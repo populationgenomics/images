@@ -1,9 +1,14 @@
 # Images
 
-This is a repository of single-software images to build and push in the `cpg-common` artifact registry.
-This might also be a good place to put scripts for moving containers with Skopeo.
+This is a repository of:
 
-The directory should be named the same as the resulting image on `cpg-common`.
+- Single-software images to build and push in the `cpg-common` artifact registry.
+- Scripts that move external images into our artifact registry using Skopeo.
+
+This is a BAD place for:
+
+- multi-software images
+- analysis-specific images, eg: an image that contains in-progress software for processing data
 
 ## Image moving scripts
 
