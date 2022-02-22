@@ -1,2 +1,2 @@
-# These owners will be the default owners for everything in the repo.
-*       @illusional @lgruen @vladsaveliev
+# These owners will be the default code revieweres for images/
+images/*    @illusional @lgruen @vladsaveliev
