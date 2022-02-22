@@ -1,0 +1,17 @@
+name: Linting
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: pre-commit
+        run: |
+          # pre-commit should install all the dependencies
+          pre-commit run --all-files
