@@ -10,22 +10,22 @@ ENV PATH=${CONDA_BIN}:$PATH
 ENV EH_VERSION=v5.0.0
 
 RUN apt-get update && apt-get install --no-install-recommends -qqy \
-    python3-dev \
-    python3-pip \
-    python \
-    python-dev \
-    awscli \
-    build-essential \
-    git \
-    libbz2-dev \
-    liblzma-dev \
-    make \
-    pkg-config \
-    wget \
-    unzip \
-    zlib1g-dev \
-    libcurl4-openssl-dev \
-    libssl-dev
+    python3-dev=3.8.2-0ubuntu2 \
+    python3-pip=20.0.2-5ubuntu1.6 \
+    python=3.8.2-0ubuntu2 \
+    python-dev=2.7.17-4 \
+    awscli=1.18.69-1ubuntu0.20.04.1 \
+    build-essential=12.8ubuntu1.1 \
+    git=1:2.25.1-1ubuntu3.2 \
+    libbz2-dev=1.0.8-2 \
+    liblzma-dev =5.2.4-1ubuntu1 \
+    make =4.2.1-1.2 \
+    pkg-config = 0.29.1-0ubuntu4\
+    wget =1.20.3-1ubuntu2 \
+    unzip=6.0-25ubuntu1 \
+    zlib1g-dev=1:1.2.11.dfsg-2ubuntu1.2 \
+    libcurl4-openssl-dev=7.68.0-1ubuntu2.7 \
+    libssl-dev=1.1.1f-1ubuntu2.10
 
 # Install and configure conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_RELEASE}-Linux-x86_64.sh -O /tmp/miniconda.sh && \
