@@ -2,6 +2,11 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PATH="/root/miniconda3/bin:${PATH}"
+ARG CONDA_RELEASE="4.6.14"
+ARG CONDA_INSTALL_DIR="/opt/conda"
+ARG CONDA_BIN=${CONDA_INSTALL_DIR}/bin
+ARG CONDA_CMD=${CONDA_BIN}/conda
+ENV PATH=${CONDA_BIN}:$PATH
 ENV EH_VERSION=v5.0.0
 
 RUN apt-get update && apt-get install --no-install-recommends -qqy \
@@ -9,6 +14,7 @@ RUN apt-get update && apt-get install --no-install-recommends -qqy \
     python3-pip \
     python \
     python-dev \
+    awscli \
     build-essential \
     git \
     libbz2-dev \
@@ -33,4 +39,3 @@ RUN rm -rf /tmp/* \
     /var/tmp/* \
     /var/cache/apt/* \
     /var/lib/apt/lists/* \
-    
