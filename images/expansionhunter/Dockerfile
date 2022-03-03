@@ -32,4 +32,4 @@ ENV PATH="/ExpansionHunter/bin/:$PATH"
 # Clean up
 RUN rm -rf /tmp/* \
     /var/tmp/* \
-    /var/cache/apt/* \
+    /var/cache/apt/*
