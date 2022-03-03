@@ -35,11 +35,11 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_RELEASE}
     ${CONDA_CMD} init bash && \
     bash -c "source ${HOME}/.bashrc"
 
-RUN pip install Cython==0.29.24 numpy==1.21.2 pybedtools==0.8.2 scipy==1.7.1
+RUN pip install --no-cache-dir Cython==0.29.24 numpy==1.21.2 pybedtools==0.8.2 scipy==1.7.1
 
 
 # Install ExpansionHunter
-RUN wget https://github.com/Illumina/ExpansionHunter/releases/download/${EH_VERSION}/ExpansionHunter-${EH_VERSION}-linux_x86_64.tar.gz && \
+RUN wget --progress=dot:giga https://github.com/Illumina/ExpansionHunter/releases/download/${EH_VERSION}/ExpansionHunter-${EH_VERSION}-linux_x86_64.tar.gz && \
     tar xzf ExpansionHunter-${EH_VERSION}-linux_x86_64.tar.gz && \
     rm ExpansionHunter-${EH_VERSION}-linux_x86_64.tar.gz && \
     mv /ExpansionHunter-${EH_VERSION}-linux_x86_64 /ExpansionHunter
