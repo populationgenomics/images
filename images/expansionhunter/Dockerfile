@@ -1,11 +1,5 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PATH="/root/miniconda3/bin:${PATH}"
-ARG CONDA_RELEASE="4.6.14"
-ARG CONDA_INSTALL_DIR="/opt/conda"
-ARG CONDA_BIN=${CONDA_INSTALL_DIR}/bin
-ARG CONDA_CMD=${CONDA_BIN}/conda
-ENV PATH=${CONDA_BIN}:$PATH
 ENV EH_VERSION=v5.0.0
 
 # hadolint ignore=DL3008
