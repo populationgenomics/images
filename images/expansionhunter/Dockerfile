@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install --no-install-recommends -qqy \
     libcurl4-openssl-dev \
     libssl-dev
 
+RUN rm /var/lib/apt/lists/*
+
 # Install and configure conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_RELEASE}-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p ${CONDA_INSTALL_DIR} && \
@@ -48,3 +50,4 @@ RUN rm -rf /tmp/* \
     /var/tmp/* \
     /var/cache/apt/* \
     /var/lib/apt/lists/* \
+
