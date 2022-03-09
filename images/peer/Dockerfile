@@ -106,6 +106,7 @@ RUN apt-get update \
         python \
         python-dev \
         python-numpy \
+        python-pandas \
         python-dill \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50 --slave /usr/bin/g++ g++ /usr/bin/g++-5 \
