@@ -13,4 +13,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends g++ libopenblas
         cpg-hail \
         cpg-utils \
         peddy \
-        sample-metadata 
+        sample-metadata
