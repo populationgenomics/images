@@ -3,7 +3,7 @@ FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:1.0
 
 ENV HAIL_QUERY_BACKEND service
 
-# hadolint ignore=DL3013
+# hadolint ignore=DL3008, DL3013
 RUN apt-get update && apt-get install -y g++ libopenblas-base liblapack3 openjdk-11-jre-headless python3-pip && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
