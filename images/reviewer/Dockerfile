@@ -7,9 +7,8 @@ wget --progress=dot:giga https://github.com/Illumina/REViewer/releases/download/
 gunzip REViewer-v0.2.7-linux_x86_64.gz && \
 chmod +x REViewer-v0.2.7-linux_x86_64 && \
 apt-get clean && \
-rm -rf /var/lib/apt/lists/*
-
-# Clean up
-RUN rm -rf /tmp/* \
+rm -rf /var/lib/apt/lists/* \
+    /tmp/* \
     /var/tmp/* \
-    /var/cache/apt/*
+    /var/cache/apt/* \
+    REViewer-v0.2.7-linux_x86_64.gz
