@@ -21,3 +21,4 @@ RUN wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/lin
         r-DT \
         r-plotly && \
     rm -r /root/micromamba/pkgs
+    
