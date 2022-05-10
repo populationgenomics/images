@@ -3,7 +3,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get -y --no-install-recommends install wget && \
-wget --progress=dot:giga https://github.com/Illumina/REViewer/releases/download/v0.2.7/REViewer-v0.2.7-linux_x86_64.gz && \
+wget --progress=dot:giga --no-check-certificate https://github.com/Illumina/REViewer/releases/download/v0.2.7/REViewer-v0.2.7-linux_x86_64.gz && \
 gunzip REViewer-v0.2.7-linux_x86_64.gz && \
 chmod +x REViewer-v0.2.7-linux_x86_64 && \
 apt-get clean && \
