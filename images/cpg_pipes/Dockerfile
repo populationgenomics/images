@@ -1,8 +1,8 @@
 # Standard analysis-runner driver image with cpg_pipes. 
 FROM ubuntu:20.04
 
-# hadolint ignore=DL3008, DL3013
-RUN apt-get update && apt install -y \
+# hadolint ignore=DL3008, DL3013, DL4006
+RUN apt-get update && apt-get install -y \
         apt-transport-https \
         bash \
         bzip2 \
