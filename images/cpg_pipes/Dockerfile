@@ -1,7 +1,8 @@
 # Standard analysis-runner driver image with cpg_pipes. 
 FROM ubuntu:20.04
 
-RUN apt update && apt install -y \
+# hadolint ignore=DL3008, DL3013
+RUN apt-get update && apt install -y \
         apt-transport-https \
         bash \
         bzip2 \
@@ -14,7 +15,7 @@ RUN apt update && apt install -y \
         python3 \
         python3-pip \
         zip && \
-    pip install --no-cache-dir cpg_pipes  && \
+    pip install --no-cache-dir cpg_pipes==0.3.1  && \
     # Google Cloud SDK
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
