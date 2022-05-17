@@ -14,4 +14,3 @@ rm -rf /var/lib/apt/lists/* \
     /var/tmp/* \
     /var/cache/apt/* \
     REViewer-v0.2.7-linux_x86_64.gz
-    
