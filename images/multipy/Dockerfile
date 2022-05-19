@@ -3,4 +3,5 @@ ARG DRIVER_SHA="36c6d4548ef347f14fd34a5b58908057effcde82-hail-83056327f288917537
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_SHA
 
-RUN pip install git+https://github.com/puolival/multipy.git
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir git+https://github.com/puolival/multipy.git
