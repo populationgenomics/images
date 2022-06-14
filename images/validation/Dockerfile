@@ -1,11 +1,9 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/hap.py:v0.3.9
+FROM pkrusche/hap.py:v0.3.9
 
-ENV TZ=Australia
-
+# requires unzip
 RUN apt-get update && \
     apt-get install -y unzip && \
     apt-get clean -y
-
 
 # Install VcfEval
 RUN wget https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.12.1/rtg-tools-3.12.1-linux-x64.zip && \
