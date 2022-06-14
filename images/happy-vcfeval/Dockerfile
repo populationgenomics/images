@@ -13,3 +13,5 @@ RUN wget -q https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.12
     mv rtg-tools-3.12.1 /vcfeval
 
 ENV PATH="/opt/hap.py/bin:$PATH" VCFEVAL_JAR="/vcfeval/RTG.jar"
+# run the RTG JAR file with $ java -jar "$VCFEVAL_JAR"
+# hap.py is present in the PATH
