@@ -1,6 +1,6 @@
 FROM pkrusche/hap.py:v0.3.9
 
-# requires unzip
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y unzip && \
     apt-get clean -y
