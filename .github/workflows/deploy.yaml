@@ -8,6 +8,10 @@ on:
       image_tag:
         description: "Tag of image"
         required: true
+      docker_cli_args:
+        description: "Extra docker CLI params"
+        required: false
+
 jobs:
   deployImage:
     runs-on: ubuntu-latest
@@ -34,7 +38,10 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build --tag $DOCKER_IMAGE images/${{ github.event.inputs.image_name }}/
+          docker build \
+            ${{ inputs.docker_cli_args }} \
+            --tag $DOCKER_IMAGE \
+            images/${{ github.event.inputs.image_name }}/
 
       - name: "push image"
         run: |
