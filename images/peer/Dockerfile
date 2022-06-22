@@ -106,6 +106,8 @@ RUN apt-get update \
         python \
         python-dev \
         python-numpy \
+        python-pandas \
+        python-dill \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50 --slave /usr/bin/g++ g++ /usr/bin/g++-5 \
     && wget --progress=dot:giga https://github.com/downloads/PMBio/peer/peer_source_1.3.tar.gz \
