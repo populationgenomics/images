@@ -1,5 +1,7 @@
 FROM gcr.io/deeplearning-platform-release/base-cpu:m93
 
+# ignore linting errors for pinning apt packages
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         g++ \
