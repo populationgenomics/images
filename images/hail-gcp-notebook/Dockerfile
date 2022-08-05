@@ -16,8 +16,10 @@ RUN apt-get update && \
         "cloudpathlib[all]" \
         cpg-utils \
         hail \
-        phantomjs \
         pyarrow \
         sample-metadata \
-        selenium && \
+        selenium==3.8.0 && \
+    curl -sSL https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar xjf - && \
+    mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
+    rm -r phantomjs-2.1.1-linux-x86_64 && \
     curl -o "$(find_spark_home.py)/jars/gcs-connector-hadoop2-2.0.1.jar" https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop2-2.0.1.jar
