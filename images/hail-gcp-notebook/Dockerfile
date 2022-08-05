@@ -2,7 +2,7 @@
 # hadolint ignore=DL3007
 FROM gcr.io/deeplearning-platform-release/base-cpu:latest
 
-# hadolint ignore=DL3008,DL3013
+# hadolint ignore=DL3008,DL3013,DL4006
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         g++ \
@@ -19,7 +19,6 @@ RUN apt-get update && \
         pyarrow \
         sample-metadata \
         selenium==3.8.0 && \
-    set -o pipefail && \
     curl -sSL https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar xjf - && \
     mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
     rm -r phantomjs-2.1.1-linux-x86_64 && \
