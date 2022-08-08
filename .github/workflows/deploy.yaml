@@ -17,6 +17,8 @@ jobs:
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       DOCKER_IMAGE: australia-southeast1-docker.pkg.dev/cpg-common/images/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+      IMAGE_NAME: ${{ github.event.inputs.image_name }}
+      IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
     steps:
       - name: "checkout repo"
@@ -34,7 +36,7 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build --tag $DOCKER_IMAGE images/${{ github.event.inputs.image_name }}/
+          docker build --tag $DOCKER_IMAGE images/${IMAGE_NAME}/ --build-arg VERSION=${IMAGE_TAG}
 
       - name: "push image"
         run: |
