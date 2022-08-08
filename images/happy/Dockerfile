@@ -1,3 +1,4 @@
+ARG VERSION=0.3.15
 FROM ubuntu:18.04
 
 # installation from https://github.com/Illumina/hap.py/blob/master/Dockerfile
@@ -42,7 +43,7 @@ RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz
 ENV PATH $PATH:/opt/apache-ant-1.9.7/bin
 
 # clone in, install, delete
-RUN git clone --depth 1 --branch v0.3.15 https://github.com/Illumina/hap.py /opt/hap.py-source && \
+RUN git clone --depth 1 --branch v${VERSION} https://github.com/Illumina/hap.py /opt/hap.py-source && \
 	python /opt/hap.py-source/install.py /opt/hap.py --with-rtgtools --no-tests && \
 	rm -rf /opt/hap.py-source
 
