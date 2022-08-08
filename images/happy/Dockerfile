@@ -49,4 +49,4 @@ RUN git clone --depth 1 --branch v${VERSION} https://github.com/Illumina/hap.py 
 
 ENV PATH="/opt/hap.py/bin:$PATH"
 ENV RTG_JAR="/opt/hap.py/libexec/rtg-tools-install/RTG.jar"
-# run the RTG JAR file with $ java -jar "$VCFEVAL_JAR"
+# run the RTG JAR file with $ java -jar "RTG_JAR"
