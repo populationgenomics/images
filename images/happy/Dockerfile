@@ -33,16 +33,6 @@ RUN apt-get update && \
 
 RUN pip install bx-python
 
-# copy git repository into the image
-RUN mkdir -p /opt/hap.py-source
-COPY . /opt/hap.py-source/
-
-# make minimal HG19 reference sequence
-RUN mkdir -p /opt/hap.py-data
-
-# download HG19 reference data
-WORKDIR /opt/hap.py-data
-
 # get + install ant
 WORKDIR /opt
 RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz && \
@@ -50,30 +40,11 @@ RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz
     rm apache-ant-1.9.7-bin.tar.gz
 ENV PATH $PATH:/opt/apache-ant-1.9.7/bin
 
-# run hap.py installer in the image, don't run tests since we don't have a reference file
-WORKDIR /opt/hap.py-source
-RUN python install.py /opt/hap.py --with-rtgtools --no-tests
-WORKDIR /opt/hap.py
+# clone in, install, delete
+RUN git clone --depth 1 --branch v0.3.15 https://github.com/Illumina/hap.py /opt/hap.py-source && \
+	python /opt/hap.py-source/install.py /opt/hap.py --with-rtgtools --no-tests && \
+	rm -rf /opt/hap.py-source
 
-# run basic tests
-RUN bin/test_haplotypes
-
-# remove source folder
-WORKDIR /
-RUN rm -rf /opt/hap.py-source
-
-
-# hadolint ignore=DL3008
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install VcfEval
-RUN wget -q https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.12.1/rtg-tools-3.12.1-linux-x64.zip && \
-    unzip rtg-tools-3.12.1-linux-x64.zip && \
-    rm rtg-tools-3.12.1-linux-x64.zip && \
-    mv rtg-tools-3.12.1 /vcfeval
-
-ENV PATH="/opt/hap.py/bin:$PATH" VCFEVAL_JAR="/vcfeval/RTG.jar"
+ENV PATH="/opt/hap.py/bin:$PATH"
+ENV RTG_JAR="/opt/hap.py/libexec/rtg-tools-install/RTG.jar"
 # run the RTG JAR file with $ java -jar "$VCFEVAL_JAR"
