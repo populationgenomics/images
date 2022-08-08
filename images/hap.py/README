@@ -5,3 +5,11 @@ git clone --depth 1 --branch v$VERSION https://github.com/Illumina/hap.py
 cd hap.py
 gcloud builds submit --timeout=8h --tag=australia-southeast1-docker.pkg.dev/cpg-common/images/hap.py:$VERSION
 ```
+
+Executables locations:
+
+```
+/opt/hap.py/bin/bcftools
+/opt/hap.py/bin/hap.py
+/opt/hap.py/libexec/rtg-tools-install/RTG.jar
+```
