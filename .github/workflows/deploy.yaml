@@ -34,7 +34,7 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build --tag $DOCKER_IMAGE images/${{ github.event.inputs.image_name }}/
+          docker build --tag $DOCKER_IMAGE images/${{ github.event.inputs.image_name }}/ --build-arg VERSION=${{ github.event.inputs.image_tag }}
 
       - name: "push image"
         run: |
