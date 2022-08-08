@@ -29,7 +29,8 @@ RUN apt-get update && \
         software-properties-common \
         wget \
         zlib1g-dev && \
-    apt-get clean -y
+    apt-get clean -y  && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN pip install bx-python
 
