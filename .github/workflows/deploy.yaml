@@ -36,7 +36,7 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build --tag $DOCKER_IMAGE images/${IMAGE_NAME}/ --build-arg VERSION=${IMAGE_TAG}
+          docker build --tag $DOCKER_IMAGE images/$IMAGE_NAME/ --build-arg VERSION=$IMAGE_TAG
 
       - name: "push image"
         run: |
