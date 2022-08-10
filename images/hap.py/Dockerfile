@@ -5,8 +5,9 @@ ARG VERSION=${VERSION:-v0.3.15}
 # installation from https://github.com/Illumina/hap.py/blob/master/Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
         autoconf \
         build-essential \
         bzip2 \
@@ -34,11 +35,11 @@ RUN apt-get update && \
     apt-get clean -y  && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install bx-python
+RUN pip install --no-cache-dir bx-python==0.8.9
 
 # get + install ant
 WORKDIR /opt
-RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz && \
+RUN wget -q http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz && \
     tar xzf apache-ant-1.9.7-bin.tar.gz && \
     rm apache-ant-1.9.7-bin.tar.gz
 ENV PATH="$PATH:/opt/apache-ant-1.9.7/bin"
