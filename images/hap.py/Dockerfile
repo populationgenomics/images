@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:18.04
 
 ARG VERSION=${VERSION:-v0.3.15}
 
