@@ -47,10 +47,11 @@ RUN wget -q http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar
 ENV PATH="$PATH:/opt/apache-ant-1.9.7/bin"
 
 # clone in, install, delete - then update bcftools/samtools
+# hadolint ignore=DL3003
 RUN git clone --depth 1 --single-branch --branch ${VERSION} https://github.com/Illumina/hap.py /opt/hap.py-source && \
 	python /opt/hap.py-source/install.py /opt/hap.py --with-rtgtools --no-tests && \
 	rm -rf /opt/hap.py-source && \
-	wget https://github.com/samtools/bcftools/releases/download/${HTS_VERSION}/bcftools-${HTS_VERSION}.tar.bz2 && \
+	wget -q https://github.com/samtools/bcftools/releases/download/${HTS_VERSION}/bcftools-${HTS_VERSION}.tar.bz2 && \
 	tar -xf bcftools-${HTS_VERSION}.tar.bz2 && \
 	cd bcftools-${HTS_VERSION} && \
 	bash configure --prefix=/opt/hap.py && \
@@ -58,7 +59,7 @@ RUN git clone --depth 1 --single-branch --branch ${VERSION} https://github.com/I
 	make install && \
 	cd .. && \
 	rm -rf bcftools-${HTS_VERSION}.tar.bz2 bcftools-${HTS_VERSION} && \
-	wget https://github.com/samtools/samtools/releases/download/${HTS_VERSION}/samtools-${HTS_VERSION}.tar.bz2 && \
+	wget -q https://github.com/samtools/samtools/releases/download/${HTS_VERSION}/samtools-${HTS_VERSION}.tar.bz2 && \
 	tar -xf samtools-${HTS_VERSION}.tar.bz2 && \
 	cd samtools-${HTS_VERSION} && \
 	bash configure --prefix=/opt/hap.py && \
