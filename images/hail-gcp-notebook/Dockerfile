@@ -15,6 +15,7 @@ RUN apt-get update && \
         bokeh \
         "cloudpathlib[all]" \
         cpg-utils \
+        gnomad \
         hail \
         pyarrow \
         sample-metadata \
