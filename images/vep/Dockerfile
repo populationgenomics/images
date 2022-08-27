@@ -2,8 +2,9 @@ FROM debian:stretch-slim
 
 ENV MAMBA_ROOT_PREFIX=/root/micromamba
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-104}
+ARG VERSION=${VERSION:-104.3}
 
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y git wget bash bzip2 zip lsb-release curl gnupg2 && \
     rm -r /var/lib/apt/lists/* && \
@@ -11,7 +12,7 @@ RUN apt-get update && \
     wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
     mkdir $MAMBA_ROOT_PREFIX && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX -c bioconda -c conda-forge \
-    ensembl-vep=${VEP_VERSION}.0 \
+    ensembl-vep=${VERSION} \
     # Loftee deps:
     samtools perl-list-moreutils perl-dbd-sqlite \
     google-cloud-sdk && \
