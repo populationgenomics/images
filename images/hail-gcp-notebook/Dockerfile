@@ -11,7 +11,9 @@ RUN apt-get update && \
         openjdk-8-jre-headless \
         python3-pip && \
     rm -rf /var/lib/apt/lists/* && \
-    pip3 install --no-cache-dir \
+    conda create -n python310 python=3.10 ipykernel && \
+    conda run -n python310 pip3 install --no-cache-dir \
+        analysis-runner \
         bokeh \
         "cloudpathlib[all]" \
         cpg-utils \
