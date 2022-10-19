@@ -3,6 +3,7 @@ FROM debian:stretch-slim
 ENV MAMBA_ROOT_PREFIX=/root/micromamba
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=${VERSION:-105.0}
+ENV VEP_SHARE=$MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}-1
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
@@ -23,6 +24,7 @@ RUN apt-get update && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX -c bioconda -c conda-forge \
     ensembl-vep=${VERSION} \
     # Loftee deps:
+    perl-bio-bigfile \
     perl-dbd-sqlite \
     perl-list-moreutils \
     samtools \
@@ -30,8 +32,21 @@ RUN apt-get update && \
     && \
     rm -r /root/micromamba/pkgs
 
-# Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
-RUN vep_install --AUTO a --NO_HTSLIB
+# remove broken (GRCh37) LOFTEE files
+# copy in new GRCh38 content
+RUN rm $VEP_SHARE/TissueExpression.pm \
+  $VEP_SHARE/ancestral.pm \
+  $VEP_SHARE/context.pm \
+  $VEP_SHARE/de_novo_donor.pl \
+  $VEP_SHARE/extended_splice.pl \
+  $VEP_SHARE/gerp_dist.pl \
+  $VEP_SHARE/loftee_splice_utils.pl \
+  $VEP_SHARE/splice_site_scan.pl \
+  $VEP_SHARE/svm.pl \
+  $VEP_SHARE/utr_splice.pl && \
+  git clone https://github.com/populationgenomics/loftee_38.git && \
+    cp -r loftee_38/* $MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION-1 \
+    && rm -rf loftee_38
 
 # Install gcsfuse to mount VEP cache files
 RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
@@ -39,6 +54,9 @@ RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     apt-get update && apt-get install -y gcsfuse
 
-RUN git clone -b grch38 https://github.com/konradjk/loftee.git && \
-    cp -r loftee/* $MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}* \
-    && rm -rf loftee
+ENV PERL5LIB=$MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}-1
+
+# Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
+# run this last, as other commands seem to re-break the installation
+RUN vep_install --AUTO a --NO_HTSLIB
+
