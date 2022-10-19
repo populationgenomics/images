@@ -6,7 +6,7 @@ ARG VERSION=${VERSION:-105.0}
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
+    apt-get install -y \
     bash \
     bzip2 \
     curl \
@@ -37,7 +37,7 @@ RUN vep_install --AUTO a --NO_HTSLIB
 RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    apt-get update && apt-get install --no-install-recommends -y gcsfuse
+    apt-get update && apt-get install -y gcsfuse
 
 RUN git clone -b grch38 https://github.com/konradjk/loftee.git && \
     cp -r loftee/* $MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}* \
