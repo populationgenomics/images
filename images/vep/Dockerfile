@@ -6,7 +6,7 @@ ARG VERSION=${VERSION:-105.0}
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
+    apt-get install -y \
     bash \
     bzip2 \
     curl \
