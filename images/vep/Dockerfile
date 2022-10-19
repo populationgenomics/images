@@ -23,18 +23,21 @@ RUN apt-get update && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX -c bioconda -c conda-forge \
     ensembl-vep=${VERSION} \
     # Loftee deps:
-    samtools perl-list-moreutils perl-dbd-sqlite \
-    google-cloud-sdk && \
+    perl-dbd-sqlite \
+    perl-list-moreutils \
+    samtools \
+    google-cloud-sdk \
+    && \
     rm -r /root/micromamba/pkgs
 
 # Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
 RUN vep_install --AUTO a --NO_HTSLIB
 
-# Install gcsfuse to mount VEP cache fiels
-RUN export GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
+# Install gcsfuse to mount VEP cache files
+RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    apt-get update && apt-get install -y gcsfuse
+    apt-get update && apt-get install --no-install-recommends -y gcsfuse
 
 RUN git clone -b grch38 https://github.com/konradjk/loftee.git && \
     cp -r loftee/* $MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}* \
