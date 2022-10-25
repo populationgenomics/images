@@ -2,9 +2,11 @@ ARG DRIVER_TAG="latest"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_TAG
 
-# hadolint ignore=DL3013
+# hadolint ignore=DL3008,DL3013
 RUN apt-get update && \
     apt-get install -y cmake && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
     # The chi2comb-py Python package depends on the chi2comb C++ library.
     curl -fsSL https://raw.githubusercontent.com/limix/chi2comb/master/install | bash && \
     pip3 install --no-cache-dir \
