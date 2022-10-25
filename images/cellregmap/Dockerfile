@@ -4,11 +4,11 @@ FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_T
 
 # hadolint ignore=DL3008,DL3013
 RUN apt-get update && \
-    apt-get install -y cmake && \
+    apt-get install -y --no-install-recommends cmake && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     # The chi2comb-py Python package depends on the chi2comb C++ library.
-    curl -fsSL https://raw.githubusercontent.com/limix/chi2comb/master/install | bash && \
+    curl -fsSL https://raw.githubusercontent.com/limix/chi2comb/master/install | bash -o pipefail && \
     pip3 install --no-cache-dir \
         cellregmap==0.0.3 \
         chi2comb==0.1.0 \
