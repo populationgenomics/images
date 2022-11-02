@@ -1,5 +1,4 @@
-# Using rocky as temp replacement for CentOS
-FROM rockylinux:8.5
+FROM debian:buster-slim
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
@@ -18,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     && \
     rm -r /root/micromamba/pkgs
 
-RUN apt update && apt install -y build-essential curl libboost-all-dev && \
+RUN apt-get update && apt-get install -y build-essential curl libboost-all-dev && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     git clone --depth 1 --branch ${VERSION} https://github.com/Illumina/DRAGMAP && \
