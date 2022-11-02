@@ -48,7 +48,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: analysis-runner
-          credentials_json: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
       - name: "gcloud docker auth"
         run: |
