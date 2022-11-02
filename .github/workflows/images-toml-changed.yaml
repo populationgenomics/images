@@ -1,9 +1,7 @@
-name: Deploy images in images.toml
+name: Deploy all in images.toml
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
     paths:
       - 'images.toml'
 
