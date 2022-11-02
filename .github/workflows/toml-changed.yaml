@@ -27,7 +27,7 @@ jobs:
       - name: "Set matrix"
         id: set_matrix
         run: |
-          echo matrix="${{ steps.read_toml.outputs.stdout }}" >> GITHUB_OUTPUT
+          echo matrix=${{ steps.read_toml.outputs.stdout }} >> GITHUB_OUTPUT
 
   deploy_all_in_toml:
     runs-on: ubuntu-latest
