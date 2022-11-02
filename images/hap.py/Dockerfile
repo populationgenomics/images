@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-ARG VERSION=${VERSION:-v0.3.15}
+ARG VERSION=${VERSION:-0.3.15}
 ARG HTS_VERSION=${HTS_VERSION:-1.15.1}
 
 # installation from https://github.com/Illumina/hap.py/blob/master/Dockerfile
@@ -48,7 +48,7 @@ ENV PATH="$PATH:/opt/apache-ant-1.9.7/bin"
 
 # clone in, install, delete - then update bcftools/samtools
 # hadolint ignore=DL3003
-RUN git clone --depth 1 --single-branch --branch ${VERSION} https://github.com/Illumina/hap.py /opt/hap.py-source && \
+RUN git clone --depth 1 --single-branch --branch v${VERSION} https://github.com/Illumina/hap.py /opt/hap.py-source && \
 	python /opt/hap.py-source/install.py /opt/hap.py --with-rtgtools --no-tests && \
 	rm -rf /opt/hap.py-source && \
 	wget -q https://github.com/samtools/bcftools/releases/download/${HTS_VERSION}/bcftools-${HTS_VERSION}.tar.bz2 && \
