@@ -1,10 +1,8 @@
 name: Deploy all in images.toml
-on:
-  workflow_dispatch:
-  push:
+on: [workflow_dispatch, push]
 
 jobs:
-  toml_changed:
+  deploy_all_in_toml:
     env:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
