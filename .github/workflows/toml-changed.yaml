@@ -63,4 +63,4 @@ jobs:
 
       - name: "push image"
         run: |
-          docker push ${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}
+          docker push "${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}"
