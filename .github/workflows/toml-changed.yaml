@@ -31,7 +31,7 @@ jobs:
         with:
           script: |
             import tomllib, os
-            with open("images.toml") as f:
+            with open("images.toml", "rb") as f:
               d = tomllib.load(f)
               for name, tag in d['images'].items():
                 os.system(f"docker build --build-arg VERSION=$TAG --tag $DOCKER_PREFIX/{name}:{tag} images/{name}")
