@@ -40,8 +40,6 @@ jobs:
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       PREFIX: australia-southeast1-docker.pkg.dev/cpg-common/images
-      NAME: ${{ matrix.name }}
-      TAG: ${{ matrix.tag }}
     steps:
       - name: "checkout repo"
         uses: actions/checkout@v2
@@ -58,8 +56,11 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build --build-arg VERSION=${TAG} --tag ${PREFIX}/${NAME}:${TAG} images/${NAME}
+          docker build \
+          --build-arg VERSION=${{ matrix.tag }} \
+          --tag ${PREFIX}/${{ matrix.name }}:${{ matrix.tag }} \
+          images/${{ matrix.name }}
 
       - name: "push image"
         run: |
-          docker push ${PREFIX}/${NAME}:${TAG}
+          docker push ${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}
