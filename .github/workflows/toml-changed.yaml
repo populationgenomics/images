@@ -22,12 +22,12 @@ jobs:
             import tomllib, os
             d = tomllib.load(open("images.toml", "rb"))
             vals = [{"name": name, "tag": tag} for name, tag in d['images'].items()]
-            print(str(vals).replace("'", "\'"))
+            print(str(vals).replace("'", "\\'"))
 
       - name: "Set matrix"
         id: set_matrix
         run: |
-          echo "matrix=${{ steps.read_toml.outputs.stdout }}" >> GITHUB_OUTPUT
+          echo "matrix='${{ steps.read_toml.outputs.stdout }}'" >> GITHUB_OUTPUT
 
   deploy_all_in_toml:
     runs-on: ubuntu-latest
