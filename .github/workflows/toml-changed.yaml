@@ -1,5 +1,11 @@
 name: Deploy all in images.toml
-on: [workflow_dispatch, push]
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'images.toml'
 
 jobs:
   make_matrix:
