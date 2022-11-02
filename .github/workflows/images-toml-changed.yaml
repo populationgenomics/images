@@ -1,0 +1,41 @@
+name: Deploy images in images.toml
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'images.toml'
+
+  images-toml-changed:
+    env:
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_PROGRESS: plain
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      DOCKER_PREFIX: australia-southeast1-docker.pkg.dev/cpg-common/images
+    steps:
+      - name: "checkout repo"
+        uses: actions/checkout@v2
+
+      - name: "gcloud setup"
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: analysis-runner
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+      - name: "gcloud docker auth"
+        run: |
+          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import toml, os
+            with open("images.toml") as f:
+              d = toml.load(f)
+              for name, tag in d['images'].items():      
+                os.system(f"docker build --build-arg VERSION=$TAG --tag $DOCKER_PREFIX/{name}:{tag} images/{name}")
+                os.system(f"docker push $DOCKER_PREFIX/{name}:{tag}")
