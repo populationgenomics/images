@@ -33,7 +33,7 @@ jobs:
             d = tomllib.load(open("images.toml", "rb"))
             print({
               "include": [
-                {"name": name, "tag": tag} 
+                {"name": name, "tag": tag}
                 for name, tag in d['images'].items()
               ]
             })
@@ -69,7 +69,7 @@ jobs:
       - name: "gcloud docker auth"
         run: |
           gcloud auth configure-docker australia-southeast1-docker.pkg.dev
-          
+
       - name: "build image"
         run: |
           docker build --build-arg VERSION=${TAG} --tag ${PREFIX}/${NAME}:${TAG} images/${NAME}
