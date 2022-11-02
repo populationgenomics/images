@@ -30,9 +30,9 @@ jobs:
       - uses: jannekem/run-python-script-action@v1
         with:
           script: |
-            import toml, os
+            import tomllib, os
             with open("images.toml") as f:
-              d = toml.load(f)
+              d = tomllib.load(f)
               for name, tag in d['images'].items():
                 os.system(f"docker build --build-arg VERSION=$TAG --tag $DOCKER_PREFIX/{name}:{tag} images/{name}")
                 os.system(f"docker push $DOCKER_PREFIX/{name}:{tag}")
