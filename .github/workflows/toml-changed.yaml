@@ -21,8 +21,8 @@ jobs:
           script: |
             import tomllib, os
             d = tomllib.load(open("images.toml", "rb"))
-            vals = [{"name": name, "tag": tag} for name, tag in d["images"].items()]
-            print(str(vals).replace(" ", ""), end='')
+            d = {"include": [{"name": name, "tag": tag} for name, tag in d["images"].items()]}
+            print(str(d).replace(" ", ""), end='')
 
       - name: "Set matrix"
         id: set_matrix
@@ -34,8 +34,7 @@ jobs:
     needs:
       - make_matrix
     strategy:
-      matrix: 
-        include: ${{ fromJson(needs.make_matrix.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.make_matrix.outputs.matrix) }}
     env:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
