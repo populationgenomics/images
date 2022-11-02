@@ -7,7 +7,7 @@ on:
     paths:
       - 'images.toml'
 
-  images-toml-changed:
+  imagesTomlChanged:
     env:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
