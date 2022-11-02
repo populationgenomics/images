@@ -12,21 +12,32 @@ jobs:
     outputs:
       matrix: ${{ steps.set_matrix.outputs.matrix }}
     steps:
-      - name: "checkout repo"
+      - name: "Checkout repo"
         uses: actions/checkout@v2
+
+      - name: "Checkout ref before change"
+        uses: actions/checkout@v2
+        with:
+          python-version: '3.11'
+          ref: ${{ github.event.before }}
+          path: 'before'
 
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: "Read TOML"
+      - name: "Listing changed tags in images.toml"
         id: read_toml
         uses: jannekem/run-python-script-action@v1
         with:
           script: |
             import tomllib, os
             d = tomllib.load(open("images.toml", "rb"))
-            d = {"include": [{"name": name, "tag": tag} for name, tag in d["images"].items()]}
+            before_d = tomllib.load(open("before/images.toml", "rb"))
+            d = {"include": [
+              {"name": name, "tag": tag} for name, tag in d["images"].items()
+              if not before_d.get(name) or before_d[name] != tag 
+            ]}
             print(str(d).replace(" ", ""), end='')
 
       - name: "Set matrix"
