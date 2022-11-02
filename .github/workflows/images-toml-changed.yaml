@@ -2,8 +2,6 @@ name: Deploy all in images.toml
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'images.toml'
 
 jobs:
   toml_changed:
