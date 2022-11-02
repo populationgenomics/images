@@ -10,16 +10,6 @@ jobs:
       - name: "checkout repo"
         uses: actions/checkout@v2
 
-      - name: "gcloud setup"
-        uses: google-github-actions/setup-gcloud@v0
-        with:
-          project_id: analysis-runner
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
-
-      - name: "gcloud docker auth"
-        run: |
-          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
-
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
@@ -41,7 +31,7 @@ jobs:
       - name: "Set matrix"
         id: set_matrix
         run: |
-          echo "matrix=${{toJson(steps.read_toml.outputs.stdout)}}" >> GITHUB_OUTPUT
+          echo "matrix=${{ steps.read_toml.outputs.stdout }}" >> GITHUB_OUTPUT
 
   deploy_all_in_toml:
     runs-on: ubuntu-latest
