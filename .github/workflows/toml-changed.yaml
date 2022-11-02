@@ -41,7 +41,7 @@ jobs:
       - name: "Set matrix"
         id: set_matrix
         run: |
-          echo "::set-output name=matrix::${{ steps.read_toml.outputs.stdout }}"
+          echo "matrix=${{toJson(steps.read_toml.outputs.stdout)}}" >> GITHUB_OUTPUT
 
   deploy_all_in_toml:
     runs-on: ubuntu-latest
@@ -64,7 +64,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: analysis-runner
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+          credentials_json: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
       - name: "gcloud docker auth"
         run: |
