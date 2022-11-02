@@ -1,5 +1,5 @@
 # Using rocky as temp replacement for CentOS
-FROM rockylinux:8.5 
+FROM rockylinux:8.5
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH

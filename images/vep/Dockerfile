@@ -59,4 +59,3 @@ ENV PERL5LIB=$MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}-1
 # Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
 # run this last, as other commands seem to re-break the installation
 RUN vep_install --AUTO a --NO_UPDATE --NO_HTSLIB
-
