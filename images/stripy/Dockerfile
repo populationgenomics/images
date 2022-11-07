@@ -16,6 +16,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     gcc \
     git \
+    gpg-agent \
     libbz2-dev \
     libcurl4-openssl-dev \
     libffi-dev \
@@ -67,3 +68,9 @@ RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
 
 WORKDIR /usr/local/bin/stripy-pipeline
+
+# Install gcsfuse to mount VEP cache files
+RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
+    echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
+    wget -qO - https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt-get update && apt-get install -y gcsfuse
