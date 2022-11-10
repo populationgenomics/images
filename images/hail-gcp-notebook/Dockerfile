@@ -2,6 +2,8 @@
 # hadolint ignore=DL3007
 FROM gcr.io/deeplearning-platform-release/base-cpu:latest
 
+ARG VERSION=${VERSION:-0.2.102}
+
 # hadolint ignore=DL3008,DL3013,DL4006
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -18,7 +20,7 @@ RUN apt-get update && \
         "cloudpathlib[all]" \
         cpg-utils \
         gnomad \
-        hail \
+        hail==${VERSION} \
         pyarrow \
         sample-metadata \
         selenium==3.8.0 && \
