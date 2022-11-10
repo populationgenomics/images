@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install --no-install-recommends -qqy \
      && rm -rf /var/lib/apt/lists/*
 
 # Install ExpansionHunter
-RUN wget --progress=dot:giga https://github.com/Illumina/ExpansionHunter/releases/download/${EH_VERSION}/ExpansionHunter-v${VERSION}-linux_x86_64.tar.gz && \
+RUN wget --progress=dot:giga https://github.com/Illumina/ExpansionHunter/releases/download/v${VERSION}/ExpansionHunter-v${VERSION}-linux_x86_64.tar.gz && \
     tar xzf ExpansionHunter-v${VERSION}-linux_x86_64.tar.gz && \
     rm ExpansionHunter-v${VERSION}-linux_x86_64.tar.gz && \
     mv /ExpansionHunter-v${VERSION}-linux_x86_64 /ExpansionHunter
