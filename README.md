@@ -3,16 +3,16 @@
 This is a repository of:
 
 - Single-software images to build and push in the `cpg-common` artifact registry.
-- Scripts that move external images into our artifact registry using Skopeo.
+- Scripts that move external images into our artifact registry using `skopeo`.
 
 This is a BAD place for:
 
 - multi-software images
-- analysis-specific images, eg: an image that contains in-progress software for processing data
+- analysis-specific images, e.g., an image that contains an in-progress script for processing data
 
 ## Single tool images
 
-Assuming you want to create an image for a tool called `mytool`, version `1.0.1`, add a folder called `images/mytool` with a `Dockerfile`. Parametrise the `Dockerfile` by `${VERSION}`, that will correspond to the version of your tool and the tag of your future image. For example, inside the `Dockerfile` you would have:
+Assuming you want to create an image for a tool called `mytool` of version `1.0.1`, add a folder called `images/mytool` with a `Dockerfile` file. Parametrise the `Dockerfile` by `${VERSION}` that will correspond to the version of your tool and the tag of your future image. For example, inside the `Dockerfile` you would have:
 
 ```Dockerfile
 ARG VERSION=${VERSION}
@@ -33,10 +33,10 @@ To update the tool version, modify the corresponding entry in TOML and create a 
 
 Whenever possible, avoid moving images with `scopeo`, and build them with a `Dockefile` instead following the section above. Moving is not recommended for two reasons:
 
-* It hides how the image was build originally (sometimes the original `Dockefile` is not even shared),
-* The source image can be removed by the author in the future, making your analysis no longer reproducible. 
+- It hides how the image was build originally (and sometimes the original `Dockefile` is not even shared),
+- The source image can be removed by the author in the future, making your analysis no longer reproducible. 
 
-If you still have to move, create a script names `move-{IMAGE_NAME}:{IMAGE_VERSION}.sh` following the template below:
+If you still need to move, create a script named `move-{IMAGE_NAME}:{IMAGE_VERSION}.sh` following the template below:
 
 ```shell
 #!/usr/bin/env bash
