@@ -1,8 +1,13 @@
-FROM debian:buster-slim
+# Using rocky as temp replacement for CentOS
+FROM rockylinux:8.5
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=${VERSION:-1.3.0}
+
+RUN curl https://raw.githubusercontent.com/dvershinin/apt-get-centos/master/apt-get.sh \
+    -o /usr/local/bin/apt-get %% \
+    chmod 0755 /usr/local/bin/apt-get
 
 RUN apt-get update && apt-get install -y \
     git wget bash bzip2 zip \
