@@ -1,6 +1,7 @@
 [images]
 # Map of tags for cpg-common images
 bcftools = '1.16'
+bedtools = '2.30.0'
 cellregmap = '0.0.3'
 dragmap = '1.3.0'
 expansionhunter = '5.0.0'
@@ -16,5 +17,6 @@ reviewer = '0.2.7'
 samblaster = '0.1.26'
 samtools = '1.16.1'
 somalier = '0.2.15'
+trtools = '4.0.2'
 vep = '105.0'
 verifybamid = '2.0.1'
