@@ -3,7 +3,6 @@
 bcftools = '1.16'
 bedtools = '2.30.0'
 cellregmap = '0.0.3'
-dragmap = '1.3.0'
 expansionhunter = '5.0.0'
 fastqc = '0.11.9'
 gatk = '4.2.6.1'
