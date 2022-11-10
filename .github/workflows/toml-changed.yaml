@@ -1,10 +1,10 @@
 name: Deploy all in images.toml
 on:
   push:
-#    branches:
-#      - main
-#    paths:
-#      - 'images.toml'
+    branches:
+      - main
+    paths:
+      - 'images.toml'
 
 jobs:
   make_matrix:
