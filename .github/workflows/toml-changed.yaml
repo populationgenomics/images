@@ -3,8 +3,8 @@ on:
   push:
 #    branches:
 #      - main
-    paths:
-      - 'images.toml'
+#    paths:
+#      - 'images.toml'
 
 jobs:
   make_matrix:
