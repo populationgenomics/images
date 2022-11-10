@@ -1,8 +1,8 @@
 name: Deploy all in images.toml
 on:
   push:
-    branches:
-      - main
+#    branches:
+#      - main
     paths:
       - 'images.toml'
 
