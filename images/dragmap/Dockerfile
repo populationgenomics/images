@@ -5,11 +5,7 @@ ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=${VERSION:-1.3.0}
 
-RUN curl https://raw.githubusercontent.com/dvershinin/apt-get-centos/master/apt-get.sh \
-    -o /usr/local/bin/apt-get %% \
-    chmod 0755 /usr/local/bin/apt-get
-
-RUN apt-get update && apt-get install -y \
+RUN yum update && yum install -y \
     git wget bash bzip2 zip \
     build-essential libboost-all-dev \
     && \
@@ -22,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     && \
     rm -r /root/micromamba/pkgs
 
-RUN apt-get update && apt-get install -y build-essential curl libboost-all-dev && \
+RUN yum update && yum install -y build-essential curl libboost-all-dev && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     git clone --depth 1 --branch ${VERSION} https://github.com/Illumina/DRAGMAP && \
