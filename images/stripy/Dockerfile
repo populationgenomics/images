@@ -1,5 +1,4 @@
 FROM ubuntu:20.04
-MAINTAINER Alena Musilova, alena.musilova@lfmotol.cuni.cz
 
 LABEL \
   version="v2.2" \
