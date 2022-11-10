@@ -31,9 +31,12 @@ To update the tool version, modify the corresponding entry in TOML and create a 
 
 ## Image moving scripts
 
-Please put your scripts that move images to our cpg-common repository in the `/scripts` directory.
+Whenever possible, avoid moving images with `scopeo`, and build them with a `Dockefile` instead following the section above. Moving is not recommended for two reasons:
 
-They should follow the format: `move-{IMAGE_NAME}:{IMAGE_VERSION}.sh`:
+* It hides how the image was build originally (sometimes the original `Dockefile` is not even shared),
+* The source image can be removed by the author in the future, making your analysis no longer reproducible. 
+
+If you still have to move, create a script names `move-{IMAGE_NAME}:{IMAGE_VERSION}.sh` following the template below:
 
 ```shell
 #!/usr/bin/env bash
@@ -46,11 +49,11 @@ gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 skopeo copy ${SOURCE_IMAGE} docker://australia-southeast1-docker.pkg.dev/cpg-common/images/${IMAGE_NAME}:${IMAGE_TAG}
 ```
 
-Then if you could follow the convention for the analysis-runner:
+And submit it with the analysis runner:
 
 ```shell
-IMAGE_NAME="TRTools"
-IMAGE_TAG="v4.0.2"
+IMAGE_NAME="mytool"
+IMAGE_TAG="1.0.1"
 analysis-runner \
     --dataset fewgenomes --access-level standard \
     --description "Images: Move ${IMAGE_NAME}:${IMAGE_TAG}" \
