@@ -9,12 +9,15 @@ ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    apt-transport-https \
     build-essential \
     bwa \
     bzip2 \
     ca-certificates \
+    curl \
     gcc \
     git \
+    gnupg \
     gpg-agent \
     libbz2-dev \
     libcurl4-openssl-dev \
@@ -28,7 +31,10 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-pip \
     software-properties-common \
     wget \
-    zlib1g-dev
+    zlib1g-dev 
+
+## Install Google cloud-sdk
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-cli -y
 
 WORKDIR /usr/local/bin/
 
@@ -62,7 +68,8 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
     && ln -s /usr/local/bin/REViewer /usr/bin/REViewer
 
 # Install STRipy by cloning from git repo (the most updated version)
-RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
+RUN which python3 && python3 --version && \
+git clone https://gitlab.com/andreassh/stripy-pipeline.git \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
 
