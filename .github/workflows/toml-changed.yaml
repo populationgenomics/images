@@ -83,4 +83,4 @@ jobs:
 
       - name: "deploy config"
         run: |
-          gsutil cp images.toml gs://cpg-config/templates/images/images.toml
+          gcloud storage cp images.toml gs://cpg-config/templates/images/images.toml
