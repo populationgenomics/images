@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL \
   version="v2.2" \
@@ -9,12 +9,15 @@ ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    apt-transport-https \
     build-essential \
     bwa \
     bzip2 \
     ca-certificates \
+    curl \
     gcc \
     git \
+    gnupg \
     gpg-agent \
     libbz2-dev \
     libcurl4-openssl-dev \
@@ -28,7 +31,14 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-pip \
     software-properties-common \
     wget \
-    zlib1g-dev
+    zlib1g-dev 
+
+## Install Google cloud-sdk
+RUN curl https://sdk.cloud.google.com > install.sh && \
+    bash install.sh --disable-prompts --install-dir=/opt && \
+    rm install.sh
+
+ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
 WORKDIR /usr/local/bin/
 
