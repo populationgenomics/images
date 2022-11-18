@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "matrix=${{ steps.read_toml.outputs.stdout }}" >> $GITHUB_OUTPUT
 
-  deploy:
+  deploy_images:
     runs-on: ubuntu-latest
     needs:
       - make_matrix
@@ -81,6 +81,23 @@ jobs:
         run: |
           docker push "${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}"
 
-      - name: "deploy config"
+  deploy_config:
+    runs-on: ubuntu-latest
+    needs:
+      - deploy_images
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      PREFIX: gs://cpg-config/templates
+    steps:
+      - name: "checkout repo"
+        uses: actions/checkout@v2
+
+      - name: "gcloud setup"
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: analysis-runner
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+      - name: "deploy config toml"
         run: |
-          gcloud storage cp images.toml gs://cpg-config/templates/images/images.toml
+          gcloud storage cp images.toml ${PREFIX}/images/images.toml
