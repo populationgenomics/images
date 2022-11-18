@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL \
   version="v2.2" \
@@ -34,7 +34,11 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     zlib1g-dev 
 
 ## Install Google cloud-sdk
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-cli -y
+RUN curl https://sdk.cloud.google.com > install.sh && \
+    bash install.sh --disable-prompts --install-dir=/opt && \
+    rm install.sh
+
+ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
 WORKDIR /usr/local/bin/
 
@@ -68,8 +72,7 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
     && ln -s /usr/local/bin/REViewer /usr/bin/REViewer
 
 # Install STRipy by cloning from git repo (the most updated version)
-RUN which python3 && python3 --version && \
-git clone https://gitlab.com/andreassh/stripy-pipeline.git \
+RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
 
