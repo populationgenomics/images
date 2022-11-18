@@ -80,3 +80,7 @@ jobs:
       - name: "push image"
         run: |
           docker push "${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}"
+
+      - name: "deploy config"
+        run: |
+          gsutil cp images.toml gs://cpg-config/templates/images/images.toml
