@@ -87,7 +87,8 @@ jobs:
       - deploy_images
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      PREFIX: gs://cpg-config/templates
+      CONFIG_DESTINATION: gs://cpg-config/templates
+      IMAGES_PREFIX: australia-southeast1-docker.pkg.dev/cpg-common/images
     steps:
       - name: "checkout repo"
         uses: actions/checkout@v2
@@ -98,6 +99,18 @@ jobs:
           project_id: analysis-runner
           service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
+      - name: "prepare config"
+        id: prepare toml
+        uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import toml, os 
+            prefix = os.environ['IMAGES_PREFIX']
+            d = tomllib.load(open('images.toml', 'rb'))
+            d = {'references': {k: f'{prefix}/k:{v}' for k, v in d['references']}
+            tomllib.dump(d, open('images-ready.toml', 'wb')}
+
       - name: "deploy config toml"
         run: |
-          gcloud storage cp images.toml ${PREFIX}/images/images.toml
+          gcloud storage cp images-ready.toml \
+            ${CONFIG_DESTINATION}/images/images.toml
