@@ -1,4 +1,4 @@
-name: Deploy all in images.toml
+name: Deploy images.toml
 on:
   push:
     branches:
@@ -107,7 +107,7 @@ jobs:
             import toml, os 
             prefix = os.environ['IMAGES_PREFIX']
             d = tomllib.load(open('images.toml', 'rb'))
-            d = {'references': {k: f'{prefix}/k:{v}' for k, v in d['references']}
+            d = {'images': {k: f'{prefix}/k:{v}' for k, v in d.items()}
             tomllib.dump(d, open('images-ready.toml', 'wb')}
 
       - name: "deploy config toml"
