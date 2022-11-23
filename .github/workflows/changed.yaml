@@ -1,4 +1,4 @@
-name: Deploy images.toml
+name: Deploy images and config
 on:
   push:
     branches:
