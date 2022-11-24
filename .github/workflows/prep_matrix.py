@@ -5,11 +5,10 @@ Prepare test matrix (to build images in parallel)
 from pathlib import Path
 import toml
 
-with Path('images.toml').open('rb') as f:
-    d = toml.load(f)
+d = toml.load('images.toml')
 before_d = {}
-if (path := Path('before/images.toml')).exists():
-    before_d = toml.load(path.open('rb'))
+if Path(path := 'before/images.toml').exists():
+    before_d = toml.load(path)
 d = {
     'include': [
         {'name': name, 'tag': tag}
