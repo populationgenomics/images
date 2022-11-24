@@ -20,7 +20,7 @@ d = {
 if d:
     d = {'include': [{'name': name, 'tag': tag} for name, tag in d.items()]}
 else:
-    d = {}
+    d = ''
 
 print(str(d).replace(' ', ''), end='', file=sys.stderr)
 print(str(d).replace(' ', ''), end='')
