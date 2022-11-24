@@ -2,6 +2,7 @@
 Prepare test matrix (to build images in parallel)
 """
 
+import sys
 from pathlib import Path
 import toml
 
@@ -16,4 +17,5 @@ d = {
         if not before_d.get(name) or before_d[name] != tag
     ]
 }
+print(str(d).replace(' ', ''), end='', file=sys.stderr)
 print(str(d).replace(' ', ''), end='')
