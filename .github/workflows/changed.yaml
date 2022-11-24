@@ -1,6 +1,6 @@
 name: Deploy images and config
 on:
-#  push:
+  push:
 #    branches:
 #      - main
 #    paths:
