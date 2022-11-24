@@ -1,10 +1,10 @@
 name: Deploy images and config
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'images.toml'
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - 'images.toml'
 
 env:
   PROJECT: 'cpg-common'
