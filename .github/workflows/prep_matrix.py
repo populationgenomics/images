@@ -6,19 +6,19 @@ import sys
 from pathlib import Path
 import toml
 
-matrix = toml.load('images.toml')
+d = toml.load('images.toml')
 before_d = {}
 if Path(path := 'before/images.toml').exists():
     before_d = toml.load(path)
 
 # Changed only
-matrix = {
+d = {
     name: tag
-    for name, tag in matrix.items()
+    for name, tag in d.items()
     if not before_d.get(name) or before_d[name] != tag
 }
-if matrix:
-    matrix = {'include': [{'name': name, 'tag': tag} for name, tag in matrix.items()]}
+if d:
+    matrix = {'include': [{'name': name, 'tag': tag} for name, tag in d.items()]}
 else:
     matrix = ''
 
