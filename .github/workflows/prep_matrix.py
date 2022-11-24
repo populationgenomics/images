@@ -2,19 +2,25 @@
 Prepare test matrix (to build images in parallel)
 """
 
+import sys
 from pathlib import Path
-import tomllib
+import toml
 
-with Path('images.toml').open('rb') as f:
-    d = tomllib.load(f)
+d = toml.load('images.toml')
 before_d = {}
-if (path := Path('before/images.toml')).exists():
-    before_d = tomllib.load(path.open('rb'))
+if Path(path := 'before/images.toml').exists():
+    before_d = toml.load(path)
+
+# Changed only
 d = {
-    'include': [
-        {'name': name, 'tag': tag}
-        for name, tag in d.items()
-        if not before_d.get(name) or before_d[name] != tag
-    ]
+    name: tag
+    for name, tag in d.items()
+    if not before_d.get(name) or before_d[name] != tag
 }
-print(str(d).replace(' ', ''), end='')
+if d:
+    matrix = {'include': [{'name': name, 'tag': tag} for name, tag in d.items()]}
+else:
+    matrix = {}
+
+print(str(matrix or '').replace(' ', ''), end='', file=sys.stderr)
+print(str(matrix or '').replace(' ', ''), end='')
