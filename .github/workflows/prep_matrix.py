@@ -1,5 +1,9 @@
-import tomllib
+"""
+Prepare test matrix (to build images in parallel)
+"""
+
 from pathlib import Path
+import tomllib
 
 with Path('images.toml').open('rb') as f:
     d = tomllib.load(f)
