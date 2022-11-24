@@ -30,12 +30,3 @@ repos:
         language: docker_image
         types: ["dockerfile"]
         entry: hadolint/hadolint:v2.8.0 hadolint
-
-  # Using system installation of pylint to support checking python module imports
-  - repo: local
-    hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: system
-        types: [python]
