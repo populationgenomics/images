@@ -92,14 +92,7 @@ jobs:
           python-version: '3.11'
 
       - name: "prepare config"
-        uses: jannekem/run-python-script-action@v1
-        with:
-          script: |
-            import toml, os 
-            prefix = ${{ env.IMAGES_PREFIX }}
-            d = tomllib.load(open('images.toml', 'rb'))
-            d = {'images': {k: f'{prefix}/k:{v}' for k, v in d.items()}
-            tomllib.dump(d, open('config.toml', 'wb')}
+        run: .github/workflows/prep_config.py > config.toml
 
       - name: "deploy config toml"
         run: |
