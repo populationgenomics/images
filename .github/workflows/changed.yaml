@@ -1,10 +1,16 @@
-name: Deploy all in images.toml
+name: Deploy images and config
 on:
   push:
     branches:
       - main
     paths:
       - 'images.toml'
+
+env:
+  PROJECT: 'cpg-common'
+  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
+  DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
 jobs:
   make_matrix:
@@ -18,7 +24,6 @@ jobs:
       - name: "Checkout ref before change"
         uses: actions/checkout@v2
         with:
-          python-version: '3.11'
           ref: ${{ github.event.before }}
           path: 'before'
 
@@ -33,7 +38,9 @@ jobs:
           script: |
             import tomllib, os
             d = tomllib.load(open("images.toml", "rb"))
-            before_d = tomllib.load(open("before/images.toml", "rb"))
+            before_d = {}
+            if os.path.isfile("before/images.toml"):
+              before_d = tomllib.load(open("before/images.toml", "rb"))
             d = {"include": [
               {"name": name, "tag": tag} for name, tag in d["images"].items()
               if not before_d.get(name) or before_d[name] != tag
@@ -45,7 +52,7 @@ jobs:
         run: |
           echo "matrix=${{ steps.read_toml.outputs.stdout }}" >> $GITHUB_OUTPUT
 
-  deploy:
+  deploy_images:
     runs-on: ubuntu-latest
     needs:
       - make_matrix
@@ -55,7 +62,6 @@ jobs:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      PREFIX: australia-southeast1-docker.pkg.dev/cpg-common/images
     steps:
       - name: "checkout repo"
         uses: actions/checkout@v2
@@ -63,20 +69,54 @@ jobs:
       - name: "gcloud setup"
         uses: google-github-actions/setup-gcloud@v0
         with:
-          project_id: analysis-runner
+          project_id: cpg-common
           service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
       - name: "gcloud docker auth"
         run: |
-          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
+          gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
 
       - name: "build image"
         run: |
           docker build \
           --build-arg VERSION=${{ matrix.tag }} \
-          --tag ${PREFIX}/${{ matrix.name }}:${{ matrix.tag }} \
+          --tag ${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }} \
           images/${{ matrix.name }}
 
       - name: "push image"
         run: |
-          docker push "${PREFIX}/${{ matrix.name }}:${{ matrix.tag }}"
+          docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
+
+  deploy_config:
+    runs-on: ubuntu-latest
+    needs:
+      - deploy_images
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    steps:
+      - name: "checkout repo"
+        uses: actions/checkout@v2
+
+      - name: "gcloud setup"
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id:  ${{ env.PROJECT }}
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: "prepare config"
+        uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import toml, os 
+            prefix = ${{ env.IMAGES_PREFIX }}
+            d = tomllib.load(open('images.toml', 'rb'))
+            d = {'images': {k: f'{prefix}/k:{v}' for k, v in d.items()}
+            tomllib.dump(d, open('config.toml', 'wb')}
+
+      - name: "deploy config toml"
+        run: |
+          gcloud storage cp config.toml ${{ env.CONFIG_DESTINATION }}
