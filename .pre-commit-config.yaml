@@ -16,11 +16,6 @@ repos:
       - id: markdownlint
         args: ["--config", ".markdownlint.json"]
 
-  - repo: https://github.com/ambv/black
-    rev: 20.8b1
-    hooks:
-      - id: black
-
   - repo: https://github.com/PyCQA/flake8
     rev: '5.0.4'
     hooks:
