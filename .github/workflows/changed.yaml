@@ -73,8 +73,9 @@ jobs:
 
   deploy_config:
     runs-on: ubuntu-latest
-    needs:
+    needs: 
       - deploy_images
+    if: ${{ ! failure() }}
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
