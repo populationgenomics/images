@@ -1,7 +1,9 @@
 FROM ubuntu:22.04
 
+ARG VERSION=${VERSION:-2.2}
+
 LABEL \
-  version="v2.2" \
+  version="v${VERSION}" \
   description="stripy-pipeline"
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -73,6 +75,7 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
 
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
+    --branch v${VERSION} \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
 
