@@ -15,7 +15,7 @@ RUN apt-get update && \
     # The chi2comb-py Python package depends on the chi2comb C++ library.
     curl -fsSL https://raw.githubusercontent.com/limix/chi2comb/master/install | bash && \
     pip3 install --no-cache-dir \
-        cellregmap==git+https://github.com/annacuomo/CellRegMap \
+        git+https://github.com/annacuomo/CellRegMap \
         chi2comb==0.1.0 \
         click==8.0.4 \
         limix==3.0.4 \
