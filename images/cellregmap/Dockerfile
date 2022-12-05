@@ -4,7 +4,7 @@ FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_T
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ARG VERSION=${VERSION:-0.0.3}
+# ARG VERSION=${VERSION:-0.0.3}
 
 # hadolint ignore=DL3008,DL3013
 RUN apt-get update && \
@@ -14,7 +14,7 @@ RUN apt-get update && \
     # The chi2comb-py Python package depends on the chi2comb C++ library.
     curl -fsSL https://raw.githubusercontent.com/limix/chi2comb/master/install | bash && \
     pip3 install --no-cache-dir \
-        cellregmap==${VERSION} \
+        git+https://github.com/annacuomo/CellRegMap \
         chi2comb==0.1.0 \
         click==8.0.4 \
         limix==3.0.4 \
