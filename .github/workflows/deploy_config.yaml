@@ -115,7 +115,7 @@ jobs:
 
     - name: build
       run: |
-        docker build . -f Dockerfile --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+        docker build production_pipelines -f Dockerfile --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push
       run: |
