@@ -12,6 +12,7 @@ env:
   IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
 jobs:
+  # Make a matrix of all the images that have changed in images.toml
   make_matrix:
     runs-on: ubuntu-latest
     outputs:
@@ -36,6 +37,7 @@ jobs:
           pip install toml
           echo "matrix=$(python .github/workflows/prep_matrix.py)" >> $GITHUB_OUTPUT
 
+  # Deploy the images that have changed to the registry
   deploy_images:
     runs-on: ubuntu-latest
     needs:
@@ -72,6 +74,9 @@ jobs:
         run: |
           docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
 
+  # Special-case for cpg_workflows: the image is not maintained via images.toml here
+  # as we have a repository production_pipelines for it, so we check out that repo
+  # here and build it from the repository source, using the package version as the tag.
   deploy_cpg_workflows:
     runs-on: ubuntu-latest
     env:
@@ -123,6 +128,8 @@ jobs:
         docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
         docker push $IMAGE_NAME:latest
 
+  # Finally, prepare the finalised TOML config from all maintained images plus the
+  # special-case cpg_workflows.
   deploy_config:
     runs-on: ubuntu-latest
     needs: 
