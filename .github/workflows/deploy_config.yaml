@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   PROJECT: 'cpg-common'
@@ -71,10 +72,62 @@ jobs:
         run: |
           docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
 
+  deploy_cpg_workflows:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      IMAGE_NAME: $IMAGES_PREFIX/cpg_workflows
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - uses: actions/checkout@main
+      with:
+        repository: "populationgenomics/production_pipelines"
+        ref: "main"
+        path: "production_pipelines"
+        submodules: recursive
+
+    - id: get_version
+      run: |
+        echo "version=$(cat production_pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
+
+    - id: get_sha
+      run: |
+        cd production_pipelines
+        echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        cd -
+
+    - uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: ${{ secrets.GH_IMAGES_DEPLOYER_JSON }}
+
+    - uses: google-github-actions/setup-gcloud@v0
+      with:
+        project_id: cpg-common
+
+    - run: |
+        gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+
+    - name: build
+      run: |
+        docker build . -f Dockerfile --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+    - name: push
+      run: |
+        docker push $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+    - name: push latest
+      run: |
+        docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+        docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+        docker push $IMAGE_NAME:latest
+
   deploy_config:
     runs-on: ubuntu-latest
     needs: 
       - deploy_images
+      - deploy_cpg_workflows
     if: ${{ ! failure() }}
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
@@ -95,7 +148,8 @@ jobs:
       - name: "prepare config"
         run: |
           pip install toml
-          python .github/workflows/prep_config.py > config.toml
+          python .github/workflows/prep_config.py \
+          ${{ needs.deploy_cpg_workflows.outputs.version }} > config.toml
 
       - name: "deploy config toml"
         run: |
