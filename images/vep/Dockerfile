@@ -33,7 +33,8 @@ RUN apt-get update && \
 
 # remove broken (GRCh37) LOFTEE files
 # copy in new GRCh38 content
-RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl-vep)" && \
+RUN VEP_SHARE=$MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION-* && \
+  echo $VEP_SHARE && \
   rm $VEP_SHARE/TissueExpression.pm \
   $VEP_SHARE/ancestral.pm \
   $VEP_SHARE/context.pm \
@@ -46,8 +47,7 @@ RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl
   $VEP_SHARE/utr_splice.pl && \
   git clone https://github.com/populationgenomics/loftee_38.git && \
     cp -r loftee_38/* $VEP_SHARE \
-    && rm -rf loftee_38 && \
-  echo "export PERL5LIB=${VEP_SHARE}" >> /root/.bashrc
+    && rm -rf loftee_38
 
 # Install gcsfuse to mount VEP cache files
 RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
