@@ -86,16 +86,16 @@ jobs:
       with:
         repository: "populationgenomics/production-pipelines"
         ref: "main"
-        path: "production_pipelines"
+        path: "production-pipelines"
         submodules: recursive
 
     - id: get_version
       run: |
-        echo "version=$(cat production_pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
+        echo "version=$(cat production-pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
 
     - id: get_sha
       run: |
-        cd production_pipelines
+        cd production-pipelines
         echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd -
 
@@ -109,7 +109,7 @@ jobs:
 
     - name: build
       run: |
-        docker build production_pipelines -f Dockerfile --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+        docker build production-pipelines --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push
       run: |
