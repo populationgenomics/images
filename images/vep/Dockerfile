@@ -3,7 +3,6 @@ FROM debian:stretch-slim
 ENV MAMBA_ROOT_PREFIX=/root/micromamba
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=${VERSION:-105.0}
-ARG VEP_CONDA=${VEP_CONDA:-0}
 
 # hadolint ignore=DL3008
 RUN apt-get update && \
@@ -35,7 +34,6 @@ RUN apt-get update && \
 # remove broken (GRCh37) LOFTEE files
 # copy in new GRCh38 content
 RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl-vep)" && \
-  echo $VEP_SHARE && \
   rm $VEP_SHARE/TissueExpression.pm \
   $VEP_SHARE/ancestral.pm \
   $VEP_SHARE/context.pm \
@@ -48,15 +46,14 @@ RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl
   $VEP_SHARE/utr_splice.pl && \
   git clone https://github.com/populationgenomics/loftee_38.git && \
     cp -r loftee_38/* $VEP_SHARE \
-    && rm -rf loftee_38
+    && rm -rf loftee_38 && \
+  echo "export PERL5LIB=${VEP_SHARE}" >> /root/.bashrc
 
 # Install gcsfuse to mount VEP cache files
 RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     apt-get update && apt-get install -y gcsfuse
-
-ENV PERL5LIB=$MAMBA_ROOT_PREFIX/share/ensembl-vep-${VERSION}-${VEP_CONDA}
 
 # Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
 # run this last, as other commands seem to re-break the installation
