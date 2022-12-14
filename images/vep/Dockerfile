@@ -31,8 +31,7 @@ RUN apt-get update && \
     && \
     rm -r /root/micromamba/pkgs
 
-# remove broken (GRCh37) LOFTEE files
-# copy in new GRCh38 content
+# remove broken (GRCh37) LOFTEE files, copy in new GRCh38 content
 RUN VEP_SHARE=$MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION-* && \
   echo $VEP_SHARE && \
   rm $VEP_SHARE/TissueExpression.pm \
@@ -47,17 +46,18 @@ RUN VEP_SHARE=$MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION-* && \
   $VEP_SHARE/utr_splice.pl && \
   git clone https://github.com/populationgenomics/loftee_38.git && \
     cp -r loftee_38/* $VEP_SHARE \
-    && rm -rf loftee_38
+    && rm -rf loftee_38 && \
 
-# Install gcsfuse to mount VEP cache files
-RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
+# Install gcsfuse to mount VEP cache files"
+
+  GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    apt-get update && apt-get install -y gcsfuse
+    apt-get update && apt-get install -y gcsfuse && \
 
 # Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
 # run this last, as other commands seem to re-break the installation
-RUN vep_install --AUTO a --NO_UPDATE --NO_HTSLIB && \
+ vep_install --AUTO a --NO_UPDATE --NO_HTSLIB && \
     ln -fs $MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION* $MAMBA_ROOT_PREFIX/share/ensembl-vep && \
     echo "export PERL5LIB=$MAMBA_ROOT_PREFIX/share/ensembl-vep" >> ~/.bashrc && \
     echo "export LOFTEE_PLUGIN_PATH=$MAMBA_ROOT_PREFIX/share/ensembl-vep" >> ~/.bashrc
