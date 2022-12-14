@@ -1,8 +1,8 @@
 name: Deploy images and config
 on:
   push:
-#    branches:
-#      - main
+    branches:
+      - main
   workflow_dispatch:
 
 env:
