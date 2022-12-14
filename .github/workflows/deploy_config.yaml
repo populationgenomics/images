@@ -1,6 +1,8 @@
 name: Deploy images and config
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -48,17 +50,14 @@ jobs:
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
-      - name: "checkout repo"
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: "gcloud setup"
-        uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: cpg-common
           service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
-      - name: "gcloud docker auth"
-        run: |
+      - run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
 
       - name: "build image"
@@ -73,19 +72,19 @@ jobs:
           docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
 
   # Special-case for cpg_workflows: the image is not maintained via images.toml here
-  # as we have a repository production_pipelines for it, so we check out that repo
+  # as we have a repository production-pipelines for it, so we check out that repo
   # here and build it from the repository source, using the package version as the tag.
   deploy_cpg_workflows:
     runs-on: ubuntu-latest
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      IMAGE_NAME: $IMAGES_PREFIX/cpg_workflows
+      IMAGE_NAME: ${{ env.IMAGES_PREFIX }}/cpg_workflows
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
     - uses: actions/checkout@main
       with:
-        repository: "populationgenomics/production_pipelines"
+        repository: "populationgenomics/production-pipelines"
         ref: "main"
         path: "production_pipelines"
         submodules: recursive
@@ -100,13 +99,10 @@ jobs:
         echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd -
 
-    - uses: 'google-github-actions/auth@v0'
-      with:
-        credentials_json: ${{ secrets.GH_IMAGES_DEPLOYER_JSON }}
-
     - uses: google-github-actions/setup-gcloud@v0
       with:
         project_id: cpg-common
+        service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
     - run: |
         gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
