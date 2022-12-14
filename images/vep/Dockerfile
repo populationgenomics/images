@@ -58,6 +58,6 @@ RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
 # Install Bio::Perl for Loftee (conda's perl-bioperl doesn't work)
 # run this last, as other commands seem to re-break the installation
 RUN vep_install --AUTO a --NO_UPDATE --NO_HTSLIB && \
-    ln -fs /root/micromamba/share/ensembl-vep-$VERSION* /root/micromamba/share/ensembl-vep && \
+    ln -fs $MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION* $MAMBA_ROOT_PREFIX/share/ensembl-vep && \
     echo "export PERL5LIB=$MAMBA_ROOT_PREFIX/share/ensembl-vep" >> ~/.bashrc && \
     echo "export LOFTEE_PLUGIN_PATH=$MAMBA_ROOT_PREFIX/share/ensembl-vep" >> ~/.bashrc
