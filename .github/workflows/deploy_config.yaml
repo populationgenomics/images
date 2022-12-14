@@ -78,7 +78,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      IMAGE_NAME: ${{ env.IMAGES_PREFIX }}/cpg_workflows
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
@@ -109,14 +108,17 @@ jobs:
 
     - name: build
       run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
         docker build production-pipelines --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push
       run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
         docker push $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push latest
       run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
         docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
         docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
         docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
