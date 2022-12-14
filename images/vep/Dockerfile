@@ -34,7 +34,7 @@ RUN apt-get update && \
 
 # remove broken (GRCh37) LOFTEE files
 # copy in new GRCh38 content
-RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl-vep)" && && \
+RUN VEP_SHARE="/root/micromamba/share/$(ls /root/micromamba/share | grep ensembl-vep)" && \
   echo $VEP_SHARE && \
   rm $VEP_SHARE/TissueExpression.pm \
   $VEP_SHARE/ancestral.pm \
