@@ -1,16 +1,14 @@
-FROM ubuntu:20.04
-ARG DEBIAN_FRONTEND=noninteractive
+FROM debian:buster-slim
 
+ENV MAMBA_ROOT_PREFIX /root/micromamba
+ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=${VERSION:-2.5.0}
 
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get -y --no-install-recommends install wget && \
-wget --progress=dot:giga --no-check-certificate https://github.com/gymreklab/GangSTR/releases/download/v2.5/GangSTR-${VERSION}-Source.tar.gz && \
-gunzip GangSTR-${VERSION}-Source.tar.gz && \
-chmod +x GangSTR-${VERSION}-Source.tar.gz && \
-apt-get clean && \
-rm -rf /var/lib/apt/lists/* \
-    /tmp/* \
-    /var/tmp/* \
-    /var/cache/apt/* \
-    GangSTR-${VERSION}-Source.tar.gz
+RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
+    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
+    mkdir ${MAMBA_ROOT_PREFIX} && \
+    micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
+    gangstr=${VERSION} && \
+    rm -r /root/micromamba/pkgs
