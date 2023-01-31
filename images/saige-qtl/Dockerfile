@@ -13,5 +13,6 @@ RUN conda create -n RSAIGE r-essentials r-base=4.1.2 python=3.10 \
         -c conda-forge r-spatest r-rcppeigen r-devtools r-skat \
         r-rcppparallel r-optparse boost openblas r-rhpcblasctl r-metaskat \
         r-skat r-qlcmatrix r-rsqlite \
+    rm -r /root/micromamba/pkgs \
     pip3 install cget click \
     conda env export > environment-RSAIGE.yml
