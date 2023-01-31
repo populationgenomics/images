@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.1
+FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.4
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN conda create -n RSAIGE r-essentials r-base=4.1.2 python=3.10 \
