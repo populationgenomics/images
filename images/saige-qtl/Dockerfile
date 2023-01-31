@@ -9,7 +9,7 @@ RUN wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/lin
         -c cpg -c bioconda -c conda-forge \
         r-essentials r-base=4.1.2 python=3.10 \
         anaconda cmake \
-        -c conda-forge gettext lapack r-matrix \
+        gettext lapack r-matrix \
         r r-rcpp r-rcpparmadillo r-data.table r-bh r-matrix \
         r-spatest r-rcppeigen r-devtools r-skat \
         r-rcppparallel r-optparse boost openblas r-rhpcblasctl r-metaskat \
