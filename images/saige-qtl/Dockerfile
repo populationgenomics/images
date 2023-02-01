@@ -11,6 +11,10 @@ RUN micromamba install -y --prefix $MAMBA_ROOT_PREFIX \
     rm -r /root/micromamba/pkgs && \
     pip3 install cget click
 
+RUN FLAGPATH=`which python | sed 's|/bin/python$||'` && \
+    export LDFLAGS="-L${FLAGPATH}/lib" && \
+    export CPPFLAGS="-I${FLAGPATH}/include"
+
 RUN src_branch=main && \
     repo_src_url=https://github.com/weizhou0/qtl && \
     git clone --depth 1 -b $src_branch $repo_src_url && \
