@@ -17,6 +17,23 @@ RUN apt-get update && \
     cd qtl && \
     git checkout $VERSION && \
     Rscript extdata/install_packages.R && \
-    R CMD INSTALL . && \
+    R CMD INSTALL .
+
+# add function R scripts
+RUN mv extdata/step1_fitNULLGLMM_qtl.R extdata/step2_tests_qtl.R \
+    extdata/step3_LDmat.R extdata/createSparseGRM.R /usr/local/bin/ && \
     cd .. && \
     rm -r qtl
+
+RUN chmod a+x /usr/local/bin/step1_fitNULLGLMM_qtl.R && \
+    chmod a+x /usr/local/bin/step2_tests_qtl.R && \
+    chmod a+x /usr/local/bin/step3_LDmat.R && \
+    chmod a+x /usr/local/bin/createSparseGRM.R
+
+RUN createSparseGRM.R  --help && \
+    step1_fitNULLGLMM_qtl.R --help && \
+    step2_tests_qtl.R --help && \
+    step3_LDmat.R --help
+
+RUN apt-get update
+RUN apt-get install time
