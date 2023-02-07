@@ -7,14 +7,14 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
     apt-transport-https \ 
     ca-certificates \
     git \
-    libbz2-dev \
-    liblzma-dev \
-    make \
-    libhts-dev \
     g++ \
-    zlib1g-dev \
+    libbz2-dev \
     libcurl4-openssl-dev \
+    libhts-dev \
+    liblzma-dev \
     libssl-dev\
+    make \
+    zlib1g-dev \
      && apt-get clean \
      && rm -rf /var/lib/apt/lists/*
 
