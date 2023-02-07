@@ -22,9 +22,10 @@ RUN update-ca-certificates
 # Install HipSTR
 RUN git clone https://github.com/HipSTR-Tool/HipSTR && \
     cd HipSTR && \
-    make
+    make && \
+    cd ..
 
-ENV PATH="/ExpansionHunter/bin/:$PATH"
+ENV PATH="/HipSTR/bin/:$PATH"
 
 # Clean up
 RUN rm -rf /tmp/* \
