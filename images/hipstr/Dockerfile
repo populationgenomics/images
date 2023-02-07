@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
-ARG VERSION=${VERSION:-0.6.2}
+ARG VERSION=${VERSION:-v0.6.2}
 WORKDIR /app
 # hadolint ignore=DL3008
 RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
@@ -21,7 +21,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
 RUN update-ca-certificates
 
 # Install HipSTR
-RUN git clone https://github.com/HipSTR-Tool/HipSTR && \
+RUN git clone -b ${VERSION} https://github.com/HipSTR-Tool/HipSTR && \
     cd HipSTR && \
     make && \
     cd ..
