@@ -21,7 +21,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
 RUN update-ca-certificates
 
 # Install HipSTR
-RUN git clone -b ${VERSION} https://github.com/HipSTR-Tool/HipSTR && \
+RUN git clone https://github.com/HipSTR-Tool/HipSTR && \
     cd HipSTR && \
     make && \
     cd ..
