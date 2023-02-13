@@ -25,6 +25,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
     && cd bgt \
     && make \
     && cp bgt /usr/local/bin/ \
-    && chmod a+x bgt \
+    && chmod a+x /usr/local/bin/bgt \
     && cd .. \
     && rm -rf bgt
