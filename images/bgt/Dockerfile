@@ -4,7 +4,7 @@ ARG VERSION=${VERSION:-v1.0}
 
 # hadolint ignore=DL3008
 RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
-    apt-transport-https \ 
+    apt-transport-https \
     ca-certificates \
     g++ \
     git \
@@ -20,11 +20,23 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
      && rm -rf /tmp/* \
         /var/tmp/* \
         /var/cache/apt/* \
-    && update-ca-certificates \
     && git clone -b ${VERSION} https://github.com/lh3/bgt.git \
     && cd bgt \
     && make \
-    && cp bgt /usr/local/bin/ \
-    && chmod a+x /usr/local/bin/bgt \
-    && cd .. \
-    && rm -rf bgt
+    && chmod a+x bgt
+
+
+FROM ubuntu:20.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+# hadolint ignore=DL3008
+RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
+    ca-certificates \
+     && apt-get clean \
+     && rm -rf /var/lib/apt/lists/* \
+     && rm -rf /tmp/* \
+        /var/tmp/* \
+        /var/cache/apt/* \
+    && update-ca-certificates
+
+COPY --from=0 /bgt/bgt /usr/local/bin/bgt
