@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS compiler
 ARG DEBIAN_FRONTEND=noninteractive
 ARG VERSION=${VERSION:-v1.0}
 
@@ -28,4 +28,4 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
 
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
-COPY --from=0 /bgt/bgt /usr/local/bin/bgt
+COPY --from=compiler /bgt/bgt /usr/local/bin/bgt
