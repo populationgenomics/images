@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT: 'cpg-common'
-  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
-  DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
-  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
+  GCP_PROJECT: 'cpg-common'
+  GCP_CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
+  GCP_DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
+  GCP_IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
 jobs:
   # Make a matrix of all the images that have changed in images.toml
@@ -45,31 +45,12 @@ jobs:
     if: ${{ needs.make_matrix.outputs.matrix != '{}' && needs.make_matrix.outputs.matrix != '' }}
     strategy:
       matrix: ${{ fromJson(needs.make_matrix.outputs.matrix) }}
-    env:
-      DOCKER_BUILDKIT: 1
-      BUILDKIT_PROGRESS: plain
-      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: populationgenomics/images/.github/workflows/deploy_container.yaml
         with:
-          project_id: cpg-common
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
-
-      - run: |
-          gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
-
-      - name: "build image"
-        run: |
-          docker build \
-          --build-arg VERSION=${{ matrix.tag }} \
-          --tag ${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }} \
-          images/${{ matrix.name }}
-
-      - name: "push image"
-        run: |
-          docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
+          gcp_project_id: cpg-common
+          image_name: ${{ matrix.name }}
+          image_tag: ${{ matrix.tag }}
 
   # Special-case for cpg_workflows: the image is not maintained via images.toml here
   # as we have a repository production-pipelines for it, so we check out that repo
@@ -101,24 +82,24 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v0
       with:
         project_id: cpg-common
-        service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+        service_account_key: ${{ secrets.SERVER_DEPLOY_KEY }}
 
     - run: |
-        gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+        gcloud auth configure-docker ${{ env.GCP_DOCKER_PREFIX }}
 
     - name: build
       run: |
-        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        IMAGE_NAME=${{ env.GCP_IMAGES_PREFIX }}/cpg_workflows
         docker build production-pipelines --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push
       run: |
-        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        IMAGE_NAME=${{ env.GCP_IMAGES_PREFIX }}/cpg_workflows
         docker push $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
 
     - name: push latest
       run: |
-        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        IMAGE_NAME=${{ env.GCP_IMAGES_PREFIX }}/cpg_workflows
         docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
         docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
         docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
@@ -141,8 +122,8 @@ jobs:
       - name: "gcloud setup"
         uses: google-github-actions/setup-gcloud@v0
         with:
-          project_id:  ${{ env.PROJECT }}
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+          project_id:  ${{ env.GCP_PROJECT }}
+          service_account_key: ${{ secrets.SERVER_DEPLOY_KEY }}
 
       - uses: actions/setup-python@v4
         with:
@@ -156,4 +137,4 @@ jobs:
 
       - name: "deploy config toml"
         run: |
-          gcloud storage cp config.toml ${{ env.CONFIG_DESTINATION }}
+          gcloud storage cp config.toml ${{ env.GCP_CONFIG_DESTINATION }}

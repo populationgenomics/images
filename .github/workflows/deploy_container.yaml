@@ -2,6 +2,9 @@ name: Deploy container
 on:
   workflow_dispatch:
     inputs:
+      gcp_project_id:
+        description: "The GCP project name to use for gcloud setup"
+        default: analysis-runner
       image_name:
         description: "Name of image, same as the directory name"
         required: true
@@ -10,6 +13,25 @@ on:
         required: true
       docker_cli_args:
         description: "Extra docker CLI params"
+        required: false
+
+  workflow_call:
+    inputs:
+      gcp_project_id:
+        description: "The GCP project name to use for gcloud setup"
+        type: string
+        default: analysis-runner
+      image_name:
+        description: "Name of image, same as the directory name"
+        type: string
+        required: true
+      image_tag:
+        description: "Tag of image"
+        type: string
+        required: true
+      docker_cli_args:
+        description: "Extra docker CLI params"
+        type: string
         required: false
 
 jobs:
