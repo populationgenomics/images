@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      GCP_CONTAINER_REGISTRY: australia-southeast1-docker.pkg.dev/cpg-common/images
+      AZURE_CONTAINER_REGISTRY: cpgcommonimages.azurecr.io
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      DOCKER_IMAGE: australia-southeast1-docker.pkg.dev/cpg-common/images/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+      DOCKER_IMAGE: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
       IMAGE_NAME: ${{ github.event.inputs.image_name }}
       IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
@@ -38,6 +40,18 @@ jobs:
         run: |
           gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
+      - name: "azure setup"
+        uses: azure/login@v1
+        with:
+          creds: $${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "azure docker auth"
+        uses: azure/docker-login@v1
+        with:
+          login-server: $AZURE_CONTAINER_REGISTRY
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+
       - name: "build image"
         run: |
           docker build \
@@ -46,6 +60,12 @@ jobs:
             --tag $DOCKER_IMAGE \
             images/$IMAGE_NAME
 
-      - name: "push image"
+      - name: "tag and push gcp image"
         run: |
-          docker push $DOCKER_IMAGE
+          docker image tag $DOCKER_IMAGE $GCP_CONTAINER_REGISTRY/$DOCKER_IMAGE &&
+          docker push $GCP_CONTAINER_REGISTRY/$DOCKER_IMAGE
+
+      - name: "tag and push azure image"
+        run: |
+          docker image tag $DOCKER_IMAGE $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE &&
+          $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
