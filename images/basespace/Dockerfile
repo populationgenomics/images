@@ -6,4 +6,3 @@ RUN apt-get update && \
     mkdir $HOME/bin && \
     wget "https://launch.basespace.illumina.com/CLI/latest/amd64-linux/bs" -O $HOME/bin/bs && \
     chmod u+x $HOME/bin/bs
-    
