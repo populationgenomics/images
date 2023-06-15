@@ -4,7 +4,7 @@ ARG VERSION=${VERSION:-v0.6.2}
 
 # hadolint ignore=DL3008
 RUN apt-get update -y && apt-get install -y --no-install-recommends -qqy \
-    apt-transport-https \ 
+    apt-transport-https \
     ca-certificates \
     g++ \
     git \

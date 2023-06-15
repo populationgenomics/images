@@ -34,7 +34,7 @@ To update the tool version, modify the corresponding entry in TOML and create a 
 Whenever possible, avoid moving images with `scopeo`, and build them with a `Dockefile` instead following the section above. Moving is not recommended for two reasons:
 
 - It hides how the image was build originally (and sometimes the original `Dockefile` is not even shared),
-- The source image can be removed by the author in the future, making your analysis no longer reproducible. 
+- The source image can be removed by the author in the future, making your analysis no longer reproducible.
 
 If you still need to move, create a script named `move-{IMAGE_NAME}:{IMAGE_VERSION}.sh` following the template below:
 
