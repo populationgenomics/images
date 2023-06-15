@@ -128,7 +128,7 @@ jobs:
   # special-case cpg_workflows.
   deploy_config:
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - deploy_images
       - deploy_cpg_workflows
     if: ${{ ! failure() }}
