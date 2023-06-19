@@ -8,6 +8,4 @@ RUN apt-get update && \
     chmod u+x $HOME/bin/bs && \
     pip3 install cpg_utils && \
     pip3 install cpg_workflows && \
-    mkdir $HOME/.basespace && \
-    gcloud --project udn-aus secrets versions access latest --secret=basespace-config > $HOME/.basespace/basespace-config.cfg && \
-    eval $($HOME/bin/bs config load basespace-config)
+    mkdir $HOME/.basespace    
