@@ -20,6 +20,8 @@ RUN git clone https://github.com/bw2/REViewer && \
     cmake .. && \
     make && \
     chmod +x /REViewer/build/install/bin/REViewer && \
-    mv /REViewer/build/install/bin/REViewer /usr/bin
+    mv /REViewer/build/install/bin/* /usr/bin && \
+    cd . && \
+    rm -rf REViewer
 # Set the entry point for the Docker container
 ENTRYPOINT ["REViewer"]
