@@ -11,6 +11,7 @@ ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    default-jre \
     apt-transport-https \
     build-essential \
     bzip2 \
@@ -44,4 +45,4 @@ WORKDIR /usr/local/bin/
 RUN wget https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/mitoreport-${VERSION}-all.jar  \
     && wget https://bioinfomethods.github.io/mitoreport/resources/resources.tgz \
     && tar -zxvf resources.tgz \
-    && rm resources.tgz  \
+    && rm resources.tgz
