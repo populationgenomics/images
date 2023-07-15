@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-ARG VERSION=${VERSION:-1.0.0-beta-1}
+ARG VERSION=${VERSION:-1.1.0}
 
 LABEL \
   version="v${VERSION}" \
@@ -11,7 +11,7 @@ ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    default-jre \
+    openjdk-11-jdk \
     apt-transport-https \
     build-essential \
     bzip2 \
@@ -42,10 +42,12 @@ ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 WORKDIR /usr/local/bin/
 
 # Install mitoreport and resourses
-RUN wget https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/mitoreport-${VERSION}-all.jar  \
-    && wget https://bioinfomethods.github.io/mitoreport/resources/resources.tgz \
+RUN curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/mitoreport-${VERSION}-all.jar \
+    && mv mitoreport-${VERSION}-all.jar mitoreport.jar \
+    && curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/resources.tgz \
     && tar -zxvf resources.tgz \
-    && rm resources.tgz
+    && java -jar mitoreport.jar mito-map-download \
+        --output resources/mito_map_annotations.json
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
