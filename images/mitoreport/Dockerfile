@@ -9,7 +9,7 @@ LABEL \
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/London
 
-# Run update and install necessary libraries, including BWA and python3
+# Run update and install necessary libraries, mitoreport requires java11
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     openjdk-11-jdk \
     apt-transport-https \
@@ -18,7 +18,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     gcc \
-    git \
     gnupg \
     gpg-agent \
     libbz2-dev \
@@ -49,9 +48,9 @@ RUN curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${
     && java -jar mitoreport.jar mito-map-download \
         --output resources/mito_map_annotations.json
 
+# Requires samtools for local cram > bam
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-
 RUN wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
     mkdir ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
