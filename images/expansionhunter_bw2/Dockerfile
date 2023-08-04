@@ -28,4 +28,3 @@ RUN git clone https://github.com/bw2/ExpansionHunter && \
 
 # Set the entry point for the Docker container
 ENTRYPOINT ["ExpansionHunter"]
-
