@@ -30,4 +30,3 @@ RUN git clone https://github.com/bw2/ExpansionHunter && \
     chmod +x /ExpansionHunter/build/install/bin/ExpansionHunter && \
     mv /ExpansionHunter/build/install/bin/ExpansionHunter /usr/bin && \
     rm -rf /ExpansionHunter
-
