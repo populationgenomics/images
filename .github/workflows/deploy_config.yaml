@@ -87,6 +87,8 @@ jobs:
         ref: "main"
         path: "production-pipelines"
         submodules: recursive
+        # Comment this line out to revert to using the default $GITHUB_TOKEN.
+        token: ${{ secrets.PRODUCTION_PIPELINES_RAW_REPO_TOKEN }}
 
     - id: get_version
       run: |
