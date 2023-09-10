@@ -10,6 +10,8 @@ RUN apt-get update && \
     && \
     apt-get clean -y
 
-# Clone the repository, jump into it
-RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && \
-    cd EH-expansion-evaluator
+# Clone the repository
+RUN git clone https://github.com/oscarlr/EH-expansion-evaluator
+
+# Container should start in git repository
+WORKDIR EH-expansion-evaluator
