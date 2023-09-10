@@ -14,4 +14,4 @@ RUN apt-get update && \
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator
 
 # Container should start in git repository
-WORKDIR EH-expansion-evaluator
+WORKDIR /EH-expansion-evaluator
