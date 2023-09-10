@@ -13,4 +13,3 @@ RUN apt-get update && \
 # Clone the repository, jump into it
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && \
     cd EH-expansion-evaluator
- 
