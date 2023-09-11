@@ -1,18 +1,22 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
-
 ARG VERSION=${VERSION:-eb982ae41f83aaf44d4a8142980f7a41ac33e979}
 
 # Install Git to clone the repository
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install --no-install-recommends -qqy \
+    python3-dev=3.8.2-0ubuntu2 \
+    python3-pip=20.0.2-5ubuntu1.9 \
+    python3.6\
     git \
     && \
     apt-get clean -y  \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python packages
+RUN pip3 install numpy pandas scikit-learn
+
 # Clone the repository
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && cd EH-expansion-evaluator && git checkout $VERSION
 
 # Container should start in git repository
-WORKDIR /EH-expansion-evaluator
+WORKDIR EH-expansion-evaluator
