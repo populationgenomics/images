@@ -19,4 +19,4 @@ RUN pip3 install --no-cache-dir numpy==1.24.4 pandas==2.0.3 scikit-learn==1.3.0
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && cd EH-expansion-evaluator && git checkout $VERSION
 
 # Container should start in git repository
-WORKDIR EH-expansion-evaluator
+WORKDIR /EH-expansion-evaluator
