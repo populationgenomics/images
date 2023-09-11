@@ -5,7 +5,7 @@ ARG VERSION=${VERSION:-eb982ae41f83aaf44d4a8142980f7a41ac33e979}
 
 # Install Git to clone the repository
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     git \
     && \
     apt-get clean -y
