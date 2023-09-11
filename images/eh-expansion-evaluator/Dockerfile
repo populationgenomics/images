@@ -8,7 +8,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     git \
     && \
-    apt-get clean -y
+    apt-get clean -y  \
+    && rm -rf /var/lib/apt/lists/*
 
 # Clone the repository
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && cd EH-expansion-evaluator && git checkout $VERSION
