@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install --no-install-recommends -qqy \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
-RUN pip3 install numpy==1.24.4 pandas==2.0.3 scikit-learn==1.3.0
+RUN pip3 install --no-cache-dir numpy==1.24.4 pandas==2.0.3 scikit-learn==1.3.0
 
 # Clone the repository
 RUN git clone https://github.com/oscarlr/EH-expansion-evaluator && cd EH-expansion-evaluator && git checkout $VERSION
