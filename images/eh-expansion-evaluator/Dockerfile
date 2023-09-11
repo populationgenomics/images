@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 ARG VERSION=${VERSION:-eb982ae41f83aaf44d4a8142980f7a41ac33e979}
