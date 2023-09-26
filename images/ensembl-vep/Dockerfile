@@ -4,15 +4,22 @@ FROM ensemblorg/ensembl-vep:${VERSION}
 
 USER root
 
-# This Dockerfile is a departure from the style used in images/vep
+# This Dockerfile is a departure from the style used in `images/vep`
 # Instead of building up a fresh VEP install using Miniconda, we are
 # using the official VEP image and adding plugins and data files to it.
+# This is being built in parallel to the existing `vep` image so that we
+# can maintain the existing image for backwards compatibility, and only
+# switch once the newer VEP version has been evaluated.
+
 # The AlphaMissense plugin at time of writing (26.09.2023) is available
 # in the vep-plugin repository, but not installed within the latest image
-# the PLI, LoF, & UTR annotator data files are not available by default,
+
+# The PLI, LoF, & UTR annotator data files are not available by default,
 # but only add minimally to the image size.
+
 # LOFTEE is installed by default, but the standard version doesn't work
 # for GRCh38, so we overwrite the standard files
+
 # GCSfuse and the Google Cloud SDK are not installed, as the workflow
 # using this image is intended to mount data files from GCS using Hail
 # Batch, so that functionality is not required inside the image.
