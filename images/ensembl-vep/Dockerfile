@@ -4,7 +4,25 @@ FROM ensemblorg/ensembl-vep:${VERSION}
 
 USER root
 
-## Copying in a couple of small data files, and a plugin or two
+# This Dockerfile is a departure from the style used in `images/vep`
+# Instead of building up a fresh VEP install using Miniconda, we are
+# using the official VEP image and adding plugins and data files to it.
+# This is being built in parallel to the existing `vep` image so that we
+# can maintain the existing image for backwards compatibility, and only
+# switch once the newer VEP version has been evaluated.
+
+# The AlphaMissense plugin at time of writing (26.09.2023) is available
+# in the vep-plugin repository, but not installed within the latest image
+
+# The PLI, LoF, & UTR annotator data files are not available by default,
+# but only add minimally to the image size.
+
+# LOFTEE is installed by default, but the standard version doesn't work
+# for GRCh38, so we overwrite the standard files
+
+# GCSfuse and the Google Cloud SDK are not installed, as the workflow
+# using this image is intended to mount data files from GCS using Hail
+# Batch, so that functionality is not required inside the image.
 
 # AlphaMissense
 # print AlphaMissense scores and predictions
@@ -30,34 +48,14 @@ ENV LOFTOOL_SCORES=/data/loftool_110_scores.txt
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-    #     apt-transport-https \
-    #
         ca-certificates \
         git \
-    #     gnupg \
-    #     lsb-release \
-
-    ## I don't think we need google-cloud-sdk inside the image..
-    # && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" \
-    #| tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    #| apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - \
-    #&& apt-get update \
-    #&& apt-get install google-cloud-cli -y \
     && curl https://raw.githubusercontent.com/Ensembl/UTRannotator/master/uORF_5UTR_GRCh38_PUBLIC.txt > ${UTR38} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/pLI_values.txt > ${PLI_SCORES} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/AlphaMissense.pm > ${VEP_DIR_PLUGINS}/AlphaMissense.pm \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/LoFtool_scores.txt > ${LOFTOOL_SCORES} \
-    ## LOFTEE files - main branch of LOFTEE is GRCh37 only
     && git clone -b grch38 https://github.com/konradjk/loftee.git \
-    && cp loftee/*.p* ${VEP_DIR_PLUGINS} \
+    && mv loftee/* ${VEP_DIR_PLUGINS} \
     && rm -rf loftee \
-
-    ## Install gcsfuse to mount VEP cache files
-    ## Do we need to have gcsfuse usable from inside the container? It's mounted on by Hail Batch
-    #&& GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) \
-    #&& echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list \
-    #&& curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
-    #&& apt-get update \
-    #&& apt-get install -y gcsfuse \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
