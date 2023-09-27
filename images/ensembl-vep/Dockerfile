@@ -2,6 +2,8 @@ ARG VERSION=${VERSION:-release_110.1}
 
 FROM ensemblorg/ensembl-vep:${VERSION}
 
+ARG HTS_VERSION=${HTS_VERSION:-1.18}
+
 USER root
 
 # This Dockerfile is a departure from the style used in `images/vep`
@@ -48,8 +50,11 @@ ENV LOFTOOL_SCORES=/data/loftool_110_scores.txt
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
+        build-essential \
         ca-certificates \
         git \
+        libncurses5-dev \
+        wget \
     && curl https://raw.githubusercontent.com/Ensembl/UTRannotator/master/uORF_5UTR_GRCh38_PUBLIC.txt > ${UTR38} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/pLI_values.txt > ${PLI_SCORES} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/AlphaMissense.pm > ${VEP_DIR_PLUGINS}/AlphaMissense.pm \
@@ -58,4 +63,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && mv loftee/* ${VEP_DIR_PLUGINS} \
     && rm -rf loftee \
     && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && wget -q https://github.com/samtools/samtools/releases/download/${HTS_VERSION}/samtools-${HTS_VERSION}.tar.bz2 \
+	&& tar -xf samtools-${HTS_VERSION}.tar.bz2 \
+	&& cd samtools-${HTS_VERSION} \
+	&& bash configure --prefix=/opt/vep/src/ensembl-vep \
+	&& make \
+	&& make install \
+	&& cd .. \
+	&& rm -rf samtools-${HTS_VERSION}.tar.bz2 samtools-${HTS_VERSION}
+
+ENV PATH="/opt/vep/src/ensembl-vep/bin:$PATH"
