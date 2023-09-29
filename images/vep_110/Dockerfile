@@ -30,7 +30,7 @@ RUN apt-get update && \
     rm -r /root/micromamba/pkgs && \
     # remove broken (GRCh37) LOFTEE files, copy in new GRCh38 content
     VEP_SHARE=$MAMBA_ROOT_PREFIX/share/ensembl-vep-$VERSION-* && \
-    git clone -b grch38 https://github.com/konradjk/loftee.git \
+    git clone -b grch38 https://github.com/konradjk/loftee.git && \
     mv loftee/* $VEP_SHARE && \
     rm -rf loftee && \
     # pull AlphaMissense \
