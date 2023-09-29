@@ -71,6 +71,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 	&& make \
 	&& make install \
 	&& cd .. \
-	&& rm -rf samtools-${HTS_VERSION}.tar.bz2 samtools-${HTS_VERSION}
+	&& rm -rf samtools-${HTS_VERSION}.tar.bz2 samtools-${HTS_VERSION} \
+    PERL_MM_USE_DEFAULT=1 cpan Ensembl::XS Bio::DB::HTS
 
 ENV PATH="/opt/vep/src/ensembl-vep/bin:$PATH"
