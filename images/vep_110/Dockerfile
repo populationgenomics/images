@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM debian:bullseye-slim
 
 ENV MAMBA_ROOT_PREFIX=/root/micromamba
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
