@@ -19,7 +19,7 @@ RUN apt-get update && \
         click==8.0.4 \
         limix==3.0.4 \
         numpy==1.21.2 \
-        pandas==1.3.4 \
+        pandas==1.2.3 \
         pandas_plink==2.2.9 \
         scanpy==1.8.2 \
         scipy==1.7.3 \
