@@ -10,6 +10,4 @@ RUN apt-get update && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     pip3 install --no-cache-dir \
-        numpy==1.21.2 \
-        pandas==1.3.5\
         scanpy==1.9.3
