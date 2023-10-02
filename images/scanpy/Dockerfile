@@ -13,4 +13,3 @@ RUN apt-get update && \
         numpy==1.21.2 \
         pandas==1.3.5\
         scanpy==1.9.3
- 
