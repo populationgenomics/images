@@ -25,8 +25,12 @@ jobs:
       IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
     steps:
+      - name: "Restrict to main"
+        if: github.ref != 'refs/heads/main'
+        run: exit 1
+
       - name: "checkout repo"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "gcloud setup"
         uses: google-github-actions/setup-gcloud@v0
