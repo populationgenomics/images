@@ -8,4 +8,4 @@ RUN apt-get update && \
     chmod u+x $HOME/bin/bs && \
     pip3 install cpg_utils && \
     pip3 install cpg_workflows && \
-    mkdir $HOME/.basespace    
+    mkdir $HOME/.basespace
