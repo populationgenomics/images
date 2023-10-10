@@ -13,6 +13,6 @@ RUN apt-get update && apt-get install -y \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
         bazam biobambam google-cloud-sdk samtools \
     && rm -r /root/micromamba/pkgs && \
-    git clone --depth 1 --branch ${VERSION} https://github.com/Illumina/DRAGMAP && \
+    git clone --depth 1 --branch ${VERSION} https://github.com/populationgenomics/DRAGMAP && \
     HAS_GTEST=0 make -C DRAGMAP -j 8 install && \
     rm -r DRAGMAP
