@@ -1,5 +1,5 @@
 name: Linting
-on: [push, pull_request]
+on: [push]
 
 jobs:
   lint:
@@ -9,14 +9,14 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: pre-commit
         run: |
           # pre-commit should install all the dependencies
-          pip install pre-commit
+          pip install -r requirements-dev.txt
           pre-commit run --all-files
