@@ -1,0 +1,161 @@
+name: Deploy images and config
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  PROJECT: 'cpg-common'
+  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
+  DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
+
+jobs:
+  # Make a matrix of all the images that have changed in images.toml
+  make_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v3
+
+      - name: "Checkout ref before change"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.before }}
+          path: 'before'
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: "Set matrix"
+        id: set_matrix
+        run: |
+          pip install toml
+          echo "matrix=$(python .github/workflows/prep_matrix.py)" >> $GITHUB_OUTPUT
+
+  # Deploy the images that have changed to the registry
+  deploy_images:
+    runs-on: ubuntu-latest
+    needs:
+      - make_matrix
+    if: ${{ needs.make_matrix.outputs.matrix != '{}' && needs.make_matrix.outputs.matrix != '' }}
+    strategy:
+      matrix: ${{ fromJson(needs.make_matrix.outputs.matrix) }}
+    env:
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_PROGRESS: plain
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: cpg-common
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+      - run: |
+          gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+
+      - name: "build image"
+        run: |
+          docker build \
+          --build-arg VERSION=${{ matrix.tag }} \
+          --tag ${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }} \
+          images/${{ matrix.name }}
+
+      - name: "push image"
+        run: |
+          docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
+
+  # Special-case for cpg_workflows: the image is not maintained via images.toml here
+  # as we have a repository production-pipelines for it, so we check out that repo
+  # here and build it from the repository source, using the package version as the tag.
+  deploy_cpg_workflows:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        repository: "populationgenomics/production-pipelines"
+        ref: "main"
+        path: "production-pipelines"
+        submodules: recursive
+        # Comment this line out to revert to using the default $GITHUB_TOKEN.
+        token: ${{ secrets.PRODUCTION_PIPELINES_RAW_REPO_TOKEN }}
+
+    - id: get_version
+      run: |
+        echo "version=$(cat production-pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
+
+    - id: get_sha
+      run: |
+        cd production-pipelines
+        echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        cd -
+
+    - uses: google-github-actions/setup-gcloud@v0
+      with:
+        project_id: cpg-common
+        service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+    - run: |
+        gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+
+    - name: build
+      run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        docker build production-pipelines --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+    - name: push
+      run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        docker push $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+    - name: push latest
+      run: |
+        IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+        docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+        docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+        docker push $IMAGE_NAME:latest
+
+  # Finally, prepare the finalised TOML config from all maintained images plus the
+  # special-case cpg_workflows.
+  deploy_config:
+    runs-on: ubuntu-latest
+    needs:
+      - deploy_images
+      - deploy_cpg_workflows
+    if: ${{ ! failure() }}
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    steps:
+      - name: "checkout repo"
+        uses: actions/checkout@v3
+
+      - name: "gcloud setup"
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id:  ${{ env.PROJECT }}
+          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: "prepare config"
+        run: |
+          pip install toml
+          python .github/workflows/prep_config.py \
+          ${{ needs.deploy_cpg_workflows.outputs.version }} > config.toml
+
+      - name: "deploy config toml"
+        run: |
+          gcloud storage cp config.toml ${{ env.CONFIG_DESTINATION }}
