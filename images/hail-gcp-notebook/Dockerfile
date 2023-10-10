@@ -2,6 +2,8 @@
 # hadolint ignore=DL3007
 FROM gcr.io/deeplearning-platform-release/base-cpu:latest
 
+ARG VERSION=${VERSION:-0.2.102}
+
 # hadolint ignore=DL3008,DL3013,DL4006
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -18,9 +20,9 @@ RUN apt-get update && \
         "cloudpathlib[all]" \
         cpg-utils \
         gnomad \
-        hail \
+        hail==${VERSION} \
         pyarrow \
-        sample-metadata \
+        metamist \
         selenium==3.8.0 && \
     curl -sSL https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar xjf - && \
     mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
