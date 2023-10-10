@@ -44,13 +44,16 @@ jobs:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      DOCKER_DEV: australia-southeast1-docker.pkg.dev/cpg-common/images-dev/
+      DOCKER_MAIN: australia-southeast1-docker.pkg.dev/cpg-common/images/
       DOCKER_IMAGE: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
       IMAGE_NAME: ${{ github.event.inputs.image_name }}
       IMAGE_TAG: ${{ github.event.inputs.image_tag }}
 
     steps:
+
       - name: "checkout repo"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "gcloud setup"
         uses: google-github-actions/setup-gcloud@v0
@@ -82,12 +85,16 @@ jobs:
             --tag $DOCKER_IMAGE \
             images/$IMAGE_NAME
 
-      - name: "tag and push gcp image"
+      - name: "Push non-main branch to dev artifactory"
+        if: ${{ github.ref_name != 'main' }}
         run: |
-          docker image tag $DOCKER_IMAGE $GCP_CONTAINER_REGISTRY/$DOCKER_IMAGE &&
-          docker push $GCP_CONTAINER_REGISTRY/$DOCKER_IMAGE
+          docker tag $DOCKER_IMAGE $DOCKER_DEV$DOCKER_IMAGE
+          docker push $DOCKER_DEV$DOCKER_IMAGE
 
-      - name: "tag and push azure image"
+      - name: "Push main branch to core artifactory"
+        if: ${{ github.ref_name == 'main' }}
         run: |
-          docker image tag $DOCKER_IMAGE $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE &&
-          $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
+          docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
+          docker tag $DOCKER_IMAGE $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
+          docker push $DOCKER_MAIN$DOCKER_IMAGE
+          docker push $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
