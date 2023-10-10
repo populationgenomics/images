@@ -58,4 +58,5 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && mv loftee/* ${VEP_DIR_PLUGINS} \
     && rm -rf loftee \
     && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && PERL_MM_USE_DEFAULT=1 cpan Ensembl::XS Bio::DB::HTS
