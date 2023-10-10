@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-ARG VERSION=${VERSION:-2.2}
+ARG VERSION=${VERSION:-4e393f921d15bfba8e3c2234b20c483c205ac295}
 
 LABEL \
   version="v${VERSION}" \
@@ -33,7 +33,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-pip \
     software-properties-common \
     wget \
-    zlib1g-dev 
+    zlib1g-dev
 
 ## Install Google cloud-sdk
 RUN curl https://sdk.cloud.google.com > install.sh && \
@@ -75,7 +75,9 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
 
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
-    --branch v${VERSION} \
+    && cd stripy-pipeline  \
+    && git checkout $VERSION \
+    && cd .. \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
 
