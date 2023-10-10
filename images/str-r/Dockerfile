@@ -1,5 +1,5 @@
 # This image adds R support to the base image.
-FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:1.1
+FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.1
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
@@ -22,4 +22,3 @@ RUN wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/lin
         r-DT \
         r-plotly && \
     rm -r /root/micromamba/pkgs
-   
