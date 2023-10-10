@@ -1,9 +1,10 @@
-
 # Base image
 FROM ubuntu:18.04
 
 # Maintainer and author
 LABEL maintainer="Bryan Quach <bquach@rti.org>"
+
+ARG VERSION=${VERSION:-1.3}
 
 #### Build code for installing R ####
 
@@ -106,25 +107,26 @@ RUN apt-get update \
         python \
         python-dev \
         python-numpy \
+        python-pandas \
         python-dill \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50 --slave /usr/bin/g++ g++ /usr/bin/g++-5 \
-    && wget --progress=dot:giga https://github.com/downloads/PMBio/peer/peer_source_1.3.tar.gz \
-    && tar -xvf peer_source_1.3.tar.gz \
+    && wget --progress=dot:giga https://github.com/downloads/PMBio/peer/peer_source_${VERSION}.tar.gz \
+    && tar -xvf peer_source_${VERSION}.tar.gz \
     && cd /peer/build/ \
 #    && find /peer -exec touch \{\} \;
     && cmake /peer \
     && make \
     && make install \
     && cd / \
-    && rm -rf /peer /peer_source_1.3.tar.gz
+    && rm -rf /peer /peer_source_${VERSION}.tar.gz
 
 # Install dependencies and R PEER package
 WORKDIR /
 
 RUN Rscript -e 'install.packages(c("optparse"), repos = "http://cran.us.r-project.org")' \
-    && wget --progress=dot:giga https://github.com/downloads/PMBio/peer/R_peer_source_1.3.tgz \
-    && R CMD INSTALL R_peer_source_1.3.tgz \
-    && rm R_peer_source_1.3.tgz
+    && wget --progress=dot:giga https://github.com/downloads/PMBio/peer/R_peer_source_${VERSION}.tgz \
+    && R CMD INSTALL R_peer_source_${VERSION}.tgz \
+    && rm R_peer_source_${VERSION}.tgz
 
 ENV PATH=pkg-config:$PATH
