@@ -1,6 +1,7 @@
 ARG VERSION=${VERSION:-release_110.1}
 
 FROM ensemblorg/ensembl-vep:${VERSION}
+ARG HTS_VERSION=${HTS_VERSION:-1.18}
 
 USER root
 
@@ -48,8 +49,11 @@ ENV LOFTOOL_SCORES=/data/loftool_110_scores.txt
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
+        build-essential \
         ca-certificates \
         git \
+        libncurses5-dev \
+        wget \
     && curl https://raw.githubusercontent.com/Ensembl/UTRannotator/master/uORF_5UTR_GRCh38_PUBLIC.txt > ${UTR38} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/pLI_values.txt > ${PLI_SCORES} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/AlphaMissense.pm > ${VEP_DIR_PLUGINS}/AlphaMissense.pm \
@@ -68,3 +72,5 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         && cd .. \
         && rm -rf samtools-${HTS_VERSION}.tar.bz2 samtools-${HTS_VERSION} \
     && PERL_MM_USE_DEFAULT=1 cpan Ensembl::XS Bio::DB::HTS
+
+ENV PATH="/opt/vep/src/ensembl-vep/bin:$PATH"
