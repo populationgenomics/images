@@ -59,4 +59,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && rm -rf loftee \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* \
+    && wget -q https://github.com/samtools/samtools/releases/download/${HTS_VERSION}/samtools-${HTS_VERSION}.tar.bz2 \
+        && tar -xf samtools-${HTS_VERSION}.tar.bz2 \
+        && cd samtools-${HTS_VERSION} \
+        && bash configure --prefix=/opt/vep/src/ensembl-vep \
+        && make \
+        && make install \
+        && cd .. \
+        && rm -rf samtools-${HTS_VERSION}.tar.bz2 samtools-${HTS_VERSION} \
     && PERL_MM_USE_DEFAULT=1 cpan Ensembl::XS Bio::DB::HTS
