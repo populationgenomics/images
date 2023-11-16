@@ -31,11 +31,15 @@ jobs:
       - name: "checkout repo"
         uses: actions/checkout@v3
 
+      - name: "auth service-account"
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
       - name: "gcloud setup"
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: analysis-runner
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
       - name: "gcloud docker auth"
         run: |
