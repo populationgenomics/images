@@ -7,5 +7,4 @@ RUN apt-get update && \
     wget "https://launch.basespace.illumina.com/CLI/${VERSION}/amd64-linux/bs" -O $HOME/bin/bs && \
     chmod u+x $HOME/bin/bs && \
     pip3 install cpg_utils && \
-    pip3 install cpg_workflows && \
     mkdir $HOME/.basespace
