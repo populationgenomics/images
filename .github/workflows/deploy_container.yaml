@@ -12,6 +12,10 @@ on:
         description: "Extra docker CLI params"
         required: false
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deployImage:
     runs-on: ubuntu-latest
