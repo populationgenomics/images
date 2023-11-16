@@ -2,6 +2,9 @@ name: Deploy container
 on:
   workflow_dispatch:
     inputs:
+      gcp_project_id:
+        description: "The GCP project name to use for gcloud setup"
+        default: analysis-runner
       image_name:
         description: "Name of image, same as the directory name"
         required: true
@@ -12,11 +15,32 @@ on:
         description: "Extra docker CLI params"
         required: false
 
+  workflow_call:
+    inputs:
+      gcp_project_id:
+        description: "The GCP project name to use for gcloud setup"
+        type: string
+        default: analysis-runner
+      image_name:
+        description: "Name of image, same as the directory name"
+        type: string
+        required: true
+      image_tag:
+        description: "Tag of image"
+        type: string
+        required: true
+      docker_cli_args:
+        description: "Extra docker CLI params"
+        type: string
+        required: false
+
 jobs:
   deployImage:
     runs-on: ubuntu-latest
 
     env:
+      GCP_CONTAINER_REGISTRY: australia-southeast1-docker.pkg.dev/cpg-common/images
+      AZURE_CONTAINER_REGISTRY: cpgcommonimages.azurecr.io
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
@@ -41,6 +65,18 @@ jobs:
         run: |
           gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
+      - name: "azure setup"
+        uses: azure/login@v1
+        with:
+          creds: $${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "azure docker auth"
+        uses: azure/docker-login@v1
+        with:
+          login-server: $AZURE_CONTAINER_REGISTRY
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+
       - name: "build image"
         run: |
           docker build \
@@ -59,4 +95,6 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
+          docker tag $DOCKER_IMAGE $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
           docker push $DOCKER_MAIN$DOCKER_IMAGE
+          docker push $AZURE_CONTAINER_REGISTRY/$DOCKER_IMAGE
