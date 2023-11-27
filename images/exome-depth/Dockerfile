@@ -1,5 +1,7 @@
 FROM r-base:4.3.1
 
+ARG VERSION=${VERSION}
+
 LABEL software="ExomeDepth"
 LABEL description="R package ExomeDepth is used to perform CNV calling on a library of BAM files"
 LABEL documentation="https://CRAN.R-project.org/package=ExomeDepth"

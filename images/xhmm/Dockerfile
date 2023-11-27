@@ -1,5 +1,7 @@
 from debian:10.13
 
+ARG VERSION=${VERSION}
+
 RUN apt-get update && apt-get install --yes \
     build-essential \
     gcc-multilib \
