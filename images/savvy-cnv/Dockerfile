@@ -1,4 +1,4 @@
-from gatk
+from broadinstitute/gatk
 
 ARG VERSION=${VERSION}
 
