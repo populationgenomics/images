@@ -6,7 +6,7 @@ ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
 WORKDIR /usr/local/bin/
 
-RUN apt-get update && apt-get install -y git wget curl bash bzip2 zip && \
+RUN apt-get update && apt-get install -y git wget curl bash bzip2 zip python && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     curl https://sdk.cloud.google.com > install.sh && \
