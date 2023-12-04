@@ -5,6 +5,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   PROJECT: 'cpg-common'
   CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
@@ -52,10 +56,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: google-github-actions/setup-gcloud@v0
+      - id: "google-cloud-auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1"
         with:
-          project_id: cpg-common
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+          workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
+
+      - id: "google-cloud-sdk-setup"
+        name: "Set up Cloud SDK"
+        uses: google-github-actions/setup-gcloud@v1
 
       - run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
@@ -87,8 +97,8 @@ jobs:
         ref: "main"
         path: "production-pipelines"
         submodules: recursive
-        # Comment this line out to revert to using the default $GITHUB_TOKEN.
-        token: ${{ secrets.PRODUCTION_PIPELINES_RAW_REPO_TOKEN }}
+        # Un-comment this line to use private access token if PP goes private
+        # token: ${{ secrets.PRODUCTION_PIPELINES_RAW_REPO_TOKEN }}
 
     - id: get_version
       run: |
@@ -100,10 +110,16 @@ jobs:
         echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
         cd -
 
-    - uses: google-github-actions/setup-gcloud@v0
+    - id: "google-cloud-auth"
+      name: "Authenticate to Google Cloud"
+      uses: "google-github-actions/auth@v1"
       with:
-        project_id: cpg-common
-        service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
+        workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+        service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
+
+    - id: "google-cloud-sdk-setup"
+      name: "Set up Cloud SDK"
+      uses: google-github-actions/setup-gcloud@v1
 
     - run: |
         gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
@@ -140,11 +156,18 @@ jobs:
       - name: "checkout repo"
         uses: actions/checkout@v3
 
-      - name: "gcloud setup"
-        uses: google-github-actions/setup-gcloud@v0
+      - id: "google-cloud-auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1"
+        with:
+          workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
+
+      - id: "google-cloud-sdk-setup"
+        name: "Set up Cloud SDK"
+        uses: google-github-actions/setup-gcloud@v1
         with:
           project_id:  ${{ env.PROJECT }}
-          service_account_key: ${{ secrets.GCP_SERVER_DEPLOY_KEY }}
 
       - uses: actions/setup-python@v4
         with:
