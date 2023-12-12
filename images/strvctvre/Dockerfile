@@ -14,14 +14,14 @@ RUN apt-get update && \
         liblzma-dev \
         libncurses5-dev \
         python3-dev \
+        tabix \
         wget && \
     apt-get clean -y  && \
     rm -rf /var/lib/apt/lists/* && \
     git clone https://github.com/andrewSharo/StrVCTVRE && \
     cd StrVCTVRE && \
-    git checkout ${VERSION}
-
-RUN pip install \
+    git checkout ${VERSION} && \
+    pip install \
     cyvcf2 \
     Cython \
     joblib \
@@ -31,3 +31,5 @@ RUN pip install \
     pybigwig \
     pysam \
     scikit-learn==1.0.2
+
+WORKDIR /StrVCTVRE
