@@ -14,6 +14,7 @@ RUN apt-get update && \
         python3-pip && \
     rm -rf /var/lib/apt/lists/* && \
     conda create -n python310 python=3.10 ipykernel && \
+    conda run -n python310 pip3 install --no-cache-dir psycopg2-binary && \
     conda run -n python310 pip3 install --no-cache-dir \
         analysis-runner \
         bokeh \
