@@ -1,0 +1,8 @@
+analysis-runner
+bokeh
+cloudpathlib[all]
+cpg-utils
+gnomad
+pyarrow
+metamist
+selenium==3.8.0
