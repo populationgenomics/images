@@ -25,7 +25,7 @@ RUN apt-get update && \
        extdata/input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt \
        extdata/input/genotype_10markers.vcf.gz \
        extdata/input/genotype_10markers.vcf.gz.csi \
-       extdata/input/gene_1_cis_region.txt && \
+       extdata/input/gene_1_cis_region.txt /usr/local/bin/ && \
     chmod a+x /usr/local/bin/step1_fitNULLGLMM_qtl.R \
               /usr/local/bin/step2_tests_qtl.R \
               /usr/local/bin/step3_gene_pvalue_qtl.R && \
