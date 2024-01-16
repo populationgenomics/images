@@ -31,14 +31,6 @@ RUN apt-get update && \
        extdata/output/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval /usr/local/bin/ && \
     chmod a+x /usr/local/bin/step1_fitNULLGLMM_qtl.R \
               /usr/local/bin/step2_tests_qtl.R \
-              /usr/local/bin/step3_gene_pvalue_qtl.R \
-              /usr/local/bin/n.indep_100_n.cell_1_01.step1 \
-              /usr/local/bin/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt \
-              /usr/local/bin/genotype_10markers.vcf.gz \
-              /usr/local/bin/genotype_10markers.vcf.gz.csi \
-              /usr/local/bin/gene_1_cis_region.txt \
-              /usr/local/bin/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1 \
-              /usr/local/bin/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis \
-              /usr/local/bin/nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_gene_1_cis_genePval && \
+              /usr/local/bin/step3_gene_pvalue_qtl.R && \
     cd .. && \
     rm -r qtl
