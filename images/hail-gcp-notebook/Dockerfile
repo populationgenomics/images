@@ -4,6 +4,8 @@ FROM gcr.io/deeplearning-platform-release/base-cpu:latest
 
 ARG VERSION=${VERSION:-0.2.102}
 
+COPY requirements.txt requirements.txt
+
 # hadolint ignore=DL3008,DL3013,DL4006
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -14,16 +16,8 @@ RUN apt-get update && \
         python3-pip && \
     rm -rf /var/lib/apt/lists/* && \
     conda create -n python310 python=3.10 ipykernel && \
-    conda run -n python310 pip3 install --no-cache-dir \
-        analysis-runner \
-        bokeh \
-        "cloudpathlib[all]" \
-        cpg-utils \
-        gnomad \
-        hail==${VERSION} \
-        pyarrow \
-        metamist \
-        selenium==3.8.0 && \
+    conda run -n python310 pip3 install --no-cache-dir --no-deps -r requirements.txt && \
+    conda run -n python310 pip3 install --no-cache-dir hail==${VERSION} && \
     curl -sSL https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar xjf - && \
     mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
     rm -r phantomjs-2.1.1-linux-x86_64 && \

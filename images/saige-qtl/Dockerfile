@@ -20,11 +20,14 @@ RUN apt-get update && \
     R CMD INSTALL . && \
     mv extdata/step1_fitNULLGLMM_qtl.R \
        extdata/step2_tests_qtl.R \
-       extdata/step3_LDmat.R \
-       extdata/createSparseGRM.R /usr/local/bin/ && \
+       extdata/step3_gene_pvalue_qtl.R \
+       extdata/input/n.indep_100_n.cell_1_01.step1* \
+       extdata/input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt \
+       extdata/input/genotype_10markers.vcf.gz \
+       extdata/input/genotype_10markers.vcf.gz.csi \
+       extdata/input/gene_1_cis_region.txt /usr/local/bin/ && \
     chmod a+x /usr/local/bin/step1_fitNULLGLMM_qtl.R \
               /usr/local/bin/step2_tests_qtl.R \
-              /usr/local/bin/step3_LDmat.R \
-              /usr/local/bin/createSparseGRM.R && \
+              /usr/local/bin/step3_gene_pvalue_qtl.R && \
     cd .. && \
     rm -r qtl
