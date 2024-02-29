@@ -2,7 +2,9 @@ FROM ubuntu:22.04
 
 ARG VERSION=${VERSION:-1.0}
 
-RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
+RUN apt-get update && \
+    apt-get install -y lsb-release wget && \
+    GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     wget -qO - https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     apt-get update && apt-get install -y gcsfuse
