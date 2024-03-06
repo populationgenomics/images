@@ -1,9 +1,6 @@
 
 # install scanpy, anndata2ri, and R packages - Seurat and scater
-
-ARG DRIVER_TAG="latest"
-
-FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:$DRIVER_TAG
+FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r::1.4
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
