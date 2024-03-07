@@ -1,5 +1,4 @@
-
-ARG DRIVER_TAG="1.4"
+ARG DRIVER_TAG="latest"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:$DRIVER_TAG
 
@@ -28,10 +27,13 @@ RUN apt update && \
         r-matrixStats==1.1.0 \
         r-seurat \
         r-tidyverse \
-        r-viridis \
+        r-viridis && \
+    rm -r /root/micromamba/pkgs && \
+    pip3 install --no-cache-dir \
         analysis-runner \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
-        scanpy==1.9.3 && \
-    rm -r /root/micromamba/pkgs
+        cpg-workflows \
+        scanpy==1.9.3 \
+        pandas
