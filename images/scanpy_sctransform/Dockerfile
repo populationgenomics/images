@@ -35,5 +35,5 @@ RUN apt update && \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
-        cpg-workflows && \
+        cpg-workflows \
         scanpy==1.9.3
