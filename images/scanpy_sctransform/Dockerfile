@@ -28,12 +28,11 @@ RUN apt update && \
         r-matrixStats==1.1.0 \
         r-seurat \
         r-tidyverse \
-        r-viridis && \
-    rm -r /root/micromamba/pkgs && \
-    pip3 install --no-cache-dir \
+        r-viridis \
         analysis-runner \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
         cpg-workflows \
-        scanpy==1.9.3
+        scanpy==1.9.3 && \
+    rm -r /root/micromamba/pkgs
