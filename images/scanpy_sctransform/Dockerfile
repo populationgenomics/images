@@ -1,7 +1,7 @@
 
 ARG DRIVER_TAG="latest"
 
-FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_TAG
+FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:$DRIVER_TAG
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
@@ -31,5 +31,9 @@ RUN apt update && \
         r-viridis && \
     rm -r /root/micromamba/pkgs && \
     pip3 install --no-cache-dir \
-        scanpy==1.9.3 && \
-    pip3 install anndata2ri
+        analysis-runner \
+        anndata2ri \
+        cloudpathlib[all] \
+        cpg-utils \
+        cpg-workflows && \
+        scanpy==1.9.3
