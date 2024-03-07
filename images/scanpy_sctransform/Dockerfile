@@ -33,6 +33,5 @@ RUN apt update && \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
-        cpg-workflows \
         scanpy==1.9.3 && \
     rm -r /root/micromamba/pkgs
