@@ -1,4 +1,4 @@
-ARG DRIVER_TAG="latest"
+ARG DRIVER_TAG="1.4"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:$DRIVER_TAG
 
