@@ -32,4 +32,5 @@ RUN apt update && \
         cloudpathlib[all] \
         cpg-utils \
         cpg-workflows \
+        gcsfs \
         pandas
