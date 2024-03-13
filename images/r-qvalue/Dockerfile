@@ -28,6 +28,7 @@ RUN apt update && \
     rm -r /root/micromamba/pkgs && \
     pip3 install --no-cache-dir \
         analysis-runner \
+        anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
         cpg-workflows \
