@@ -17,23 +17,18 @@ RUN apt update && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX \
         -c cpg -c bioconda -c conda-forge \
         bioconductor-biomart \
-        bioconductor-scater \
+        bioconductor-qvalue \
         r-argparser \
         r-arrow \
         r-base \
         r-devtools \
         r-essentials \
-        r-googlecloudstorager \
-        r-matrixStats==1.1.0 \
-        r-seurat \
         r-tidyverse \
         r-viridis && \
     rm -r /root/micromamba/pkgs && \
     pip3 install --no-cache-dir \
         analysis-runner \
-        anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
         cpg-workflows \
-        scanpy==1.9.3 \
         pandas
