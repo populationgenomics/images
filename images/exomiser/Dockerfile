@@ -6,6 +6,7 @@ ARG VERSION=${VERSION:-14.0.0}
 RUN apt-get update && \
     apt-get install -y \
     openjdk-21-jre-headless \
+    tree \
     unzip \
     wget \
     && \
