@@ -16,3 +16,5 @@ RUN apt-get update && \
     rm "exomiser-cli-${VERSION}-distribution.zip"
 
 WORKDIR /exomiser-cli-${VERSION}
+
+COPY application.properties /exomiser-cli-${VERSION}/application.properties
