@@ -30,6 +30,7 @@ def open_file(filepath: str):
     with open(filepath, 'r', encoding='utf-8') as handle:
         return method(handle)
 
+
 def main(config: str, output: str, pedigree: str, vcf: str):
     """
     integrates the components to make a local analysis YAML

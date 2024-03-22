@@ -4,7 +4,7 @@ ARG VERSION=${VERSION:-14.0.0}
 
 # download & unzip the distribution - this will create a directory called 'exomiser-cli-14.0.0'
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install --no-install-recommends -y \
     openjdk-21-jre-headless \
     python3 \
     python3-pip \
