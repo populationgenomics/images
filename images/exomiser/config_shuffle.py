@@ -46,14 +46,13 @@ def main(config: str, output: str, pedigree: str, vcf: str):
     template['analysis']['pedigree'] = pedigree
     template['analysis']['vcf'] = vcf
     template['analysis']['proband'] = content['proband']
-    template['analysis']['hpoIds'] = content['hpo']
+    template['analysis']['hpoIds'] = content['hpoIds']
     template['outputOptions']['outputFileName'] = f'{content["family"]}.json'
 
     with open(output, 'w', encoding='utf-8') as handle:
         yaml.dump(template, handle)
 
     print(f'Wrote to {output}')
-    print(template)
 
 
 if __name__ == '__main__':
@@ -63,3 +62,4 @@ if __name__ == '__main__':
     parser.add_argument('pedigree', help='The pedigree file')
     parser.add_argument('vcf', help='The vcf file')
     args = parser.parse_args()
+    main(args.config, args.output, args.pedigree, args.vcf)
