@@ -21,14 +21,12 @@ def open_file(filepath: str):
         dictionary of the target contents
     """
 
-    if filepath.endswith('.json'):
-        method = json.load
-    elif filepath.endswith('.yaml'):
-        method = yaml.load
-    else:
-        raise ValueError('Filetype not supported')
     with open(filepath, 'r', encoding='utf-8') as handle:
-        return method(handle)
+        if filepath.endswith('.json'):
+            return json.load(handle)
+        if filepath.endswith('.yaml'):
+            return yaml.safe_load(handle)
+        raise ValueError('Filetype not supported')
 
 
 def main(config: str, output: str, pedigree: str, vcf: str):
