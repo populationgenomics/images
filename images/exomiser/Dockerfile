@@ -6,6 +6,8 @@ ARG VERSION=${VERSION:-14.0.0}
 RUN apt-get update && \
     apt-get install -y \
     openjdk-21-jre-headless \
+    python3 \
+    python3-pip \
     tree \
     unzip \
     wget \
@@ -13,7 +15,8 @@ RUN apt-get update && \
     apt-get clean; \
     wget "https://github.com/exomiser/Exomiser/releases/download/${VERSION}/exomiser-cli-${VERSION}-distribution.zip" &&  \
     unzip "exomiser-cli-${VERSION}-distribution.zip" && \
-    rm "exomiser-cli-${VERSION}-distribution.zip"
+    rm "exomiser-cli-${VERSION}-distribution.zip" && \
+    pip3 install PyYAML
 
 WORKDIR /exomiser-cli-${VERSION}
 
