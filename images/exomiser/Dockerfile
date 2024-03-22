@@ -20,4 +20,4 @@ RUN apt-get update && \
 
 WORKDIR /exomiser-cli-${VERSION}
 
-COPY application.properties /exomiser-cli-${VERSION}/application.properties
+COPY application.properties config_shuffle.py template.yaml ./
