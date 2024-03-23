@@ -20,4 +20,5 @@ RUN apt-get update && \
 
 WORKDIR /exomiser-cli-${VERSION}
 
+# this will break
 COPY application.properties config_shuffle.py template.yaml ./
