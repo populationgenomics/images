@@ -61,15 +61,15 @@ analysis:
               NON_CODING_TRANSCRIPT_EXON_VARIANT,
               UPSTREAM_GENE_VARIANT,
               INTERGENIC_VARIANT,
-                REGULATORY_REGION_VARIANT,
-                CODING_TRANSCRIPT_INTRON_VARIANT,
-                NON_CODING_TRANSCRIPT_INTRON_VARIANT,
-                DOWNSTREAM_GENE_VARIANT
+              REGULATORY_REGION_VARIANT,
+              CODING_TRANSCRIPT_INTRON_VARIANT,
+              NON_CODING_TRANSCRIPT_INTRON_VARIANT,
+              DOWNSTREAM_GENE_VARIANT
             ]
         },
         #knownVariantFilter: {}, #removes variants represented in the database
         frequencyFilter: {maxFrequency: 2.0},
-        pathogenicityFilter: {keepNonPathogenic: true},
+        pathogenicityFilter: {keepNonPathogenic: false},
         #inheritanceFilter and omimPrioritiser should always run AFTER all other filters have completed
         #they will analyse genes according to the specified modeOfInheritance above- UNDEFINED will not be analysed.
         inheritanceFilter: {},
