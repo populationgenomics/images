@@ -47,7 +47,7 @@ def main(config: str, output: str, pedigree: str, vcf: str):
     template['analysis']['vcf'] = vcf
     template['analysis']['proband'] = content['proband']
     template['analysis']['hpoIds'] = content['hpoIds']
-    template['outputOptions']['outputFileName'] = content["family"]
+    template['outputOptions']['outputFileName'] = content['family']
 
     with open(output, 'w', encoding='utf-8') as handle:
         yaml.dump(template, handle)
