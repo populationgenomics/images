@@ -90,4 +90,4 @@ outputOptions:
     #numGenes options: 0 = all or specify a limit e.g. 500 for the first 500 results
     numGenes: 50
     #out-format options: HTML, JSON, TSV_GENE, TSV_VARIANT, VCF
-    outputFormats: [JSON]
+    outputFormats: [JSON, TSV_GENE, TSV_VARIANT]
