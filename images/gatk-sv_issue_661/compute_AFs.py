@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
+# flake8: noqa
 
 """
 Compute allele frequencies for sex & population combinations given an SV VCF
@@ -9,10 +9,10 @@ Compute allele frequencies for sex & population combinations given an SV VCF
 
 import sys
 import argparse
-import pysam
-from svtk import utils as svu
+import pysam  # type: ignore
+from svtk import utils as svu  # type: ignore
 from collections import Counter
-import pybedtools as pbt
+import pybedtools as pbt  # type: ignore
 
 
 def create_pop_dict(popfile):
