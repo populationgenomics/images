@@ -62,7 +62,7 @@ jobs:
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
           docker push $DOCKER_MAIN$DOCKER_IMAGE
-  
+
   deploy_image_dev:
     runs-on: ubuntu-latest
     environment: dev
