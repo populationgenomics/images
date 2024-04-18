@@ -17,14 +17,13 @@ permissions:
   contents: read
 
 jobs:
-  deployImage:
+  deploy_image_prod:
     runs-on: ubuntu-latest
-
+    environment: production
     env:
       DOCKER_BUILDKIT: 1
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-      DOCKER_DEV: australia-southeast1-docker.pkg.dev/cpg-common/images-dev/
       DOCKER_MAIN: australia-southeast1-docker.pkg.dev/cpg-common/images/
       DOCKER_IMAGE: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
       IMAGE_NAME: ${{ github.event.inputs.image_name }}
@@ -33,14 +32,60 @@ jobs:
     steps:
 
       - name: "checkout repo"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: "google-cloud-auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1"
+        uses: "google-github-actions/auth@v2"
         with:
           workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
           service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
+
+      - id: "google-cloud-sdk-setup"
+        name: "Set up Cloud SDK"
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: "gcloud docker auth"
+        run: |
+          gcloud auth configure-docker australia-southeast1-docker.pkg.dev
+
+      - name: "build image"
+        run: |
+          docker build \
+            ${{ inputs.docker_cli_args }} \
+            --build-arg VERSION=$IMAGE_TAG \
+            --tag $DOCKER_IMAGE \
+            images/$IMAGE_NAME
+
+      - name: "Push main branch to core artifactory"
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
+          docker push $DOCKER_MAIN$DOCKER_IMAGE
+
+  deploy_image_dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_PROGRESS: plain
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+      DOCKER_DEV: australia-southeast1-docker.pkg.dev/cpg-common/images-dev/
+      DOCKER_IMAGE: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+      IMAGE_NAME: ${{ github.event.inputs.image_name }}
+      IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+
+    steps:
+
+      - name: "checkout repo"
+        uses: actions/checkout@v4
+
+      - id: "google-cloud-auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "gh-images-dev-deployer@cpg-common.iam.gserviceaccount.com"
 
       - id: "google-cloud-sdk-setup"
         name: "Set up Cloud SDK"
@@ -63,9 +108,3 @@ jobs:
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_DEV$DOCKER_IMAGE
           docker push $DOCKER_DEV$DOCKER_IMAGE
-
-      - name: "Push main branch to core artifactory"
-        if: ${{ github.ref_name == 'main' }}
-        run: |
-          docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
-          docker push $DOCKER_MAIN$DOCKER_IMAGE
