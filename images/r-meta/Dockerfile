@@ -17,7 +17,6 @@ RUN apt update && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX \
         -c cpg -c bioconda -c conda-forge \
         bioconductor-biomart \
-        bioconductor-qvalue \
         r-argparser \
         r-arrow \
         r-base \
