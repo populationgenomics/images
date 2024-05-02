@@ -19,14 +19,15 @@ jobs:
   # Make a matrix of all the images that have changed in images.toml
   make_matrix:
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       matrix: ${{ steps.set_matrix.outputs.matrix }}
     steps:
       - name: "Checkout repo"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Checkout ref before change"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.before }}
           path: 'before'
@@ -44,6 +45,7 @@ jobs:
   # Deploy the images that have changed to the registry
   deploy_images:
     runs-on: ubuntu-latest
+    environment: production
     needs:
       - make_matrix
     if: ${{ needs.make_matrix.outputs.matrix != '{}' && needs.make_matrix.outputs.matrix != '' }}
@@ -54,11 +56,11 @@ jobs:
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: "google-cloud-auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1"
+        uses: "google-github-actions/auth@v2"
         with:
           workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
           service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
@@ -86,12 +88,13 @@ jobs:
   # here and build it from the repository source, using the package version as the tag.
   deploy_cpg_workflows:
     runs-on: ubuntu-latest
+    environment: production
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: "populationgenomics/production-pipelines"
         ref: "main"
@@ -112,7 +115,7 @@ jobs:
 
     - id: "google-cloud-auth"
       name: "Authenticate to Google Cloud"
-      uses: "google-github-actions/auth@v1"
+      uses: "google-github-actions/auth@v2"
       with:
         workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
         service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
@@ -146,6 +149,7 @@ jobs:
   # special-case cpg_workflows.
   deploy_config:
     runs-on: ubuntu-latest
+    environment: production
     needs:
       - deploy_images
       - deploy_cpg_workflows
@@ -154,11 +158,11 @@ jobs:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
       - name: "checkout repo"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: "google-cloud-auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1"
+        uses: "google-github-actions/auth@v2"
         with:
           workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
           service_account: "gh-images-deployer@cpg-common.iam.gserviceaccount.com"
