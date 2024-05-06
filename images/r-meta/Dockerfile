@@ -20,6 +20,7 @@ RUN apt update && \
         r-argparser \
         r-arrow \
         r-base \
+        r-coloc \
         r-devtools \
         r-essentials \
         r-meta \
