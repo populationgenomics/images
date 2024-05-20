@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 ARG GIT_REPO=https://github.com/populationgenomics/TRTools.git
 ARG GIT_BRANCH=skip-if-monomorphic
 
-RUN git clone -b ${GIT_BRANCH} ${GIT_REPO} /usr/src/app
+RUN git clone -b ${GIT_BRANCH} ${GIT_REPO}
 
 # Set the working directory
-WORKDIR /usr/src/app/TRTools
+WORKDIR /TRTools
