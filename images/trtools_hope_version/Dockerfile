@@ -30,4 +30,4 @@ RUN micromamba create -n trtools -f dev-env.yml && \
     micromamba run -n trtools poetry install
 
 # Activate the Conda environment
-CMD ["micromamba", "run", "-n", "trtools", "poetry", "shell"]
+CMD ["micromamba", "activate", "trtools", "poetry", "shell"]
