@@ -22,10 +22,10 @@ RUN wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | t
 RUN git clone -b ${GIT_BRANCH} ${GIT_REPO}
 
 # Set the working directory
-WORKDIR /TRTools
+WORKDIR TRTools
 
 # Create the Conda environment and install dependencies using Poetry
-COPY dev-env.yml .
+# COPY dev-env.yml .
 RUN micromamba create -n trtools -f dev-env.yml && \
     micromamba run -n trtools poetry install
 
