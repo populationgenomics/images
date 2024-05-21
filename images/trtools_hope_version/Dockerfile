@@ -13,10 +13,9 @@ ARG GIT_BRANCH=skip-if-monomorphic
 RUN apt-get update && apt-get install -y \
     git wget bash bzip2 zip && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf /var/cache/apt/*
-
-# Install Micromamba
-RUN wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj -C /usr/local/bin --strip-components=1 bin/micromamba
+    rm -rf /var/cache/apt/* && \
+    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
+    mkdir ${MAMBA_ROOT_PREFIX}
 
 # Clone the specified branch from the GitHub repository
 RUN git clone -b ${GIT_BRANCH} ${GIT_REPO}
