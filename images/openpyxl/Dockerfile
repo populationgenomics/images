@@ -8,5 +8,5 @@ RUN apt-get update && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     pip3 install --no-cache-dir \
-        pandas==2.2.1
+        pandas==2.2.1 \
         openpyxl==3.1.2
