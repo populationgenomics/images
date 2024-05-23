@@ -1,4 +1,3 @@
-ARG VERSION=${VERSION}
 ARG DRIVER_TAG="latest"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_TAG
@@ -10,4 +9,4 @@ RUN apt-get update && \
     rm -r /var/cache/apt/* && \
     pip3 install --no-cache-dir \
         pandas==2.2.1 \
-        openpyxl==${VERSION}
+        openpyxl==3.1.2
