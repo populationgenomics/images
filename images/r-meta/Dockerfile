@@ -24,7 +24,7 @@ RUN apt update && \
         r-devtools \
         r-essentials \
         r-meta \
-        # r-susieR \
+        r-susieR \
         r-tidyverse \
         r-viridis && \
     rm -r /root/micromamba/pkgs && \
