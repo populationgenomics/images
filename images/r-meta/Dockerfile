@@ -12,7 +12,7 @@ RUN apt update && \
     apt install -y build-essential && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
-    wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C /usr/local bin/micromamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
     mkdir $MAMBA_ROOT_PREFIX && \
     micromamba install -y --prefix $MAMBA_ROOT_PREFIX \
         -c cpg -c bioconda -c conda-forge \
