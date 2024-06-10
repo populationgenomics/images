@@ -33,6 +33,5 @@ RUN apt update && \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
-        cpg-workflows \
         gcsfs \
         pandas
