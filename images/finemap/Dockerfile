@@ -6,21 +6,6 @@ WORKDIR /tmp
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     curl \
-    unzip \
-    gzip \
-    bzip2 \
-    ca-certificates \
-    build-essential \
-    gfortran \
-    libgfortran-6-dev \
-    libgomp1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log
-
-# Fine-mapping tools required packages
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    libgsl-dev libgsl2 libatlas3-base liblapack-dev \
     && apt-get clean
 
 # R, Python, SoS and DSC
