@@ -6,6 +6,7 @@ WORKDIR /tmp
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     curl \
+    libgomp1 \
     && apt-get clean
 
 RUN curl -L http://www.christianbenner.com/finemap_v1.4.2_x86_64.tgz -o finemap.tgz \
