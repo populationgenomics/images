@@ -20,7 +20,7 @@ RUN apt update && apt install -y \
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
-# pull the talos repo and build \
+# pull the talos repo and build
 RUN git clone https://github.com/populationgenomics/automated-interpretation-pipeline.git
 
 WORKDIR /automated-interpretation-pipeline
