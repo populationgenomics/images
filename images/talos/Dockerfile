@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-4.0.0}
+ARG VERSION=${VERSION:-main}
 
 RUN apt update && apt install -y \
         apt-transport-https \
@@ -20,8 +20,4 @@ RUN apt update && apt install -y \
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
-# pull the talos repo and build
-RUN git clone https://github.com/populationgenomics/automated-interpretation-pipeline.git
-
-WORKDIR /automated-interpretation-pipeline
-RUN python3 -m pip install .[cpg]
+RUN python3 -m pip install metamist git+https://github.com/populationgenomics/automated-interpretation-pipeline.git@${VERSION}
