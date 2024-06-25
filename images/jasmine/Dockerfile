@@ -11,4 +11,4 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip curl && \
     mkdir ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
     jasminesv=${VERSION} && \
-    rm -r /root/micromamba/pkgs
+    rm -r /root/micromamba/pkgs \
