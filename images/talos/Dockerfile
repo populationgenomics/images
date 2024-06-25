@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-main}
+ARG VERSION=${VERSION:-4.1.0}
 
 RUN apt update && apt install -y \
         apt-transport-https \
@@ -20,4 +20,4 @@ RUN apt update && apt install -y \
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
-RUN python3 -m pip install metamist git+https://github.com/populationgenomics/automated-interpretation-pipeline.git@${VERSION}
+RUN pip install --no-cache-dir metamist git+https://github.com/populationgenomics/automated-interpretation-pipeline.git@${VERSION}
