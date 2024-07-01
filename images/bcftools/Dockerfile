@@ -1,7 +1,6 @@
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 
 ARG VERSION=${VERSION:-1.20}
-
 
 RUN apt-get update && apt-get install -y \
         bash \
@@ -20,7 +19,6 @@ RUN apt-get update && apt-get install -y \
     git clone --recurse-submodules https://github.com/samtools/htslib.git --branch ${VERSION} --depth 1 && \
     git clone https://github.com/samtools/bcftools.git --branch ${VERSION} --depth 1 && \
     cd bcftools && \
-    make && \
-    mv bcftools /usr/local/bin && \
+    make install && \
     cd - && \
     rm -rf bcftools htslib
