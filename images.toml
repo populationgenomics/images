@@ -1,5 +1,5 @@
 # Map of tags for cpg-common images
-bcftools = '1.16'
+bcftools = '1.20'
 bedtools = '2.30.0'
 bwa = '0.7.17'
 cellregmap = '0.0.3'
