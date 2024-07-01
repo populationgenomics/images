@@ -1,14 +1,30 @@
-FROM debian:buster-slim
+FROM debian:bookworm-slim as base
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-1.16}
+ARG VERSION=${VERSION:-1.20}
 
-RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
+RUN apt-get update && apt-get install -y \
+        bzip2 \
+        libbz2-dev \
+        liblzma-dev \
+        libcurl4-openssl-dev \
+        zlib1g-dev && \
     rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/* && \
-    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
-    mkdir ${MAMBA_ROOT_PREFIX} && \
-    micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
-    bcftools=${VERSION} && \
-    rm -r /root/micromamba/pkgs
+    rm -r /var/cache/apt/*
+
+# second stage - add compile-relevant tools, obtain release, install from release
+FROM base as compiler
+
+RUN apt-get update && apt-get install -y \
+        gcc \
+        make \
+        wget && \
+    wget https://github.com/samtools/bcftools/releases/download/${VERSION}/bcftools-${VERSION}.tar.bz2 && \
+    tar -xf bcftools-${VERSION}.tar.bz2 && \
+    cd bcftools-${VERSION} && \
+    ./configure --prefix=/bcftools_install && \
+    make install
+
+# the actual build - on minimal install, copy content from bcftools install directory
+from base
+
+COPY --from=compiler /bcftools_install/bin/* /usr/bin
