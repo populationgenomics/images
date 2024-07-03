@@ -2,12 +2,14 @@ FROM debian:bookworm-slim as base
 
 ARG VERSION=${VERSION:-1.20}
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
-        bzip2 \
-        libbz2-dev \
-        liblzma-dev \
-        libcurl4-openssl-dev \
-        zlib1g-dev && \
+        libbz2-1.0 \
+        libcurl4 \
+        liblzma5 \
+        libssl3 \
+        zlib1g && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
@@ -15,16 +17,25 @@ RUN apt-get update && apt-get install -y \
 FROM base as compiler
 
 RUN apt-get update && apt-get install -y \
+        bzip2 \
         gcc \
+        libbz2-dev \
+        libcurl4-openssl-dev \
+        liblzma-dev \
+        libssl-dev \
         make \
-        wget && \
+        wget \
+        zlib1g-dev && \
     wget https://github.com/samtools/bcftools/releases/download/${VERSION}/bcftools-${VERSION}.tar.bz2 && \
     tar -xf bcftools-${VERSION}.tar.bz2 && \
     cd bcftools-${VERSION} && \
-    ./configure --prefix=/bcftools_install && \
-    make install
+    ./configure --enable-libcurl --enable-s3 --enable-gcs && \
+    make && \
+    strip bcftools plugins/*.so && \
+    make DESTDIR=/bcftools_install install
 
 # the actual build - on minimal install, copy content from bcftools install directory
 from base
 
-COPY --from=compiler /bcftools_install/bin/* /usr/bin
+COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
+COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
