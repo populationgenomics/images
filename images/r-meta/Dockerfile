@@ -24,6 +24,7 @@ RUN apt update && \
         r-devtools \
         r-essentials \
         r-meta \
+        r-susieR \
         r-tidyverse \
         r-viridis && \
     rm -r /root/micromamba/pkgs && \
@@ -32,6 +33,5 @@ RUN apt update && \
         anndata2ri \
         cloudpathlib[all] \
         cpg-utils \
-        cpg-workflows \
         gcsfs \
         pandas
