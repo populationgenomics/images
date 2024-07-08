@@ -10,7 +10,7 @@ RUN mkdir /exomiser && \
     unzip "${EXOMISER_ARCHIVE}" && \
     rm "${EXOMISER_ARCHIVE}" && \
     echo '#!/bin/bash' >> /usr/local/bin/exomiser && \
-    echo cd /exomiser/${EXOMISER_STEM} \&\& exec java -jar $(echo /exomiser/${EXOMISER_STEM}/${EXOMISER_STEM}.jar) \"\$@\" >> /usr/local/bin/exomiser && \
+    echo cd /exomiser/${EXOMISER_STEM} \&\& exec java -jar /exomiser/${EXOMISER_STEM}/${EXOMISER_STEM}.jar \"\$@\" >> /usr/local/bin/exomiser && \
     chmod 755 /usr/local/bin/exomiser
 
 WORKDIR /exomiser/${EXOMISER_STEM}
