@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 RUN git clone -b ${GIT_BRANCH} ${GIT_REPO}
 
 # Set the working directory
-WORKDIR TRTools
+WORKDIR /TRTools
 
 # Create the Conda environment and install dependencies using Poetry
 # COPY dev-env.yml .
