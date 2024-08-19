@@ -42,6 +42,7 @@ strvctvre = 'v.1.10'
 subread = '2.0.6'
 talos = '5.1.3'  # release to build, image names should have specific releases. Can build by naming side-branch
 trtools = '5.0.2'
+trtools_hope_version = 'skip-if-monomorphic'  # specific branch name
 vep_105 = '105.0'
 vep_110 = 'release_110.1'
 verifybamid = '2.0.1'
