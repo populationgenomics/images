@@ -1,13 +1,19 @@
-FROM google/cloud-sdk:486.0.0
+FROM martinlaurent/ascli:4.18.0
 
-# Aspera doesn't install for the root user.
-RUN useradd -m aspera
-USER aspera
-WORKDIR /home/aspera
-
-RUN curl https://d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest/bin/ibm-aspera-connect_4.2.12.780_linux_x86_64.tar.gz | tar xz && \
-    ./ibm-aspera-connect_4.2.12.780_linux_x86_64.sh && \
-    rm ibm-aspera-connect_4.2.12.780_linux_x86_64.sh
-
-# Allow Hail Batch to create files in /io.
 USER root
+
+# Google Cloud SDK: use the script-based installation, as the Debian package is outdated.
+RUN apt update && apt install -y \
+    apt-transport-https \
+    bzip2 \
+    ca-certificates \
+    gnupg \
+    skopeo \
+    wget \
+    zip \
+    curl https://sdk.cloud.google.com > install.sh && \
+    bash install.sh --disable-prompts --install-dir=/opt && \
+    rm -r install.sh /var/lib/apt/lists/* /var/cache/apt/* 
+
+USER cliuser
+ENV PATH="/opt/google-cloud-sdk/bin:${PATH}"
