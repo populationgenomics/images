@@ -10,7 +10,7 @@ RUN apt update && apt install -y \
     gnupg \
     skopeo \
     wget \
-    zip \
+    zip && \
     curl https://sdk.cloud.google.com > install.sh && \
     bash install.sh --disable-prompts --install-dir=/opt && \
     rm -r install.sh /var/lib/apt/lists/* /var/cache/apt/*
