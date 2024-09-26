@@ -13,7 +13,7 @@ RUN apt-get update && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     pip3 install cget click && \
-    git clone --depth 1 https://github.com/weizhou0/qtl.git && \
+    git clone https://github.com/weizhou0/qtl.git && \
     cd qtl && \
     git checkout $VERSION && \
     Rscript extdata/install_packages.R && \
