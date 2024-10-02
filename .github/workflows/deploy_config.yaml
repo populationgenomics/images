@@ -32,7 +32,7 @@ jobs:
           ref: ${{ github.event.before }}
           path: 'before'
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -67,7 +67,7 @@ jobs:
 
       - id: "google-cloud-sdk-setup"
         name: "Set up Cloud SDK"
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
       - run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
@@ -122,7 +122,7 @@ jobs:
 
     - id: "google-cloud-sdk-setup"
       name: "Set up Cloud SDK"
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
 
     - run: |
         gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
@@ -169,11 +169,11 @@ jobs:
 
       - id: "google-cloud-sdk-setup"
         name: "Set up Cloud SDK"
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id:  ${{ env.PROJECT }}
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
