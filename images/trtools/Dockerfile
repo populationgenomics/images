@@ -11,5 +11,5 @@ RUN apt-get update && apt-get install -y git curl bash bzip2 zip && \
 RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
     mkdir ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
-    trtools=${VER} && \
+    trtools=${VERSION} && \
     rm -r /root/micromamba/pkgs
