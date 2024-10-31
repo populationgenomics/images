@@ -2,7 +2,7 @@ FROM debian:buster-slim
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-6.0.2}
+ARG VERSION='6.0.2'
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y git curl bash bzip2 zip && \
