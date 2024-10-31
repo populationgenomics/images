@@ -2,7 +2,7 @@ FROM debian:buster-slim
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION='6.0.2'
+ARG VERSION=6.0.2
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y git curl bash bzip2 zip && \
@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y git curl bash bzip2 zip && \
 RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
     mkdir ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
-    trtools=6.0.2 && \
+    trtools=${VERSION} && \
     rm -r /root/micromamba/pkgs
 
 
