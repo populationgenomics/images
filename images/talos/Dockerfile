@@ -28,7 +28,7 @@ ADD "https://github.com/tonymet/gcloud-lite/releases/download/${CLOUD_SDK_VERSIO
 RUN tar -zxf gcloud.tar.gz \
     && mv google-cloud-sdk /bin/google-cloud-sdk \
     && rm gcloud.tar.gz \
-    && gcloud components reinstall
+    && /bin/google-cloud-sdk/bin/gcloud components reinstall
 
 ENV PATH="/bin/google-cloud-sdk/bin:$PATH"
 
