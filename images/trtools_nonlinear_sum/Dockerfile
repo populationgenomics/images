@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-master}
+ARG VERSION=${VERSION:-largest_allele_effect}
 ARG GIT_REPO=https://github.com/populationgenomics/TRTools-nonlinear-sum.git
 
 # Install necessary packages and clean up to reduce image size
