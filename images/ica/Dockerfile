@@ -8,6 +8,7 @@ RUN apt update && apt install -y \
     ca-certificates \
     curl \
     gnupg \
+    jq \
     wget \
     zip && \
     rm -r /var/lib/apt/lists/* && \
