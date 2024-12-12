@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim as base
+FROM debian:bookworm-slim AS base
 
 ARG VERSION=${VERSION:-1.20}
 
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     rm -r /var/cache/apt/*
 
 # second stage - add compile-relevant tools, obtain release, install from release
-FROM base as compiler
+FROM base AS compiler
 
 RUN apt-get update && apt-get install -y \
         bzip2 \
@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y \
     make DESTDIR=/bcftools_install install
 
 # the actual build - on minimal install, copy content from bcftools install directory
-from base
+FROM base
 
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
 COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
