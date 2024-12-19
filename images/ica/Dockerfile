@@ -1,22 +1,11 @@
-FROM python:3.10-bullseye
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_workflows:latest
 
-ARG VERSION=${VERSION:-2.31.0}
+ARG VERSION=${VERSION:-2.31.1}
 
 RUN apt update && apt install -y \
-    apt-transport-https \
-    bash \
-    ca-certificates \
-    curl \
-    gnupg \
-    jq \
-    wget \
-    zip && \
+    jq && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
-    # Google Cloud SDK: use the script-based installation, as the Debian package is outdated.
-    curl https://sdk.cloud.google.com > install.sh && \
-    bash install.sh --disable-prompts --install-dir=/opt && \
-    rm install.sh && \
     # Download and check the ICA CLI.
     wget -q https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/${VERSION}/ica-linux-amd64.sha256 -O /tmp/ica-linux-amd64.sha256 && \
     wget -q https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/${VERSION}/ica-linux-amd64.zip -O /tmp/ica-linux-amd64.zip && \
@@ -26,5 +15,8 @@ RUN apt update && apt install -y \
     cp /tmp/linux-amd64/icav2 /usr/local/bin/icav2 && \
     chmod a+x /usr/local/bin/icav2 && \
     rm -rf /tmp/ica-linux-amd64.sha256 /tmp/ica-linux-amd64.zip /tmp/linux-amd64
+
+RUN pip install git+https://github.com/Illumina/ica-sdk-python.git \
+    && pip install typing-extensions --upgrade
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
