@@ -25,7 +25,6 @@ jobs:
       BUILDKIT_PROGRESS: plain
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
       DOCKER_DEV: australia-southeast1-docker.pkg.dev/cpg-common/images-dev/
-      DOCKER_MAIN: australia-southeast1-docker.pkg.dev/cpg-common/images/
       DOCKER_IMAGE: ${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
       IMAGE_NAME: ${{ github.event.inputs.image_name }}
       IMAGE_TAG: ${{ github.event.inputs.image_tag }}
@@ -33,6 +32,15 @@ jobs:
     steps:
       - name: "checkout repo"
         uses: actions/checkout@v4
+        with:
+          repository: "populationgenomics/analysis-runner"
+
+      - name: "checkout Hail repo"
+        uses: actions/checkout@v4
+        with:
+          repository: "populationgenomics/hail"
+          ref: ${{ github.event.inputs.docker_cli_args }}
+          path: "hail"
 
       - id: "google-cloud-auth"
         name: "Authenticate to Google Cloud"
@@ -49,19 +57,13 @@ jobs:
         run: |
           gcloud auth configure-docker australia-southeast1-docker.pkg.dev
 
-      - name: "build image"
+      - name: "build driver image"
         run: |
           docker build \
-            ${{ inputs.docker_cli_args }} \
-            --build-arg VERSION=$IMAGE_TAG \
-            --tag $DOCKER_IMAGE \
-            images/$IMAGE_NAME
-
-      - name: "Push main branch to core artifactory"
-        if: ${{ github.ref_name == 'main' }}
-        run: |
-          docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
-          docker push $DOCKER_MAIN$DOCKER_IMAGE
+            -f driver/Dockerfile.hail \
+            --build-arg HAIL_SHA=${{ github.event.inputs.docker_cli_args }} \
+            --tag $IMAGE_NAME:$IMAGE_TAG \
+            driver
 
       - name: "Push non-main branch to dev artifactory"
         if: ${{ github.ref_name != 'main' }}
