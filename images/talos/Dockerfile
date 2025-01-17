@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-6.2.1}
+ARG VERSION=${VERSION:-6.4.0}
 
 RUN apt update && apt install -y \
         apt-transport-https \
