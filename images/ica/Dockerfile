@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_workflows:latest
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/cpg_workflows:ica
 
 ARG VERSION=${VERSION:-2.31.2}
 ARG ICA_CLI_VERSION=${ICA_CLI_VERSION:-2.31.0}
