@@ -62,9 +62,11 @@ jobs:
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
           docker push $DOCKER_MAIN$DOCKER_IMAGE
+          echo "Link to image: https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images/$IMAGE_NAME?project=cpg-common"
 
       - name: "Push non-main branch to dev artifactory"
         if: ${{ github.ref_name != 'main' }}
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_DEV$DOCKER_IMAGE
           docker push $DOCKER_DEV$DOCKER_IMAGE
+          echo "Link to image: https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images-dev/$IMAGE_NAME?project=cpg-common"
