@@ -8,7 +8,7 @@ on:
       image_tag:
         description: "Tag of image"
         required: true
-      cli_args:
+      docker_cli_args:
         description: "Extra docker CLI params"
         required: false
 
@@ -51,7 +51,11 @@ jobs:
 
       - name: "build image"
         run: |
-          docker build ${{ inputs.cli_args }} --build-arg VERSION=$IMAGE_TAG --tag $DOCKER_IMAGE images/$IMAGE_NAME
+          docker build \
+              ${{ inputs.docker_cli_args }} \
+              --build-arg VERSION=$IMAGE_TAG \
+              --tag $DOCKER_IMAGE \
+              images/$IMAGE_NAME
 
       - name: "Push main branch to core artifactory"
         if: ${{ github.ref_name == 'main' }}
