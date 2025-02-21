@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS base
 
-#ARG VERSION=${VERSION:-1.04.00}
+ARG VERSION=${VERSION:-1.04.00}
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
