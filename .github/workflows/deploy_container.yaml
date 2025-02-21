@@ -52,10 +52,10 @@ jobs:
       - name: "build image"
         run: |
           docker build \
-              ${{ inputs.docker_cli_args }} \
-              --build-arg VERSION=$IMAGE_TAG \
-              --tag $DOCKER_IMAGE \
-              images/$IMAGE_NAME
+            ${{ inputs.docker_cli_args }} \
+            --build-arg VERSION=$IMAGE_TAG \
+            --tag $DOCKER_IMAGE \
+            images/$IMAGE_NAME
 
       - name: "Push main branch to core artifactory"
         if: ${{ github.ref_name == 'main' }}
