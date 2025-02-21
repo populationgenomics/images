@@ -8,5 +8,5 @@ RUN apt-get update && apt-get install -y \
         curl && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
-    curl -L -0 '/usr/local/bin/mosdepth' https://github.com/brentp/mosdepth/releases/download/v${VERSION}/mosdepth && \
+    curl -L -o '/usr/local/bin/mosdepth' https://github.com/brentp/mosdepth/releases/download/v${VERSION}/mosdepth && \
     chmod a+x /usr/local/bin/mosdepth
