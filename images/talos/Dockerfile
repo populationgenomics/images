@@ -1,16 +1,16 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-6.4.0}
+ENV VERSION=6.4.0
 
 RUN apt update && apt install -y \
-        apt-transport-https \
-        bzip2 \
-        ca-certificates \
-        git \
-        gnupg \
-        openjdk-11-jdk-headless \
-        wget \
-        zip && \
+    apt-transport-https \
+    bzip2 \
+    ca-certificates \
+    git \
+    gnupg \
+    openjdk-11-jdk-headless \
+    wget \
+    zip && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     # Google Cloud SDK: use the script-based installation, as the Debian package is outdated.
