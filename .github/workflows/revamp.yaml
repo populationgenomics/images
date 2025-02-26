@@ -1,0 +1,191 @@
+name: Deploy with Versioning
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  PROJECT: 'cpg-common'
+  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
+  DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # using tmp for testing
+
+jobs:
+  get_next_version:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      matrix: ${{ steps.get_next_version.outputs.next_version }}
+    steps:
+      - name: 'Checkout repo'
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - id: 'google-cloud-auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: 'google-cloud-sdk-setup'
+        name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT }}
+
+      - name: 'Get current version'
+        id: get_next_version
+        run: |
+          echo "next_version=$(python .github/workflows/get_version.py)" >> $GITHUB_OUTPUT
+
+  # Deploy the images that have changed to the registry
+  deploy_images:
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - get_next_version
+    if: ${{ needs.get_next_version.outputs.matrix != '{}' && needs.get_next_version.outputs.matrix != '' }}
+    strategy:
+      matrix: ${{ fromJson(needs.get_next_version.outputs.matrix) }}
+    env:
+      DOCKER_BUILDKIT: 1
+      BUILDKIT_PROGRESS: plain
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: 'google-cloud-auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: 'google-cloud-sdk-setup'
+        name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - run: |
+          gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+
+      - name: 'build image'
+        run: |
+          docker build \
+          --build-arg VERSION=${{ matrix.tag }} \
+          --tag ${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }} \
+          images/${{ matrix.name }}
+
+      - name: 'push image'
+        run: |
+          docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
+
+  # Special-case for cpg_workflows: the image is not maintained via images.toml here
+  # as we have a repository production-pipelines for it, so we check out that repo
+  # here and build it from the repository source, using the package version as the tag.
+  deploy_cpg_workflows:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'populationgenomics/production-pipelines'
+          ref: 'main'
+          path: 'production-pipelines'
+          submodules: recursive
+
+      - id: get_version
+        run: |
+          echo "version=$(cat production-pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
+
+      - id: get_sha
+        run: |
+          cd production-pipelines
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          cd -
+
+      - id: 'google-cloud-auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: 'google-cloud-sdk-setup'
+        name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - run: |
+          gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
+
+      - name: build
+        run: |
+          IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+          docker build production-pipelines --tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+      - name: push
+        run: |
+          IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+          docker push $IMAGE_NAME:${{ steps.get_sha.outputs.sha }}
+
+      - name: push latest
+        run: |
+          IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
+          docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+          docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
+          docker push $IMAGE_NAME:latest
+
+  # Finally, prepare the finalised TOML config from all maintained images plus the
+  # special-case cpg_workflows.
+  deploy_config:
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - deploy_images
+      - deploy_cpg_workflows
+    if: ${{ ! failure() }}
+    env:
+      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
+    steps:
+      - name: 'checkout repo'
+        uses: actions/checkout@v4
+
+      - id: 'google-cloud-auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: 'google-cloud-sdk-setup'
+        name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 'prepare config'
+        run: |
+          pip install toml
+          python .github/workflows/prep_config.py \
+          ${{ needs.deploy_cpg_workflows.outputs.version }} > config.toml
+
+      - name: 'deploy config toml'
+        run: |
+          gcloud storage cp config.toml ${{ env.CONFIG_DESTINATION }}
