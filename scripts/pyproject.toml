@@ -1,0 +1,40 @@
+[project]
+name = "scripts"
+version = "0.1.0"
+description = "Base images repository"
+requires-python = ">=3.13"
+dependencies = [
+    "duckdb>=1.1.3",
+    "google-cloud-artifact-registry>=1.14.0",
+    "pandas>=2.2.3",
+    "polars>=1.21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pip-tools",
+    "pre-commit",
+    "PyYaml",
+    "ruff",
+    "setuptools",
+    "wheel",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+indent-width = 4
+skip-string-normalization = true
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+line-ending = "auto"
