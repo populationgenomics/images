@@ -11,9 +11,9 @@ def extract_version_from_file(file_path):
       ARG VERSION=1.0.0
     """
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, 'r') as f:
             content = f.read()
-        pattern = re.compile(r"^\s*ENV\s+VERSION\s*=\s*([^\s]+)", re.MULTILINE)
+        pattern = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
         match = pattern.search(content)
         return match.group(1) if match else None
     except Exception:
@@ -30,41 +30,40 @@ def get_next_version_tag(folder, version):
     """
     # Construct the fully qualified image name.
     BASE_IMAGE_PATH_PROD = os.environ.get(
-        "GCP_BASE_IMAGE",
-        "australia-southeast1-docker.pkg.dev/cpg-common/images",
+        'GCP_BASE_IMAGE',
+        'australia-southeast1-docker.pkg.dev/cpg-common/images',
     )
     BASE_IMAGE_PATH_ARCHIVE = os.environ.get(
-        "GCP_BASE_IMAGE",
-        "australia-southeast1-docker.pkg.dev/cpg-common/images-archive",
+        'GCP_BASE_IMAGE',
+        'australia-southeast1-docker.pkg.dev/cpg-common/images-archive',
     )
-    full_image_name_prod = f"{BASE_IMAGE_PATH_PROD}/{folder}"
-    full_image_name_archive = f"{BASE_IMAGE_PATH_ARCHIVE}/{folder}"
+    full_image_name_prod = f'{BASE_IMAGE_PATH_PROD}/{folder}'
+    full_image_name_archive = f'{BASE_IMAGE_PATH_ARCHIVE}/{folder}'
 
     tags_list = []
 
     for full_image_name in [full_image_name_prod, full_image_name_archive]:
         cmd = [
-            "gcloud",
-            "container",
-            "images",
-            "list-tags",
+            'gcloud',
+            'container',
+            'images',
+            'list-tags',
             full_image_name,
-            "--format=json",
+            '--format=json',
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            # If the command fails (for example, if the image is new), default to suffix 1.
-            return f"{version}-1"
+            return f'{version}-1'
         try:
             tags_list += json.loads(result.stdout)
         except Exception:
             pass
 
     max_suffix = 0
-    pattern = re.compile(rf"^{re.escape(version)}-(\d+)$")
+    pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
     for entry in tags_list:
         # Each entry should have a list of tags.
-        tags = entry.get("tags", [])
+        tags = entry.get('tags', [])
         for tag in tags:
             match = pattern.match(tag)
             if match:
@@ -72,17 +71,17 @@ def get_next_version_tag(folder, version):
                 if num > max_suffix:
                     max_suffix = num
     new_suffix = max_suffix + 1
-    return f"{version}-{new_suffix}"
+    return f'{version}-{new_suffix}'
 
 
 def main():
     # Path to the checkout of the commit before the push.
-    before_dir = os.environ.get("BEFORE_DIR", "before")
+    before_dir = os.environ.get('BEFORE_DIR', 'before')
     include_entries = []
 
     # List Dockerfiles tracked in the current commit.
     result = subprocess.run(
-        ["git", "ls-files", "*Dockerfile"], capture_output=True, text=True
+        ['git', 'ls-files', '*Dockerfile'], capture_output=True, text=True
     )
     dockerfiles = result.stdout.splitlines()
 
@@ -98,19 +97,18 @@ def main():
 
         # We add the entry if the version is new or has changed.
         if before_version != current_version:
-            # Extract only the top-level folder name (e.g. for images/picard/Dockerfile, use "picard")
             folder_path = os.path.dirname(file)
-            folder = os.path.basename(folder_path) if folder_path else "root"
+            folder = os.path.basename(folder_path) if folder_path else 'root'
 
             # Determine the next available tag based on current_version.
             new_tag = get_next_version_tag(folder, current_version)
 
-            include_entries.append({"name": folder, "tag": new_tag})
+            include_entries.append({'name': folder, 'tag': new_tag})
 
     # Build the final matrix structure.
-    matrix = {"include": include_entries}
+    matrix = {'include': include_entries}
 
-    print(str(matrix).replace(" ", ""), end="")
+    print(str(matrix).replace(' ', ''), end='')
 
 
 main()
