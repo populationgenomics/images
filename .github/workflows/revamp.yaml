@@ -11,7 +11,7 @@ permissions:
 
 env:
   PROJECT: 'cpg-common'
-  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml'
+  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/revamp.toml' # using revamp.toml for testing
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
   IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # using tmp for testing
 
@@ -47,14 +47,6 @@ jobs:
         run: |
           next_version=$(python .github/workflows/get_version.py)
           echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
-          echo "$next_version" > matrix.json
-
-      - name: Upload matrix as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: matrix-json
-          path: matrix.json
-          retention-days: 7 # Keep it for 7 days
 
   # Deploy the images that have changed to the registry
   deploy_images:
