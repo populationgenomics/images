@@ -89,5 +89,6 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ### 🐳 Dockerfile Version Changes\n\n$TABLE
+            ### 🐳 Dockerfile Version Changes
+            ${{ env.table }}
           edit-mode: replace
