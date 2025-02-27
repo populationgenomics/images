@@ -61,8 +61,10 @@ jobs:
           matrix: ${{ needs.get_next_version.outputs.matrix }}
         run: |
           echo "Extracted JSON: $matrix"
-          echo "### 🐳 Dockerfile Version Changes" > table.md
+          echo "### 🐳 Expected Tags" > table.md
           echo "" >> table.md
+          echo "Some Dockerfiles have have been modified in this PR. New tags are expected to be deployed." >> table.md
+          echo "The table below shows what the tags are expected to be on merging this PR." >> table.md
           echo "| Name  | Tag |" >> table.md
           echo "|-------|-------|" >> table.md
 
@@ -78,7 +80,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: 🐳 Dockerfile Version Changes
+          body-includes: 🐳 Expected Tags
 
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v4
