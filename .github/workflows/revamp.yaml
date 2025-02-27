@@ -13,7 +13,7 @@ env:
   PROJECT: 'cpg-common'
   CONFIG_DESTINATION: 'gs://cpg-config/templates/images/revamp.toml' # using revamp.toml for testing
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
-  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # using tmp for testing
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
 jobs:
   get_next_version:
