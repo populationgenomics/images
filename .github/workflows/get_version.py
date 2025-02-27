@@ -101,7 +101,6 @@ def get_before_commit():
 
 def main():
     before_commit = get_before_commit()
-    print(f'Comparing changes between {before_commit} and HEAD')
 
     # Get changed Dockerfiles
     result = subprocess.run(
