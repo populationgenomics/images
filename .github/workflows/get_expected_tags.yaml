@@ -61,19 +61,16 @@ jobs:
           matrix: ${{ needs.get_next_version.outputs.matrix }}
         run: |
           echo "Extracted JSON: $matrix"
+          echo "### 🐳 Dockerfile Version Changes" > table.md
+          echo "" >> table.md
+          echo "| Name  | Tag |" >> table.md
+          echo "|-------|-------|" >> table.md
 
-          # Convert JSON to Markdown table format
-          TABLE="| Name  | Tag |\n|-------|-------|"
           for row in $(echo "$matrix" | jq -c '.include[]'); do
             NAME=$(echo "$row" | jq -r '.name')
             TAG=$(echo "$row" | jq -r '.tag')
-            TABLE="$TABLE\n| $NAME | $TAG |"
+            echo "| $NAME | $TAG |" >> table.md
           done
-
-          # Save as output for later use
-          echo "table<<EOF" >> $GITHUB_ENV
-          echo "$TABLE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
@@ -88,7 +85,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ### 🐳 Dockerfile Version Changes
-            ${{ env.table }}
+          body-path: table.md # ⬅️ Use file instead of an environment variable!
           edit-mode: replace
