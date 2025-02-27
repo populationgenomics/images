@@ -56,7 +56,7 @@ jobs:
       - name: Read matrix JSON
         id: read-matrix
         run: |
-          MATRIX_JSON=${{ needs.get_next_version.outputs.matrix }}
+          MATRIX_JSON=${{ fromJson(needs.get_next_version.outputs.matrix) }}
           echo "Extracted JSON: $MATRIX_JSON"
 
           # Convert JSON to Markdown table format
