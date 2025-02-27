@@ -55,12 +55,14 @@ jobs:
     steps:
       - name: Read matrix JSON
         id: read-matrix
+        env:
+          matrix: ${{ needs.get_next_version.outputs.matrix }}
         run: |
-          echo "Extracted JSON: ${{ needs.get_next_version.outputs.matrix }}"
+          echo "Extracted JSON: $matrix"
 
           # Convert JSON to Markdown table format
           TABLE="| Name  | Tag |\n|-------|-------|"
-          for row in $(echo "${{ needs.get_next_version.outputs.matrix }}" | jq -c '.include[]'); do
+          for row in $(echo "$matrix" | jq -c '.include[]'); do
             NAME=$(echo "$row" | jq -r '.name')
             TAG=$(echo "$row" | jq -r '.tag')
             TABLE="$TABLE\n| $NAME | $TAG |"
