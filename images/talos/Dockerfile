@@ -6,6 +6,7 @@ RUN apt update && apt install -y \
         apt-transport-https \
         bzip2 \
         ca-certificates \
+        curl \
         git \
         gnupg \
         openjdk-11-jdk-headless \
