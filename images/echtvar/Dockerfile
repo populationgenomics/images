@@ -12,5 +12,5 @@ COPY config.json /config.json
 # designed for the gnomAD v4 genomes-only
 COPY simple_config.json /simple_config.json
 
-ENV ECHTVAR_CONFIG /config.json
-ENV ECHTVAR_SIMPLE_CONFIG /simple_config.json
+ENV ECHTVAR_CONFIG=/config.json
+ENV ECHTVAR_SIMPLE_CONFIG=/simple_config.json
