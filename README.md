@@ -1,6 +1,6 @@
 # Images
 
-This is a repository of:
+This is a repository of
 
 - Single-software images to build and push in the `cpg-common` artifact registry.
 - Scripts that move external images into our artifact registry using `skopeo`.
