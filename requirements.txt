@@ -11,7 +11,7 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
     # via requests
 duckdb==1.2.1
-    # via scripts (pyproject.toml)
+    # via images (pyproject.toml)
 google-api-core[grpc]==2.24.2
     # via google-cloud-artifact-registry
 google-auth==2.38.0
@@ -19,7 +19,7 @@ google-auth==2.38.0
     #   google-api-core
     #   google-cloud-artifact-registry
 google-cloud-artifact-registry==1.15.1
-    # via scripts (pyproject.toml)
+    # via images (pyproject.toml)
 googleapis-common-protos[grpc]==1.69.1
     # via
     #   google-api-core
@@ -40,9 +40,9 @@ idna==3.10
 numpy==2.2.3
     # via pandas
 pandas==2.2.3
-    # via scripts (pyproject.toml)
+    # via images (pyproject.toml)
 polars==1.24.0
-    # via scripts (pyproject.toml)
+    # via images (pyproject.toml)
 proto-plus==1.26.1
     # via
     #   google-api-core

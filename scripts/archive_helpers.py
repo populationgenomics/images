@@ -11,7 +11,7 @@ import polars as pl
 from google.api_core import exceptions as gcp_exceptions
 from google.cloud import artifactregistry_v1
 
-from Image import Image
+from scripts.Image import Image
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -43,7 +43,7 @@ def copy_image(source_image: Image, target_image: Image) -> tuple[Status, str]:
 
         if result.returncode == 0:
             logging.info(f'Image {target_image} already exists. Skipping copy.')
-            return Status.SUCCESS
+            return Status.SUCCESS, ''
 
         # Copy the image if it doesn't exist
         copy_command = [
@@ -132,7 +132,7 @@ def migrate_images(
 
 def unmark_images(
     image_data, archive_prefix='ARCHIVED', max_workers=10
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Reverses the archiving process by removing any archive_prefix tags from images in the provided DuckDB relation.
 
@@ -232,19 +232,21 @@ def get_images_for_registry(
             'projects/([^/]+)/locations/([^/]+)/repositories/([^/]+)/dockerImages/([^@]+)@sha256:(.+)$',
             response.name,
         )
-        image_details = {
-            'build_time': response.build_time,
-            'image_size_bytes': response.image_size_bytes,
-            'tags': response.tags,
-            'update_time': response.update_time,
-            'upload_time': response.upload_time,
-            'name': response.name,
-            'image_project': name_match[1],
-            'image_location': name_match[2],
-            'image_repository': name_match[3],
-            'image_name': name_match[4],
-            'image_digest': name_match[5],
-        }
+
+        if isinstance(name_match, re.Match):
+            image_details = {
+                'build_time': response.build_time,
+                'image_size_bytes': response.image_size_bytes,
+                'tags': response.tags,
+                'update_time': response.update_time,
+                'upload_time': response.upload_time,
+                'name': response.name,
+                'image_project': name_match[1],
+                'image_location': name_match[2],
+                'image_repository': name_match[3],
+                'image_name': name_match[4],
+                'image_digest': name_match[5],
+            }
 
         responses.append(image_details)
     return responses
@@ -404,14 +406,14 @@ def list_duplicates(
         # Check if the archival image exists
         if archival_image.exists():
             result['dupe'] = True
-            result['row'][
-                'message'
-            ] = f'Archival image {archival_image.image_digest_path} exists.'
+            result['row']['message'] = (
+                f'Archival image {archival_image.image_digest_path} exists.'
+            )
             return result
 
-        result['row'][
-            'message'
-        ] = f'Archival image {archival_image.image_digest_path} does not exist.'
+        result['row']['message'] = (
+            f'Archival image {archival_image.image_digest_path} does not exist.'
+        )
         return result
 
     # Create a ThreadPoolExecutor to parallelize the processing

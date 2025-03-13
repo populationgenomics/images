@@ -2,3 +2,4 @@
 .idea
 .scannerwork
 .python-version
+*.egg-info

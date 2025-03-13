@@ -1,8 +1,0 @@
-pyproject.toml
-src/Image.py
-src/archive_helpers.py
-src/scripts.egg-info/PKG-INFO
-src/scripts.egg-info/SOURCES.txt
-src/scripts.egg-info/dependency_links.txt
-src/scripts.egg-info/requires.txt
-src/scripts.egg-info/top_level.txt
