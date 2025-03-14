@@ -1,6 +1,6 @@
 FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_workflows:latest
 
-ARG VERSION=${VERSION:-2.31.2}
+ARG VERSION=${VERSION:-2.31.3}
 ARG ICA_CLI_VERSION=${ICA_CLI_VERSION:-2.31.0}
 
 RUN apt update && apt install -y \
