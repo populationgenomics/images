@@ -14,7 +14,6 @@ env:
 jobs:
   get_next_version:
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       matrix: ${{ steps.get_next_version.outputs.next_version }}
     steps:
@@ -27,19 +26,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - id: 'google-cloud-auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
-
-      - id: 'google-cloud-sdk-setup'
-        name: 'Set up Cloud SDK'
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT }}
 
       - name: 'Get current version'
         id: get_next_version
