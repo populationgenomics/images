@@ -21,7 +21,7 @@ def open_file(filepath: str):
         dictionary of the target contents
     """
 
-    with open(filepath, 'r', encoding='utf-8') as handle:
+    with open(filepath, encoding='utf-8') as handle:
         if filepath.endswith('.json'):
             return json.load(handle)
         if filepath.endswith('.yaml'):
