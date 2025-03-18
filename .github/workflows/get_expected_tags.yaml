@@ -63,7 +63,7 @@ jobs:
           echo "Extracted JSON: $matrix"
           echo "### 🐳 Expected Tags" > table.md
           echo "" >> table.md
-          echo "Some Dockerfiles have have been modified in this PR. New tags are expected to be deployed." >> table.md
+          echo "Some Dockerfiles have been modified in this PR. New tags are expected to be deployed." >> table.md
           echo "The table below shows what the tags are expected to be on merging this PR." >> table.md
           echo "| Name  | Tag |" >> table.md
           echo "|-------|-------|" >> table.md
