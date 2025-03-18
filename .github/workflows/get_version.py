@@ -30,7 +30,7 @@ def get_next_version_tag(folder, version):
         'australia-southeast1-docker.pkg.dev/cpg-common/images',
     )
     BASE_IMAGE_PATH_ARCHIVE = os.environ.get(
-        'GCP_BASE_IMAGE',
+        'GCP_BASE_ARCHIVE_IMAGE',
         'australia-southeast1-docker.pkg.dev/cpg-common/images-archive',
     )
     full_image_name_prod = f'{BASE_IMAGE_PATH_PROD}/{folder}'
