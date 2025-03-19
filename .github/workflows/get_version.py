@@ -53,7 +53,6 @@ def get_next_version_tag(folder, version):
             tags_list += json.loads(result.stdout)
         except Exception:
             pass
-    print(tags_list)
     max_suffix = 0
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
     for entry in tags_list:
