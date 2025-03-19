@@ -80,7 +80,7 @@ def get_before_commit():
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True
     ).stdout.strip()
 
-    if current_branch in ('main', 'images-revamp-versioning'):
+    if current_branch == 'main':
         # Get the last two merge commits
         merge_commits = subprocess.run(
             ['git', 'log', '--merges', '--format=%H', '-n', '2'],
