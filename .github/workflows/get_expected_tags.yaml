@@ -45,6 +45,7 @@ jobs:
         id: get_next_version
         run: |
           next_version=$(python .github/workflows/get_version.py)
+          echo "$next_version"
           echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
 
   post-version-table:
