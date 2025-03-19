@@ -14,6 +14,7 @@ env:
 jobs:
   get_next_version:
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       matrix: ${{ steps.get_next_version.outputs.next_version }}
     steps:
@@ -26,6 +27,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - id: 'google-cloud-auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: 'google-cloud-sdk-setup'
+        name: 'Set up Cloud SDK'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT }}
 
       - name: 'Get current version'
         id: get_next_version
@@ -49,7 +63,7 @@ jobs:
           echo "Extracted JSON: $matrix"
           echo "### 🐳 Expected Tags" > table.md
           echo "" >> table.md
-          echo "Some Dockerfiles have have been modified in this PR. New tags are expected to be deployed." >> table.md
+          echo "Some Dockerfiles have been modified in this PR. New tags are expected to be deployed." >> table.md
           echo "The table below shows what the tags are expected to be on merging this PR." >> table.md
           echo "| Name  | Tag |" >> table.md
           echo "|-------|-------|" >> table.md
@@ -61,7 +75,7 @@ jobs:
           done
 
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -69,7 +83,7 @@ jobs:
           body-includes: 🐳 Expected Tags
 
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
