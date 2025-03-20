@@ -345,7 +345,7 @@ def main():
     )
     parser.add_argument(
         '--no-combos',
-        help='Do not compute combinations of populations ' + 'and sexes.',
+        help='Do not compute combinations of populations and sexes.',
         action='store_true',
         default=False,
     )
