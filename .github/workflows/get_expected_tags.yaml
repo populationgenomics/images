@@ -57,6 +57,9 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: 'Checkout repo'
+        uses: actions/checkout@v4
+
       - name: Read matrix JSON
         id: read-matrix
         env:
