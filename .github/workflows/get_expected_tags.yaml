@@ -54,6 +54,8 @@ jobs:
     permissions:
       pull-requests: write
     if: ${{ needs.get_next_version.outputs.matrix != '{}' && needs.get_next_version.outputs.matrix != '' }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Read matrix JSON
         id: read-matrix
@@ -74,18 +76,6 @@ jobs:
             echo "| $NAME | $TAG |" >> table.md
           done
 
-      - name: Find Comment
-        uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: 🐳 Expected Tags
-
       - name: Create or update comment
-        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: table.md # ⬅️ Use file instead of an environment variable!
-          edit-mode: replace
+        run: |
+          gh pr comment --edit-last --create-if-none --body-file table.md ${{ github.event.pull_request.number }}
