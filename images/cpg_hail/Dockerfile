@@ -1,9 +1,7 @@
-# Any analysis-runner driver image must at least include git.
 ARG PY_VER=${PY_VER:-3.10}
+ARG VERSION=${VERSION:-cpg-0.2.134-1}
 
 FROM python:${PY_VER}-slim-bookworm AS basic
-
-ARG HAIL_SHA=${HAIL_SHA:-2bb197d63afd58f9452af306e0eb14d6924d0019}
 
 ENV HAIL_QUERY_BACKEND="service"
 
@@ -12,7 +10,6 @@ RUN apt-get update && \
         apt-transport-https \
         bzip2 \
         ca-certificates \
-        git \
         gnupg \
         openjdk-17-jdk-headless \
         software-properties-common \
@@ -24,8 +21,6 @@ RUN apt-get update && \
 
 FROM basic AS builder
 
-ARG HAIL_SHA=${HAIL_SHA:-d85618aaf4d2bf667aa72c5c6a142e9bafaae9c8}
-
 ENV HAIL_QUERY_BACKEND="service"
 
 RUN apt-get update && \
@@ -34,6 +29,7 @@ RUN apt-get update && \
         curl \
         g++ \
         gcc \
+        git \
         libfontconfig \
         liblapack3 \
         libopenblas-dev \
@@ -49,7 +45,7 @@ RUN pip --no-cache-dir install \
     # Install Hail from the CPG fork.
     git clone https://github.com/populationgenomics/hail.git && \
     cd hail && \
-    git checkout $HAIL_SHA && \
+    git checkout $VERSION && \
     cd hail && \
     # Generate a Wheel, but don't install it in this layer
     # DEPLOY_REMOTE avoids a dev suffix being appended to dataproc initialization paths.
