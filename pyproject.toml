@@ -87,6 +87,7 @@ fixable = [
     "YTT",
 ]
 ignore = [
+    "ANN101",  # Missing type annotation for self in method
     "ANN201",  # Missing return type annotation for public function
     "E501",    # Line length too long
     "E731",    # Do not assign a lambda expression, use a def
