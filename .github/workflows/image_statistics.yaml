@@ -1,0 +1,53 @@
+name: Publish image statistics
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - SET-483-set-up-job-to-generate-image-statistics-page-on-a-schedule
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  image_statistics:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: "checkout repo"
+        uses: actions/checkout@v4
+
+      - id: "google-cloud-auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+
+      - id: "google-cloud-sdk-setup"
+        name: "Set up Cloud SDK"
+        uses: google-github-actions/setup-gcloud@v2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Get image statistics"
+        run: |
+          pip install --no-deps -r requirements.txt
+          python -m scripts.image_statistics.get_data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: "Build observable app"
+        working-directory: ./scripts/image_statistics
+        run: |
+          npm ci
+          npm run build
+
+      - name: "Copy output to web bucket"
+        working-directory: ./scripts/image_statistics
+        run: |
+          gcloud storage cp -r ./dist gs://cpg-common-main-web/image_statistics/$(date -I)
