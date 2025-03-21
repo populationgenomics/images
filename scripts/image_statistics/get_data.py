@@ -8,7 +8,7 @@ from scripts.common.image_repository_helpers import Image, list_images_in_reposi
 repositories = ['images', 'images-dev', 'images-tmp', 'images-archive']
 
 
-def main():
+def get_image_stats():
     # get the logs first as it is much faster than getting the images
     logs_df = get_image_logs()
 
@@ -41,4 +41,5 @@ def main():
     images_df.write_parquet(Path(__file__).parent / 'src/data/images.parquet')
 
 
-main()
+if __name__ == '__main__':
+    get_image_stats()
