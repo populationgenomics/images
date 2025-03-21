@@ -69,7 +69,7 @@ class Image:
 
         project = name_match[1]
         location = name_match[2]
-        image_repository = name_match[3]
+        repository = name_match[3]
         name = name_match[4]
         digest = name_match[5]
 
@@ -77,7 +77,7 @@ class Image:
         if not (
             type(project) is str
             and type(location) is str
-            and type(image_repository) is str
+            and type(repository) is str
             and type(name) is str
             and type(digest) is str
         ):
@@ -94,12 +94,16 @@ class Image:
             digest=digest,
             project=project,
             location=location,
-            repository=image_repository,
+            repository=repository,
             name=name,
         )
 
 
 def list_images_in_repository(repository: str):
+    """
+    Get a list of all images in the specifiec repository.
+    returns a list of Image dataclass instances
+    """
     ar_client = artifactregistry_v1.ArtifactRegistryClient()
 
     request = artifactregistry_v1.ListDockerImagesRequest(
