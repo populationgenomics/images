@@ -36,7 +36,7 @@ jobs:
       - name: "Get image statistics"
         run: |
           pip install --no-deps -r requirements.txt
-          python -m scripts.image_statistics.get_data
+          python scripts/get_image_statistics.py
 
       - uses: actions/setup-node@v4
         with:
