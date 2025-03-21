@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import polars as pl
-
-from scripts.common.image_logs_helpers import get_image_logs
-from scripts.common.image_repository_helpers import Image, list_images_in_repository
+from common.image_logs_helpers import get_image_logs
+from common.image_repository_helpers import Image, list_images_in_repository
 
 repositories = ['images', 'images-dev', 'images-tmp', 'images-archive']
 
@@ -37,8 +36,12 @@ def get_image_stats():
             for image in all_images
         ]
     )
-    logs_df.write_parquet(Path(__file__).parent / 'src/data/logs.parquet')
-    images_df.write_parquet(Path(__file__).parent / 'src/data/images.parquet')
+    logs_df.write_parquet(
+        Path(__file__).parent / 'image_statistics/src/data/logs.parquet'
+    )
+    images_df.write_parquet(
+        Path(__file__).parent / 'image_statistics/src/data/images.parquet'
+    )
 
 
 if __name__ == '__main__':
