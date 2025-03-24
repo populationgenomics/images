@@ -256,7 +256,7 @@ def copy_image(source: str, destination: str):
         # already there, and it is pretty much as quick as running an additional check
         logging.info(f'Copying image from {source} to {destination} using skopeo...')
 
-        subprocess.run(
+        subprocess.run(  # noqa: S603 - shlex escapes the command, linter just can't tell
             shlex.split(
                 f'skopeo copy --all --preserve-digests docker://{source} docker://{destination}'
             ),
