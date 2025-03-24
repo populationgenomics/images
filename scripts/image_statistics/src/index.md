@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 ---
 title: Images
 toc: false
@@ -61,7 +62,7 @@ const imagesInSelectedRegistries = await db.query(`
   on l.full_path = i.full_path
   where true
   ${selected && `and i.repository IN (${selected})`}
-  
+
   group by 1
   order by 1
 `);
@@ -85,7 +86,7 @@ const imageList = Inputs.table(
       most_recent_pull: (dd) => formatTimestamp(dd),
       first_pull: (dd) => formatTimestamp(dd),
       image: (image) => html`<a href=https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/${image}?project=cpg-common target=_blank>${image}</a>`
-  
+
     }
   }
 );
@@ -220,7 +221,7 @@ const logTable = Inputs.table(logsSearchView, {
   <div class="card">
     <h2>Image repositories</h2>
     ${repositoryTable}
-    
+
   </div>
   <div class="card grid-colspan-3">
     <h2>Images</h2>
@@ -290,6 +291,3 @@ const logTable = Inputs.table(logsSearchView, {
     }))}
   </div>
 </div>
-
-
-
