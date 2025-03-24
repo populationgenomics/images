@@ -1,6 +1,10 @@
 name: Publish image statistics
 on:
   workflow_dispatch:
+  schedule:
+    # run at 6pm UTC which should be middle of the night ish in Aus,
+    # so that each morning we have up to date images stats from the prev day.
+    - cron: "0 18 * * *"
   push:
     branches:
       - main
