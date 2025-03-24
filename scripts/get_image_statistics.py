@@ -15,11 +15,11 @@ def get_image_stats():
     for repo in repositories:
         all_images.extend(list_images_in_repository(repo))
 
-    # get the image data, use pre-archived fields so it can be best compared to the logs
+    # get the image data, use "active" fields so it can be best compared to the logs
     images_df = pl.DataFrame(
         [
             {
-                'full_path': image.pre_archive_full_path,
+                'full_path': image.active_full_path,
                 'build_time': image.build_time,
                 'update_time': image.update_time,
                 'upload_time': image.upload_time,
@@ -28,10 +28,10 @@ def get_image_stats():
                 'digest': image.digest,
                 'project': image.project,
                 'location': image.location,
-                'repository': image.pre_archive_repository,
+                'repository': image.active_repository,
                 'name': image.name,
                 'status': image.status,
-                'short_path': image.pre_archive_short_path,
+                'short_path': image.active_short_path,
             }
             for image in all_images
         ]
