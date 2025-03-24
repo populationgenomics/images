@@ -44,19 +44,93 @@ class Image:
     # This is useful for comparing image versions across archived and non-archived
     # repositories.
     @property
-    def pre_archive_full_path(self):
+    def active_full_path(self):
         return self.full_path.replace('-archive/dockerImages', '/dockerImages')
 
     @property
-    def pre_archive_repository(self):
+    def active_repository(self):
         return self.repository.removesuffix('-archive')
 
     @property
-    def pre_archive_short_path(self):
-        return f'{self.pre_archive_repository}/{self.name}'
+    def active_short_path(self):
+        return f'{self.active_repository}/{self.name}'
+
+    @property
+    def active_version_id(self):
+        return f'{self.active_short_path}@sha256:{self.digest}'
+
+    @property
+    def active_docker_name(self):
+        return f'{self.location}-docker.pkg.dev/{self.project}/{self.active_repository}/{self.name}@sha256:{self.digest}'
+
+    # Compute what some paths would look like after the image is archived
+    # This is useful when moving images back and forth between archived and active
+    @property
+    def archived_full_path(self):
+        return (
+            self.full_path.replace('/dockerImages', '-archive/dockerImages')
+            if '-archive/dockerImages' not in self.full_path
+            else self.full_path
+        )
+
+    @property
+    def archived_repository(self):
+        return (
+            f'{self.repository}-archive'
+            if not self.repository.endswith('-archive')
+            else self.repository
+        )
+
+    @property
+    def archived_short_path(self):
+        return f'{self.archived_repository}/{self.name}'
+
+    @property
+    def archived_version_id(self):
+        return f'{self.archived_short_path}@sha256:{self.digest}'
+
+    @property
+    def archived_docker_name(self):
+        repository = self.archived_repository
+        return f'{self.location}-docker.pkg.dev/{self.project}/{repository}/{self.name}@sha256:{self.digest}'
+
+    def convert_to_active(self):
+        "Get a version of the image tas if it were active"
+        return Image(
+            full_path=self.active_full_path,
+            build_time=self.build_time,
+            update_time=self.update_time,
+            upload_time=self.upload_time,
+            size_bytes=self.size_bytes,
+            tags=self.tags,
+            digest=self.digest,
+            project=self.project,
+            location=self.location,
+            repository=self.active_repository,
+            name=self.name,
+        )
+
+    def convert_to_archived(self):
+        "Get a version of the image as if it were archived"
+        return Image(
+            full_path=self.archived_full_path,
+            build_time=self.build_time,
+            update_time=self.update_time,
+            upload_time=self.upload_time,
+            size_bytes=self.size_bytes,
+            tags=self.tags,
+            digest=self.digest,
+            project=self.project,
+            location=self.location,
+            repository=self.archived_repository,
+            name=self.name,
+        )
 
     @staticmethod
     def from_artifact_repository_image(image_data: DockerImage) -> 'Image':
+        """
+        Given a DockerImage object, create a new Image object.
+        """
         image_path = image_data.name.replace('%2F', '/')
 
         name_match = re.search(
