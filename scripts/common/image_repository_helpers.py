@@ -214,7 +214,9 @@ class Repository:
         """
         Check if this repository already has a certain version of an image
         """
-        matching_images = [i for i in self.images if i.digest == image.digest]
+        matching_images = [
+            i for i in self.images if i.name == image.name and i.digest == image.digest
+        ]
         return len(matching_images) > 0
 
     def find_conflicting_tags(self, image: Image):
