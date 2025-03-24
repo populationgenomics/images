@@ -351,12 +351,12 @@ def main():
     )
     parser.add_argument(
         '--allosomes-list',
-        help='TSV of sex chromosomes (used for ' + 'sex-specific AFs).',
+        help='TSV of sex chromosomes (used for sex-specific AFs).',
         default=None,
     )
     parser.add_argument(
         '--par',
-        help='BED file of pseudoautosomal regions (used ' + 'for sex-specific AFs).',
+        help='BED file of pseudoautosomal regions (used for sex-specific AFs).',
         default=None,
     )
     parser.add_argument('fout', help='Output vcf. Also accepts "stdout" and "-".')
