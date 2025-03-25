@@ -54,5 +54,4 @@ jobs:
       - name: "Copy output to web bucket"
         working-directory: ./scripts/image_statistics
         run: |
-          gcloud storage rm gs://cpg-common-main-web/image_statistics/$(date -I)/**
-          gcloud storage cp -r ./dist gs://cpg-common-main-web/image_statistics/$(date -I)
+          gcloud storage rsync ./dist gs://cpg-common-main-web/image_statistics/$(date -I) --recursive --delete-unmatched-destination-objects
