@@ -77,6 +77,9 @@ jobs:
       - run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
 
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
+
       - name: Build and push
         uses: depot/build-push-action@v1
         with:
