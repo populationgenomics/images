@@ -4,7 +4,7 @@ import polars as pl
 from common.image_logs_helpers import get_image_logs
 from common.image_repository_helpers import Image, list_images_in_repository
 
-repositories = ['images', 'images-dev', 'images-tmp', 'images-archive']
+repositories = ['images', 'images-dev', 'images-archive']
 
 
 def get_image_stats():

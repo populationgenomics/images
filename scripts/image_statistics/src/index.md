@@ -1,12 +1,12 @@
 ---
-title: Images
+title: Image Statistics
 toc: false
 ---
 
 <!-- markdownlint-disable -->
 
 
-# Images
+# Image Statistics
 
 <!-- Set up useful functions -->
 
