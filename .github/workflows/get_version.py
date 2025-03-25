@@ -8,12 +8,14 @@ import os
 def extract_version_from_file(file_path):
     """
     Extract the version from a Dockerfile by searching for a line like:
-      ENV VERSION=1.0.0
+      ARG VERSION=${VERSION:-6.4.0}
+    and extracting the default value (6.4.0).
     """
     try:
         with open(file_path, 'r') as f:
             content = f.read()
-        pattern = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
+        # Match lines like: ARG VERSION=${VERSION:-6.4.0}
+        pattern = re.compile(r'^\s*ARG\s+VERSION\s*=\s*\$\{[^:-]+:-([^}]+)\}', re.MULTILINE)  # noqa:E501
         match = pattern.search(content)
         return match.group(1) if match else None
     except Exception:
