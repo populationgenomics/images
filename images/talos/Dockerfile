@@ -22,4 +22,4 @@ ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
 RUN pip install --no-cache-dir metamist git+https://github.com/populationgenomics/talos.git@${VERSION}
 
-# Adding a comment to force changes
+# Adding a comment to force changes pt.2
