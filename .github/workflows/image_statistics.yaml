@@ -5,10 +5,6 @@ on:
     # run at 6pm UTC which should be middle of the night ish in Aus,
     # so that each morning we have up to date images stats from the prev day.
     - cron: "0 18 * * *"
-  push:
-    branches:
-      - main
-      - SET-483-set-up-job-to-generate-image-statistics-page-on-a-schedule
 
 permissions:
   id-token: write
