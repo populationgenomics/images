@@ -30,6 +30,7 @@ jobs:
       - name: 'Get current version'
         id: get_next_version
         run: |
+          gcloud config list account --format "value(core.account)"
           next_version=$(python .github/workflows/get_version.py)
           echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
 

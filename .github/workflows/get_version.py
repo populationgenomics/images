@@ -3,6 +3,7 @@ import json
 import subprocess
 import re
 import os
+import sys
 
 
 def extract_version_from_file(file_path):
@@ -55,6 +56,7 @@ def get_next_version_tag(folder, version):
             pass
 
     max_suffix = 0
+    print(f'{tags_list=}', file=sys.stderr)
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
     for entry in tags_list:
         tags = entry.get('tags', [])
@@ -129,6 +131,7 @@ def main():
     # Build the final matrix structure.
     matrix = {'include': include_entries}
     print(json.dumps(matrix, separators=(',', ':')), end='')
+    print(f'{matrix=}', file=sys.stderr)
 
 
 main()
