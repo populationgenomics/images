@@ -1,4 +1,4 @@
-.PHONY: compile lint install install-dev install-all
+.PHONY: compile-requirements lint install install-dev
 
 compile-requirements:
 	docker run --platform linux/amd64 -v $$(pwd):/opt/deps python:3.11 /bin/bash -c '\
@@ -13,7 +13,7 @@ lint:
 	ruff format
 
 install:
-	pip install -r requirements.txt
+	pip install --no-deps -r requirements.txt
 
 install-dev:
-	pip install -r requirements-dev.txt
+	pip install --no-deps -r requirements-dev.txt
