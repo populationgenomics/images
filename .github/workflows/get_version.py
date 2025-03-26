@@ -47,12 +47,15 @@ def get_next_version_tag(folder, version):
             full_image_name,
             '--format=json',
         ]
+        print(f'Running {" ".join(cmd)}', file=sys.stderr)
         result = subprocess.run(cmd, capture_output=True, text=True)
+        print(f'{result.returncode=!r} {result.stdout=!r} {result.stderr=!r}', file=sys.stderr)
         if result.returncode != 0:
             return f'{version}-1'
         try:
             tags_list += json.loads(result.stdout)
-        except Exception:
+        except Exception as e:
+            print(f'Bork {e=}', file=sys.stderr)
             pass
 
     max_suffix = 0
@@ -78,6 +81,7 @@ def get_before_commit():
     - If on `main` with a merge: Finds the last two merge
     commits and compares them.
     """
+    print('Running git rev-parse --abbrev-ref HEAD', file=sys.stderr)
     current_branch = subprocess.run(
         ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True
     ).stdout.strip()
@@ -116,6 +120,7 @@ def main():
 
     for file in dockerfiles:
         current_version = extract_version_from_file(file)
+        print(f'FOR {file=!r} {current_version=!r}', file=sys.stderr)
         if current_version is None:
             continue
 
