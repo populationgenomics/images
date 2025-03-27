@@ -1,3 +1,5 @@
 FROM docker.io/python:3.10-slim-bookworm
 
-ENV VERSION=1.0
+# Hello this is a comment
+
+ENV VERSION=1.2
