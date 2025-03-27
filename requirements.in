@@ -1,0 +1,5 @@
+google-cloud-artifact-registry~=1.14.0
+google-cloud-bigquery~=3.30.0
+google-cloud-bigquery-storage~=2.29.1
+polars~=1.25.2
+pyarrow~=19.0.1
