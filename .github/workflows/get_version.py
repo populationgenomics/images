@@ -50,7 +50,7 @@ def get_next_version_tag(folder: str, version: str) -> str:
             full_image_name,
             '--format=json',
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603, E501
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603
 
         # If the command fails, we cannot determine the next version.
         if result.returncode != 0:
@@ -118,7 +118,7 @@ def main():
 
     # Get changed Dockerfiles
     result = subprocess.run(  # noqa: S603
-        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],  # noqa: S607, E501
+        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],  # noqa: S607
         capture_output=True,
         text=True,
         check=True,
