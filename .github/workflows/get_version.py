@@ -5,38 +5,42 @@ import re
 import os
 
 
-def extract_version_from_file(file_path):
+def extract_version_from_file(file_path: str) -> str | None:
     """
     Extract the version from a Dockerfile by searching for a line like:
       ENV VERSION=1.0.0
     """
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             content = f.read()
         pattern = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
         match = pattern.search(content)
         return match.group(1) if match else None
-    except Exception:
+    except (OSError, re.error):
         return None
 
 
-def get_next_version_tag(folder, version):
+def get_next_version_tag(folder: str, version: str) -> str:
     """
     Query GCP to list tags for the given image and determine the next available
     version suffix for the extracted version.
     """
-    BASE_IMAGE_PATH_PROD = os.environ.get(
+    base_image_path_prod = os.environ.get(
         'GCP_BASE_IMAGE',
         'australia-southeast1-docker.pkg.dev/cpg-common/images',
     )
-    BASE_IMAGE_PATH_ARCHIVE = os.environ.get(
+    base_image_path_archive = os.environ.get(
         'GCP_BASE_ARCHIVE_IMAGE',
         'australia-southeast1-docker.pkg.dev/cpg-common/images-archive',
     )
-    full_image_name_prod = f'{BASE_IMAGE_PATH_PROD}/{folder}'
-    full_image_name_archive = f'{BASE_IMAGE_PATH_ARCHIVE}/{folder}'
+    full_image_name_prod = f'{base_image_path_prod}/{folder}'
+    full_image_name_archive = f'{base_image_path_archive}/{folder}'
 
     tags_list = []
+    from contextlib import suppress
+    import logging
+
+    logging.basicConfig(level=logging.ERROR)
     for full_image_name in [full_image_name_prod, full_image_name_archive]:
         cmd = [
             'gcloud',
@@ -46,13 +50,19 @@ def get_next_version_tag(folder, version):
             full_image_name,
             '--format=json',
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603, E501
+
+        # If the command fails, we cannot determine the next version.
         if result.returncode != 0:
+            raise Exception(f'Failed to list tags for {full_image_name}')
+
+        # If no tags are found, return the first version.
+        if json.loads(result.stdout) == []:
             return f'{version}-1'
-        try:
+
+        # If existing tags are found, proceed to determine the next version.
+        with suppress(json.JSONDecodeError):
             tags_list += json.loads(result.stdout)
-        except Exception:
-            pass
 
     max_suffix = 0
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
@@ -62,8 +72,7 @@ def get_next_version_tag(folder, version):
             match = pattern.match(tag)
             if match:
                 num = int(match.group(1))
-                if num > max_suffix:
-                    max_suffix = num
+                max_suffix = max(max_suffix, num)
     new_suffix = max_suffix + 1
     return f'{version}-{new_suffix}'
 
@@ -76,37 +85,43 @@ def get_before_commit():
     - If on `main` with a merge: Finds the last two merge
     commits and compares them.
     """
-    current_branch = subprocess.run(
-        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True
+    current_branch = subprocess.run(  # noqa: S603
+        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],  # noqa: S607
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
 
     if current_branch == 'main':
         # Get the last two merge commits
-        merge_commits = subprocess.run(
-            ['git', 'log', '--merges', '--format=%H', '-n', '2'],
+        merge_commits = subprocess.run(  # noqa: S603
+            ['git', 'log', '--merges', '--format=%H', '-n', '2'],  # noqa: S607
             capture_output=True,
             text=True,
+            check=True,
         ).stdout.splitlines()
-        if len(merge_commits) >= 2:
+        merge_commit_threshold = 2
+        if len(merge_commits) >= merge_commit_threshold:
             return merge_commits[1]  # Compare latest merge with the one before it
-        else:
-            return 'HEAD~1'  # Default to previous commit if no merges
-    else:
-        # Find the commit where this branch diverged from main
-        base_commit = subprocess.run(
-            ['git', 'merge-base', 'HEAD', 'origin/main'], capture_output=True, text=True
-        ).stdout.strip()
-        return base_commit
+        return 'HEAD~1'  # Default to previous commit if no merges
+    # Find the commit where this branch diverged from main
+    return subprocess.run(  # noqa: S603
+        ['git', 'merge-base', 'HEAD', 'origin/main'],  # noqa: S607
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
 
 
 def main():
     before_commit = get_before_commit()
 
     # Get changed Dockerfiles
-    result = subprocess.run(
-        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],
+    result = subprocess.run(  # noqa: S603
+        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],  # noqa: S607, E501
         capture_output=True,
         text=True,
+        check=True,
     )
     dockerfiles = result.stdout.splitlines()
 
