@@ -147,9 +147,7 @@ jobs:
         run: |
           IMAGE_NAME=${{ env.IMAGES_PREFIX }}/cpg_workflows
           docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:${{ steps.get_version.outputs.version }}
-          docker tag $IMAGE_NAME:${{ steps.get_sha.outputs.sha }} $IMAGE_NAME:latest
           docker push $IMAGE_NAME:${{ steps.get_version.outputs.version }}
-          docker push $IMAGE_NAME:latest
 
   # Finally, prepare the finalised TOML config from all maintained images plus the
   # special-case cpg_workflows.
