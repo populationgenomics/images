@@ -5,7 +5,7 @@ import re
 import os
 
 
-def extract_version_from_file(file_path: str) -> str:
+def extract_version_from_file(file_path: str) -> str | None:
     """
     Extract the version from a Dockerfile by searching for a line like:
       ENV VERSION=1.0.0
@@ -51,11 +51,19 @@ def get_next_version_tag(folder: str, version: str) -> str:
             '--format=json',
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603
+
+        # If the command fails, we cannot determine the next version.
         if result.returncode != 0:
+            raise Exception(f'Failed to list tags for {full_image_name}')
+
+        # If no tags are found, return the first version.
+        if json.loads(result.stdout) == []:
             return f'{version}-1'
 
+        # If existing tags are found, proceed to determine the next version.
         with suppress(json.JSONDecodeError):
             tags_list += json.loads(result.stdout)
+
     max_suffix = 0
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
     for entry in tags_list:
