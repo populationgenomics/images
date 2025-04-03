@@ -10,7 +10,7 @@ permissions:
 
 env:
   PROJECT: 'cpg-common'
-  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/images.toml' # use revamp.toml for testing
+  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/revamp.toml' # use revamp.toml for testing
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
   IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
