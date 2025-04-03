@@ -12,7 +12,7 @@ env:
   PROJECT: 'cpg-common'
   CONFIG_DESTINATION: 'gs://cpg-config/templates/images/revamp.toml' # use revamp.toml for testing
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
-  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # use images-tmp for testing
 
 jobs:
   get_next_version:
@@ -26,6 +26,7 @@ jobs:
         with:
           ref: ${{ github.ref == 'refs/heads/main' && 'main' || github.event.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -65,6 +66,8 @@ jobs:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - id: 'google-cloud-auth'
         name: 'Authenticate to Google Cloud'
@@ -108,6 +111,7 @@ jobs:
           ref: 'main'
           path: 'production-pipelines'
           submodules: recursive
+          persist-credentials: false
 
       - id: get_version
         run: |

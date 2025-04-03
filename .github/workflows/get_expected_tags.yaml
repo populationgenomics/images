@@ -23,6 +23,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref || github.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -59,6 +60,8 @@ jobs:
     steps:
       - name: 'Checkout repo'
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Read matrix JSON
         id: read-matrix
