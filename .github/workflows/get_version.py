@@ -5,6 +5,7 @@ import json
 import subprocess
 import re
 import os
+import sys
 
 
 def extract_version_from_file(file_path: str) -> str | None:
@@ -50,15 +51,13 @@ def get_next_version_tag(folder: str, version: str) -> str:
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-        # If no tags are found, return the first version.
-        if json.loads(result.stdout) == []:
-            return f'{version}-1'
-
         # If existing tags are found, proceed to determine the next version.
         tags_list += json.loads(result.stdout)
 
     max_suffix = 0
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
+
+    # If no tags are found, it returns the next version as -1.
     for entry in tags_list:
         tags = entry.get('tags', [])
         for tag in tags:
@@ -136,6 +135,7 @@ def main():
 
     # Build the final matrix structure.
     matrix = {'include': include_entries}
+    print(json.dumps(matrix, separators=(',', ':')), file=sys.stderr)
     print(json.dumps(matrix, separators=(',', ':')), end='')
 
 
