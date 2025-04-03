@@ -10,16 +10,13 @@ import os
 def extract_version_from_file(file_path: str) -> str | None:
     """
     Extract the version from a Dockerfile by searching for a line like:
-      ENV VERSION=1.0.0
+    ENV VERSION=1.0.0
     """
-    try:
-        with open(file_path) as f:
-            content = f.read()
-        pattern = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
-        match = pattern.search(content)
-        return match.group(1) if match else None
-    except (OSError, re.error):
-        return None
+    with open(file_path) as f:
+        content = f.read()
+    pattern = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
+    match = pattern.search(content)
+    return match.group(1) if match else None
 
 
 def get_next_version_tag(folder: str, version: str) -> str:
@@ -39,7 +36,6 @@ def get_next_version_tag(folder: str, version: str) -> str:
     full_image_name_archive = f'{base_image_path_archive}/{folder}'
 
     tags_list = []
-    from contextlib import suppress
     import logging
 
     logging.basicConfig(level=logging.ERROR)
@@ -54,17 +50,12 @@ def get_next_version_tag(folder: str, version: str) -> str:
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-        # If the command fails, we cannot determine the next version.
-        if result.returncode != 0:
-            raise Exception(f'Failed to list tags for {full_image_name}')
-
         # If no tags are found, return the first version.
         if json.loads(result.stdout) == []:
             return f'{version}-1'
 
         # If existing tags are found, proceed to determine the next version.
-        with suppress(json.JSONDecodeError):
-            tags_list += json.loads(result.stdout)
+        tags_list += json.loads(result.stdout)
 
     max_suffix = 0
     pattern = re.compile(rf'^{re.escape(version)}-(\d+)$')
