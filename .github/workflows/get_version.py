@@ -5,6 +5,7 @@ import json
 import subprocess
 import re
 import os
+import sys
 
 
 def extract_version_from_file(file_path: str) -> str | None:
@@ -134,6 +135,7 @@ def main():
 
     # Build the final matrix structure.
     matrix = {'include': include_entries}
+    print(json.dumps(matrix, separators=(',', ':')), file=sys.stderr)
     print(json.dumps(matrix, separators=(',', ':')), end='')
 
 
