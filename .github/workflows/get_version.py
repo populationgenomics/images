@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+#  ruff: noqa: S603
+
 import json
 import subprocess
 import re
@@ -50,7 +52,7 @@ def get_next_version_tag(folder: str, version: str) -> str:
             full_image_name,
             '--format=json',
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         # If the command fails, we cannot determine the next version.
         if result.returncode != 0:
@@ -85,8 +87,8 @@ def get_before_commit():
     - If on `main` with a merge: Finds the last two merge
     commits and compares them.
     """
-    current_branch = subprocess.run(  # noqa: S603
-        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],  # noqa: S607
+    current_branch = subprocess.run(
+        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
         capture_output=True,
         text=True,
         check=True,
@@ -94,8 +96,8 @@ def get_before_commit():
 
     if current_branch == 'main':
         # Get the last two merge commits
-        merge_commits = subprocess.run(  # noqa: S603
-            ['git', 'log', '--merges', '--format=%H', '-n', '2'],  # noqa: S607
+        merge_commits = subprocess.run(
+            ['git', 'log', '--merges', '--format=%H', '-n', '2'],
             capture_output=True,
             text=True,
             check=True,
@@ -105,8 +107,8 @@ def get_before_commit():
             return merge_commits[1]  # Compare latest merge with the one before it
         return 'HEAD~1'  # Default to previous commit if no merges
     # Find the commit where this branch diverged from main
-    return subprocess.run(  # noqa: S603
-        ['git', 'merge-base', 'HEAD', 'origin/main'],  # noqa: S607
+    return subprocess.run(
+        ['git', 'merge-base', 'HEAD', 'origin/main'],
         capture_output=True,
         text=True,
         check=True,
@@ -117,8 +119,8 @@ def main():
     before_commit = get_before_commit()
 
     # Get changed Dockerfiles
-    result = subprocess.run(  # noqa: S603
-        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],  # noqa: S607
+    result = subprocess.run(
+        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],
         capture_output=True,
         text=True,
         check=True,

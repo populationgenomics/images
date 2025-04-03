@@ -107,4 +107,5 @@ ignore = [
     "COM812",  # Recommended to disable by ruff due to potential conflicts
     "ISC001",  # Recommended to disable by ruff due to potential conflicts
     "PGH004",  # Allow setting blanket noqa for an entire file, as there are files that would require major changes to pass QA
+    "S607",    # Allow starting a process with a partial executable path
 ]
