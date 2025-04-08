@@ -18,18 +18,18 @@ logging.getLogger().setLevel(logging.INFO)
 SUPPORTED_REPOSITORIES = ['images']
 
 
-def get_archive_list():
+def get_archive_set():
     archive_list_file = Path(__file__).parent.parent / 'archived_images.txt'
     archive_list: list[str] = []
     with open(archive_list_file) as f:
         for line in f:
             archive_list.append(line.strip())
-    # remove duplicates from the list and return
-    return list(set(archive_list))
+    # remove duplicates from the list and return as a set
+    return set(archive_list)
 
 
-def validate_archive_list(archive_list: list[str]):
-    for image in archive_list:
+def validate_archive_set(archive_set: set[str]):
+    for image in archive_set:
         match = re.search(
             '([^/]+)/([^@]+)@sha256:(.+)$',
             image,
@@ -93,18 +93,16 @@ def move_image(source_image: Image, dest_image: Image, dest_repository: Reposito
         delete_version(dest_image)
 
 
-def archive_images_in_repository(repository: str, archive_list: list[str]):
+def archive_images_in_repository(repository: str, archive_set: set[str]):
     logging.info('Getting images from repositories, this takes a while...')
     active_images = list_images_in_repository(repository)
     archived_images = list_images_in_repository(f'{repository}-archive')
 
     to_archive = [
-        image for image in active_images if image.active_version_id in archive_list
+        image for image in active_images if image.active_version_id in archive_set
     ]
     to_unarchive = [
-        image
-        for image in archived_images
-        if image.active_version_id not in archive_list
+        image for image in archived_images if image.active_version_id not in archive_set
     ]
 
     logging.info(f'Found {len(to_archive)} images to archive.')
@@ -124,11 +122,11 @@ def archive_images_in_repository(repository: str, archive_list: list[str]):
 
 
 def archive_images():
-    archive_list = get_archive_list()
-    validate_archive_list(archive_list)
+    archive_set = get_archive_set()
+    validate_archive_set(archive_set)
 
     for repository in SUPPORTED_REPOSITORIES:
-        to_archive = [img for img in archive_list if img.startswith(f'{repository}/')]
+        to_archive = {img for img in archive_set if img.startswith(f'{repository}/')}
         archive_images_in_repository(repository, to_archive)
 
 
