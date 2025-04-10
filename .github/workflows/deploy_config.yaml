@@ -86,7 +86,7 @@ jobs:
   # Special-case for cpg_workflows: the image is not maintained via images.toml here
   # as we have a repository production-pipelines for it, so we check out that repo
   # here and build it from the repository source, using the package version as the tag.
-  deploy_cpg_workflows:
+  get_cpg_workflows_version:
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -114,7 +114,7 @@ jobs:
     environment: production
     needs:
       - deploy_images
-      - deploy_cpg_workflows
+      - get_cpg_workflows_version
     if: ${{ ! failure() }}
     env:
       CLOUDSDK_CORE_DISABLE_PROMPTS: 1
@@ -143,7 +143,7 @@ jobs:
         run: |
           pip install toml
           python .github/workflows/prep_config.py \
-          ${{ needs.deploy_cpg_workflows.outputs.version }} > config.toml
+          ${{ needs.get_cpg_workflows_version.outputs.version }} > config.toml
 
       - name: "deploy config toml"
         run: |
