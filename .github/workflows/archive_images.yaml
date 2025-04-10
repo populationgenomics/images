@@ -19,6 +19,11 @@ jobs:
       - name: "checkout repo"
         uses: actions/checkout@v4
 
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install skopeo
+
       - id: "google-cloud-auth"
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
