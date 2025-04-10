@@ -53,7 +53,7 @@ jobs:
       - get_next_version
     permissions:
       pull-requests: write
-    if: ${{ needs.get_next_version.outputs.matrix != '{}' && needs.get_next_version.outputs.matrix != '' }}
+    if: ${{ needs.get_next_version.outputs.matrix != '{"include":[]}' && needs.get_next_version.outputs.matrix != '' }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
