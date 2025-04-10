@@ -1,0 +1,4 @@
+-r requirements.in
+pre-commit~=3.7.1
+ruff~=0.11.0
+PyYaml~=6.0.2
