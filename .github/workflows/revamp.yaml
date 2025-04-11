@@ -17,7 +17,6 @@ env:
 jobs:
   get_next_version:
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       matrix: ${{ steps.get_next_version.outputs.next_version }}
     steps:
@@ -36,8 +35,8 @@ jobs:
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
+          workload_identity_provider: ${{ secrets.FETCH_TAGS_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.FETCH_TAGS_WORKLOAD_SERVICE_ACCOUNT }}
 
       - id: 'google-cloud-sdk-setup'
         name: 'Set up Cloud SDK'
@@ -57,7 +56,7 @@ jobs:
     environment: production
     needs:
       - get_next_version
-    if: ${{ needs.get_next_version.outputs.matrix != '{}' && needs.get_next_version.outputs.matrix != '' }}
+    if: ${{ needs.get_next_version.outputs.matrix != '{"include":[]}' && needs.get_next_version.outputs.matrix != '' }}
     strategy:
       matrix: ${{ fromJson(needs.get_next_version.outputs.matrix) }}
     env:
