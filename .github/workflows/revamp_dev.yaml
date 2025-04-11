@@ -75,6 +75,8 @@ jobs:
     steps:
       - name: 'checkout repo'
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - id: 'google-cloud-auth'
         name: 'Authenticate to Google Cloud'
