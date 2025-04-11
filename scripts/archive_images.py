@@ -20,12 +20,11 @@ SUPPORTED_REPOSITORIES = ['images']
 
 def get_archive_set():
     archive_list_file = Path(__file__).parent.parent / 'archived_images.txt'
-    archive_list: list[str] = []
+    archive_set: set[str] = set()
     with open(archive_list_file) as f:
         for line in f:
-            archive_list.append(line.strip())
-    # remove duplicates from the list and return as a set
-    return set(archive_list)
+            archive_set.add(line.strip())
+    return archive_set
 
 
 def validate_archive_set(archive_set: set[str]):
