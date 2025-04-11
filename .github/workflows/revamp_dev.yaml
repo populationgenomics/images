@@ -137,17 +137,49 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
 
-      - name: 'build image with args'
+      - name: Validate and export inputs
+        shell: bash
+        run: |
+          IMAGE_NAME="${{ github.event.inputs.image_name }}"
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          CLI_ARGS="${{ github.event.inputs.docker_cli_args }}"
+
+          # Validate image name
+          if ! [[ "$IMAGE_NAME" =~ ^[a-z0-9_-]+$ ]]; then
+            echo "❌ Invalid image name: $IMAGE_NAME"
+            exit 1
+          fi
+
+          # Validate image tag
+          if ! [[ "$IMAGE_TAG" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "❌ Invalid image tag: $IMAGE_TAG"
+            exit 1
+          fi
+
+          # Validate CLI args
+          if [[ "$CLI_ARGS" =~ [;&|><`()$] ]]; then
+            echo "❌ Unsafe characters in CLI args: $CLI_ARGS"
+            exit 1
+          fi
+
+          # Export validated values to later steps
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "CLI_ARGS=$CLI_ARGS" >> $GITHUB_ENV
+          echo "IMAGE_PATH=images/$IMAGE_NAME" >> $GITHUB_ENV
+          echo "IMAGE_FULL_TAG=${{ env.IMAGES_PREFIX }}/$IMAGE_NAME:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Build image with args
         run: |
           docker build \
-            ${{ inputs.docker_cli_args }} \
-            --build-arg VERSION=${{ github.event.inputs.image_tag }} \
-            --tag ${{ env.IMAGES_PREFIX }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }} \
-            images/${{ github.event.inputs.image_name }}
+            $CLI_ARGS \
+            --build-arg VERSION="$IMAGE_TAG" \
+            --tag "$IMAGE_FULL_TAG" \
+            "$IMAGE_PATH"
 
       - name: 'Push to dev artifactory'
         run: |
-          docker push "${{ env.IMAGES_PREFIX }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}" | tee push.log
+          docker push "$IMAGE_FULL_TAG" | tee push.log
           digest=$(grep 'digest:' push.log | grep -o 'sha256:[0-9a-f]*')
           echo ":package: Link to image:" >> $GITHUB_STEP_SUMMARY
-          echo "https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images-dev/${{ github.event.inputs.image_name }}/$digest?project=cpg-common" >> $GITHUB_STEP_SUMMARY
+          echo "https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images-dev/$IMAGE_NAME/$digest?project=cpg-common" >> $GITHUB_STEP_SUMMARY
