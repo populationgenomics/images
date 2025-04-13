@@ -93,15 +93,6 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.DOCKER_PREFIX }}
 
-      - name: 'build image with args'
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          docker build \
-            ${{ inputs.docker_cli_args }} \
-            --build-arg VERSION=${{ github.event.inputs.image_tag }} \
-            --tag ${{ env.IMAGES_PREFIX }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }} \
-            images/${{ github.event.inputs.image_name }}
-
       - name: 'build image with get_next_version'
         run: |
           docker build \
