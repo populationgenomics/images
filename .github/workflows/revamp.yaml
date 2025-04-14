@@ -1,4 +1,4 @@
-name: Deploy with Versioning
+name: Revamped Deploy with Versioning
 on:
   push:
     branches:
