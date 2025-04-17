@@ -1,7 +1,8 @@
 FROM debian:bookworm-slim AS base
 
-ARG VERSION=${VERSION:-1.20}
+ARG VERSION=${VERSION:-1.21}
 
+ENV VERSION=1.21
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
