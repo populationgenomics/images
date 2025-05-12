@@ -21,6 +21,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     git \
     gnupg \
     gpg-agent \
+    jq \
     libbz2-dev \
     libcurl4-openssl-dev \
     libffi-dev \
