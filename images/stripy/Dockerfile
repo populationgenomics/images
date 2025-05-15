@@ -77,7 +77,7 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
     && cd stripy-pipeline  \
-    && git checkout ${VERSION} \
+    && git checkout $VERSION \
     && cd .. \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt
