@@ -10,7 +10,6 @@ permissions:
 
 env:
   PROJECT: 'cpg-common'
-  CONFIG_DESTINATION: 'gs://cpg-config/templates/images/revamp.toml' # use revamp.toml for testing
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
   IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # use images-tmp for testing
 
@@ -91,68 +90,3 @@ jobs:
       - name: 'push image'
         run: |
           docker push "${{ env.IMAGES_PREFIX }}/${{ matrix.name }}:${{ matrix.tag }}"
-
-  # Special-case for cpg_workflows: the image is not maintained via images.toml here
-  # as we have a repository production-pipelines for it, so we check out that repo
-  # here and build it from the repository source, using the package version as the tag.
-  get_cpg_workflows_version:
-    runs-on: ubuntu-latest
-    environment: production
-    env:
-      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: 'populationgenomics/production-pipelines'
-          ref: 'main'
-          path: 'production-pipelines'
-          submodules: recursive
-          persist-credentials: false
-
-      - id: get_version
-        run: |
-          echo "version=$(cat production-pipelines/.bumpversion.cfg | grep 'current_version = ' | sed 's/current_version = //')" >> $GITHUB_OUTPUT
-
-  # Finally, prepare the finalised TOML config from all maintained images plus the
-  # special-case cpg_workflows.
-  deploy_config:
-    runs-on: ubuntu-latest
-    environment: production
-    needs:
-      - deploy_images
-      - get_cpg_workflows_version
-    if: ${{ ! failure() }}
-    env:
-      CLOUDSDK_CORE_DISABLE_PROMPTS: 1
-    steps:
-      - name: 'checkout repo'
-        uses: actions/checkout@v4
-
-      - id: 'google-cloud-auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/1051897107465/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'gh-images-deployer@cpg-common.iam.gserviceaccount.com'
-
-      - id: 'google-cloud-sdk-setup'
-        name: 'Set up Cloud SDK'
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT }}
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: 'prepare config'
-        run: |
-          pip install toml
-          python .github/workflows/prep_config.py \
-          ${{ needs.get_cpg_workflows_version.outputs.version }} > config.toml
-
-      - name: 'deploy config toml'
-        run: |
-          gcloud storage cp config.toml ${{ env.CONFIG_DESTINATION }}
