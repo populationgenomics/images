@@ -10,7 +10,10 @@ RUN apt-get update && \
         apt-transport-https \
         bzip2 \
         ca-certificates \
+        curl \
+        git \
         gnupg \
+        jq \
         openjdk-17-jdk-headless \
         software-properties-common \
         wget \
@@ -26,17 +29,12 @@ ENV HAIL_QUERY_BACKEND="service"
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         build-essential \
-        curl \
         g++ \
         gcc \
-        git \
         libfontconfig \
         liblapack3 \
         libopenblas-dev \
-        rsync \
-        software-properties-common \
-        wget \
-        zip && \
+        rsync && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
