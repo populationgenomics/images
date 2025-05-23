@@ -13,22 +13,20 @@ def extract_version_from_file(file_path: str) -> str | None:
     Extract the version from a Dockerfile by searching for a line like:
     ENV VERSION=1.0
     or
+    ARG VERSION=1.0
+    or
     ARG VERSION=${VERSION:-1.0}
     """
     with open(file_path) as f:
         content = f.read()
-    # Try ENV first
-    pattern_env = re.compile(r'^\s*ENV\s+VERSION\s*=\s*([^\s]+)', re.MULTILINE)
-    match_env = pattern_env.search(content)
-    if match_env:
-        return match_env.group(1)
-    # Now try ARG, with optional default after ':-'
-    pattern_arg = re.compile(
-        r'^\s*ARG\s+VERSION\s*=\s*\${VERSION:-(.+?)}', re.MULTILINE
-    )
-    match_arg = pattern_arg.search(content)
-    if match_arg:
-        return match_arg.group(1)
+
+    match = re.search(r'(ENV|ARG)\s+VERSION\s*=\s*([^\s]+)', content, re.MULTILINE)
+    if match:
+        value = match.group(2)
+        # Remove ${VERSION:- ... } if present
+        match = re.fullmatch(r'\${VERSION:-([^}]+)}', value)
+        return match.group(1) if match else value
+
     return None
 
 

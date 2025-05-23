@@ -15,19 +15,16 @@ This is a BAD place for:
 Assuming you want to create an image for a tool called `mytool` of version `1.0.1`, add a folder called `images/mytool` with a `Dockerfile` file. Parametrise the `Dockerfile` by `${VERSION}` that will correspond to the version of your tool and the tag of your future image. For example, inside the `Dockerfile` you would have:
 
 ```Dockerfile
-ARG VERSION=${VERSION}
+ARG VERSION=1.0.1
 RUN pip install mytool==${VERSION}
 ```
 
-Then, add an entry into [`images.toml`](images.toml) with the name of your image matching the desired tag/version:
-
-```toml
-mytool = '1.0.1'
-```
-
 Finally, create a pull-request with your changes and assign someone to review it. Once merged, the GitHub CI will automatically build your image and push it into the `cpg-common` artifact registry.
+The image will be given a tag like `1.0.1-1`, `1.0.1-2`, etc, made up from your upstream tool version number with an automatically incremented sequence number suffix.
+This means that you will have a permanent tag to use to refer to each build of your image even when the upstream tool version has not changed.
 
-To update the tool version, modify the corresponding entry in TOML and create a pull request, CI will automatically rebuild the image.
+To update the tool version, modify the corresponding entry in the `ARG VERSION` line and create a pull request, CI will automatically rebuild the image.
+If the upstream tool is unchanged but you are modifying the packaging in the _Dockerfile_, just make those modifications and create a pull request. CI will increment the sequence number suffix automatically.
 
 ## Image moving scripts
 
