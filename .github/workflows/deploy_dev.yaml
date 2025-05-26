@@ -1,4 +1,4 @@
-name: Revamped Deploy Dev Image
+name: Deploy dev image
 on:
   pull_request:
     types: [opened, synchronize]

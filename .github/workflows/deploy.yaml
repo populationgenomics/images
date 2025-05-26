@@ -1,4 +1,4 @@
-name: Revamped Deploy with Versioning
+name: Deploy images
 on:
   push:
     branches:
@@ -11,7 +11,7 @@ permissions:
 env:
   PROJECT: 'cpg-common'
   DOCKER_PREFIX: 'australia-southeast1-docker.pkg.dev'
-  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images-tmp' # use images-tmp for testing
+  IMAGES_PREFIX: 'australia-southeast1-docker.pkg.dev/cpg-common/images'
 
 jobs:
   get_next_version:
