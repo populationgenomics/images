@@ -1,5 +1,6 @@
-ARG PY_VER=${PY_VER:-3.10}
-ARG VERSION=${VERSION:-0.2.134.cpg2}
+ARG PY_VER="3.10"
+
+ARG VERSION=0.2.134.cpg2
 
 FROM python:${PY_VER}-slim-bookworm AS basic
 
