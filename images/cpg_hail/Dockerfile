@@ -1,5 +1,5 @@
 ARG PY_VER=${PY_VER:-3.10}
-ARG VERSION=${VERSION:-0.2.134.cpg1}
+ARG VERSION=${VERSION:-0.2.134.cpg2}
 
 FROM python:${PY_VER}-slim-bookworm AS basic
 
@@ -15,6 +15,7 @@ RUN apt-get update && \
         gnupg \
         jq \
         openjdk-17-jdk-headless \
+        rsync \
         software-properties-common \
         wget \
         zip && \
@@ -33,8 +34,7 @@ RUN apt-get update && \
         gcc \
         libfontconfig \
         liblapack3 \
-        libopenblas-dev \
-        rsync && \
+        libopenblas-dev && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
