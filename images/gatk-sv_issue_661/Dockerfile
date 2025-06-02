@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/sv/sv-pipeline:2023-09-13-v0.28.3-beta-af8362e3
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/sv/sv-pipeline:2025-03-25-v1.0.2-hotfix-65eddd78
 
 ARG VERSION=${VERSION:-n_a}
 
