@@ -37,11 +37,11 @@ ARG DV_GPU_BUILD
 ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV DV_BIN_PATH=/opt/deepvariant/bin
 
-# Copying DeepVariant source code
-COPY . /opt/deepvariant
-
 ARG VERSION
 ENV VERSION=${VERSION}
+
+RUN apt-get update && apt-get install -y git
+RUN git clone --branch r1.9 https://github.com/google/deepvariant.git /opt/deepvariant
 
 WORKDIR /opt/deepvariant
 
