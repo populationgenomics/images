@@ -24,6 +24,7 @@ RUN apt update && \
         r-devtools \
         r-essentials \
         r-meta \
+        r-rfast \
         r-susieR \
         r-tidyverse \
         r-viridis && \
