@@ -1,14 +1,16 @@
 FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.134.cpg2-1
 
-# Install gsutil if not already present
-RUN apt-get update && apt-get install -y \
-    curl \
-    python3-pip && \
-    pip3 install --upgrade pip && \
-    pip3 install gsutil
+ARG DV_GPU_BUILD=0
+ARG VERSION=1.9.0
+ARG PYTHON_VERSION=3.10
+ARG TF_ENABLE_ONEDNN_OPTS=1
 
-ENV VERSION=1.9.0
+ENV DV_GPU_BUILD=${DV_GPU_BUILD}
+ENV VERSION=${VERSION}
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV TF_ENABLE_ONEDNN_OPTS=${TF_ENABLE_ONEDNN_OPTS}
 ENV DV_DIR=/opt/deepvariant
+ENV DV_BIN_PATH=/opt/deepvariant/bin
 
 WORKDIR ${DV_DIR}
 
@@ -17,6 +19,6 @@ RUN gsutil -m cp -r gs://deepvariant/binaries/DeepVariant/${VERSION}/DeepVariant
 RUN chmod +x ${DV_DIR}/run-prereq.sh ${DV_DIR}/settings.sh
 
 RUN ${DV_DIR}/run-prereq.sh && \
-    . ${DV_DIR}/settings.sh
+    bash -c "source ${DV_DIR}/settings.sh"
 
 CMD ["/bin/bash"]
