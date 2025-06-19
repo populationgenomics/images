@@ -6,6 +6,7 @@ import subprocess
 import re
 import os
 import sys
+from pathlib import Path
 
 
 def extract_version_from_file(file_path: str) -> str | None:
@@ -17,6 +18,11 @@ def extract_version_from_file(file_path: str) -> str | None:
     or
     ARG VERSION=${VERSION:-1.0}
     """
+
+    if not Path(file_path).exists():
+        print(f'File {file_path} does not exist.', file=sys.stderr)
+        return None
+
     with open(file_path) as f:
         content = f.read()
 
