@@ -1,4 +1,4 @@
-# FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.134.cpg2-1
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.134.cpg2-1
 
 # Install gsutil if not already present
 RUN apt-get update && apt-get install -y \
