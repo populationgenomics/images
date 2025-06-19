@@ -120,16 +120,19 @@ def main():
 
     # Get changed Dockerfiles
     result = subprocess.run(
-        ['git', 'diff', '--name-only', before_commit, 'HEAD', '--', '*Dockerfile'],
+        ['git', 'diff', '--name-status', before_commit, 'HEAD', '--', '*Dockerfile'],
         capture_output=True,
         text=True,
         check=True,
     )
-    dockerfiles = result.stdout.splitlines()
+    dockerfiles = [line.split() for line in result.stdout.splitlines()]
 
     include_entries = []
 
-    for file in dockerfiles:
+    for status, file in dockerfiles:
+        if status == 'D':  # Ignore Dockerfiles that have been deleted
+            continue
+
         current_version = extract_version_from_file(file)
         if current_version is None:
             continue
