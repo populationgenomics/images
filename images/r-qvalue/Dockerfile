@@ -6,8 +6,8 @@ ARG VERSION=2.34.0
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 
 RUN apt update && \
     # Some R packages require a C compiler during installation.
