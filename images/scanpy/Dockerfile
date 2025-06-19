@@ -2,7 +2,7 @@ ARG DRIVER_TAG="latest"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver:$DRIVER_TAG
 
-# ARG VERSION=${VERSION:-1.9.3}
+ARG VERSION=${VERSION:-1.9.3}
 
 # hadolint ignore=DL3008,DL3013
 RUN apt-get update && \

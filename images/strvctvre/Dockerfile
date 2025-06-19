@@ -21,7 +21,7 @@ RUN apt-get update && \
     git clone https://github.com/andrewSharo/StrVCTVRE && \
     cd StrVCTVRE && \
     git checkout ${VERSION} && \
-    pip install \
+    pip --no-cache-dir install \
     cyvcf2 \
     Cython \
     joblib \

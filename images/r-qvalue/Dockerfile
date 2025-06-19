@@ -2,6 +2,8 @@ ARG DRIVER_TAG="1.4"
 
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-base:$DRIVER_TAG
 
+ARG VERSION=2.34.0
+
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba

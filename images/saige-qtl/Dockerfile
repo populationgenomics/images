@@ -1,7 +1,7 @@
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.4
 
 # Override this with a specific SHA in images.toml, as the qtl fork doesn't have releases.
-ARG VERSION=HEAD
+ARG VERSION=c3ddadda416a0be349872ed3b486ec020c371764
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
