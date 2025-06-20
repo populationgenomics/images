@@ -15,6 +15,9 @@ ENV DV_BIN_PATH=/opt/deepvariant/bin
 WORKDIR ${DV_DIR}
 
 RUN gsutil -m cp -r gs://deepvariant/binaries/DeepVariant/${VERSION}/DeepVariant-${VERSION}/* ${DV_DIR}
+RUN gsutil cp gs://cpg-bioheart-test/deepvariant_test/run_deepvariant ${DV_BIN_PATH}/run_deepvariant && \
+    gsutil cp gs://cpg-bioheart-test/deepvariant_test/run_deepvariant.py ${DV_BIN_PATH}/run_deepvariant.py && \
+    chmod +x ${DV_BIN_PATH}/run_deepvariant
 
 RUN chmod +x ${DV_DIR}/run-prereq.sh ${DV_DIR}/settings.sh
 
