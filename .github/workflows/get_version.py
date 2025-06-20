@@ -129,16 +129,36 @@ def main():
 
     include_entries = []
 
-    for status, file in dockerfiles:
+    # Constants for git diff parsing
+    min_parts_normal = 2
+    min_parts_rename = 3
+
+    for line_parts in dockerfiles:
+        status = line_parts[0]
+
+        # Handle different git diff statuses
         if status == 'D':  # Ignore Dockerfiles that have been deleted
             continue
 
-        current_version = extract_version_from_file(file)
+        if status.startswith('R'):  # Renamed file (R100, old_path, new_path)
+            if len(line_parts) < min_parts_rename:
+                continue
+            dockerfile_path = line_parts[2]  # Use the new path for renamed files
+        else:  # Added (A), Modified (M), or other statuses
+            if len(line_parts) < min_parts_normal:
+                continue
+            dockerfile_path = line_parts[1]
+
+        # Check if dockerfile exists (handles new files that might not exist yet)
+        if not os.path.exists(dockerfile_path):
+            continue
+
+        current_version = extract_version_from_file(dockerfile_path)
         if current_version is None:
             continue
 
         # Get only the last folder name
-        folder_path = os.path.dirname(file)
+        folder_path = os.path.dirname(dockerfile_path)
         folder = os.path.basename(folder_path) if folder_path else 'root'
 
         # Determine the next available tag based on current_version.
