@@ -1,6 +1,6 @@
 FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix
 
-ARG VERSION="2.7.0"
+ARG VERSION=2.7.0
 
 # source
 # https://sapac.support.illumina.com/downloads/dragen_decompression_software-linux.html
