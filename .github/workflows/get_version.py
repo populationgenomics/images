@@ -129,8 +129,28 @@ def main():
 
     include_entries = []
 
-    for status, file in dockerfiles:
+    # Constants for git diff parsing
+    min_parts_normal = 2
+    min_parts_rename = 3
+
+    for line_parts in dockerfiles:
+        status = line_parts[0]
+
+        # Handle different git diff statuses
         if status == 'D':  # Ignore Dockerfiles that have been deleted
+            continue
+
+        if status.startswith('R'):  # Renamed file (R100, old_path, new_path)
+            if len(line_parts) < min_parts_rename:
+                continue
+            file = line_parts[2]  # Use the new path for renamed files
+        else:  # Added (A), Modified (M), or other statuses
+            if len(line_parts) < min_parts_normal:
+                continue
+            file = line_parts[1]
+
+        # Check if file exists (handles new files that might not exist yet)
+        if not os.path.exists(file):
             continue
 
         current_version = extract_version_from_file(file)
