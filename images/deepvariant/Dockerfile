@@ -34,18 +34,25 @@ ENV DV_GPU_BUILD=${DV_GPU_BUILD}
 ENV DV_BIN_PATH=/opt/deepvariant/bin
 
 # Copying DeepVariant source code
-COPY . /opt/deepvariant
+# Install git and other dependencies needed for build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    ca-certificates \
+    build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ARG VERSION
 ENV VERSION=${VERSION}
 
+# Clone DeepVariant source code
+WORKDIR /opt
+RUN git clone --branch r${VERSION} https://github.com/google/deepvariant.git
+
 WORKDIR /opt/deepvariant
 
-RUN echo "Acquire::http::proxy \"$http_proxy\";\n" \
-         "Acquire::https::proxy \"$https_proxy\";" > "/etc/apt/apt.conf"
-
 RUN ./build-prereq.sh \
-  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh  # PATH for bazel
+  && PATH="${HOME}/bin:${PATH}" ./build_release_binaries.sh
 
 FROM ${FROM_IMAGE}
 ARG DV_GPU_BUILD
