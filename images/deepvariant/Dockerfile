@@ -47,7 +47,7 @@ ENV VERSION=${VERSION}
 
 # Clone DeepVariant source code
 WORKDIR /opt
-RUN git clone --branch r${VERSION} https://github.com/google/deepvariant.git
+RUN git clone https://github.com/google/deepvariant.git
 
 WORKDIR /opt/deepvariant
 
