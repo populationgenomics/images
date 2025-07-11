@@ -1,6 +1,5 @@
 FROM debian:bookworm-slim AS base
 
-ARG VERSION=${VERSION:-1.20}
 ENV VERSION=1.20
 
 ENV DEBIAN_FRONTEND=noninteractive
