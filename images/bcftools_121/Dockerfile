@@ -1,4 +1,4 @@
-FROM docker.io/docker/hardened-debian:12-slim AS base
+FROM debian:bookworm-slim AS base
 
 ARG VERSION=${VERSION:-1.21}
 ENV VERSION=1.21
