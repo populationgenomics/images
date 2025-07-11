@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     ./configure --enable-libcurl --enable-s3 --enable-gcs && \
     make && \
     strip bcftools plugins/*.so && \
-    make DESTDIR=/bcftools_install install \
+    make DESTDIR=/bcftools_install install && \
     make -C htslib-$VERSION DESTDIR=/bcftools_install install
 
 
