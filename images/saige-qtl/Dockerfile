@@ -3,6 +3,8 @@ FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.4
 # Override this with a specific SHA in images.toml, as the qtl fork doesn't have releases.
 ARG VERSION=HEAD
 
+ENV VERSION=main_initVal
+
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
 # See https://github.com/saigegit/SAIGE/blob/main/docker/Dockerfile.
