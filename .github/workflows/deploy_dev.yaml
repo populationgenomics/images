@@ -149,8 +149,8 @@ jobs:
             exit 1
           fi
 
-          # Validate CLI args
-          if [[ "$CLI_ARGS" =~ [;&|><`()$] ]]; then
+          # Validate CLI args (only if not empty)
+          if [[ -n "$CLI_ARGS" && "$CLI_ARGS" =~ [\;\&\|\>\<\`\(\)\$] ]]; then
             echo "❌ Unsafe characters in CLI args: $CLI_ARGS"
             exit 1
           fi
