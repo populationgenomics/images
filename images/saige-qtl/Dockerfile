@@ -11,6 +11,8 @@ RUN apt-get update && \
     apt-get install -y cmake gfortran libopenblas-base && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
+    micromamba install -y --prefix $MAMBA_ROOT_PREFIX -c bioconda -c conda-forge libgcc-ng==12.2.0 savvy superlu && \
+    rm -r $MAMBA_ROOT_PREFIX/pkgs && \
     pip3 install cget click && \
     git clone https://github.com/weizhou0/qtl.git && \
     cd qtl && \
