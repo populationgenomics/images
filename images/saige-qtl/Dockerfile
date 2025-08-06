@@ -19,16 +19,14 @@ RUN apt-get update && \
     git checkout $VERSION && \
     Rscript extdata/install_packages.R && \
     R CMD INSTALL . && \
-    mv extdata/step1_fitNULLGLMM_qtl.R \
-       extdata/step2_tests_qtl.R \
-       extdata/step3_gene_pvalue_qtl.R \
-       extdata/input/n.indep_100_n.cell_1_01.step1* \
+    for f in step1_fitNULLGLMM_qtl.R step2_tests_qtl.R step3_gene_pvalue_qtl.R makeGroupFile.R; do \
+        sed '/#!.*env.*pixi.*Rscript$/s,/.*,'$MAMBA_ROOT_PREFIX'/bin/Rscript,' < extdata/$f > /usr/local/bin/$f; \
+        chmod a+x /usr/local/bin/$f; \
+    done && \
+    mv extdata/input/n.indep_100_n.cell_1_01.step1* \
        extdata/input/seed_1_100_nindep_100_ncell_100_lambda_2_tauIntraSample_0.5_Poisson.txt \
        extdata/input/genotype_10markers.vcf.gz \
        extdata/input/genotype_10markers.vcf.gz.csi \
        extdata/input/gene_1_cis_region.txt /usr/local/bin/ && \
-    chmod a+x /usr/local/bin/step1_fitNULLGLMM_qtl.R \
-              /usr/local/bin/step2_tests_qtl.R \
-              /usr/local/bin/step3_gene_pvalue_qtl.R && \
     cd .. && \
     rm -r qtl
