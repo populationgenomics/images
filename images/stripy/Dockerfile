@@ -1,10 +1,6 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/samtools:1.21-1
+FROM python:3.10-slim-bookworm AS basic
 
 ARG VERSION=v2.5
-
-LABEL \
-  version="v${VERSION}" \
-  description="stripy-pipeline"
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/London
@@ -28,9 +24,6 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 		liblzma-dev \
 		libssl-dev \
 		make \
-		python3 \
-		python3-dev \
-		python3-pip \
 		software-properties-common \
 		wget \
 		zlib1g-dev && \
@@ -62,6 +55,17 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
     && mv REViewer-${REVIEWER_VERSION}-linux_x86_64 /usr/local/bin/REViewer \
     && chmod 755 /usr/local/bin/REViewer \
     && ln -s /usr/local/bin/REViewer /usr/bin/REViewer
+
+# Install Samtools
+ENV SAMTOOLS_VERSION="1.21"
+RUN wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && tar xjf samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && rm samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && cd samtools-${SAMTOOLS_VERSION} \
+    && ./configure --without-curses \
+    && make \
+    && make install \
+    && make clean
 
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
