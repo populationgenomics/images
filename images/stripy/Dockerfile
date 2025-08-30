@@ -1,40 +1,35 @@
-FROM ubuntu:22.04
+FROM python:3.10-slim-bookworm AS basic
 
-ARG VERSION=${VERSION:-v2.5}
-
-LABEL \
-  version="v${VERSION}" \
-  description="stripy-pipeline"
+ARG VERSION=v2.5
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    build-essential \
-    bwa \
-    bzip2 \
-    ca-certificates \
-    curl \
-    gcc \
-    git \
-    gnupg \
-    gpg-agent \
-    jq \
-    libbz2-dev \
-    libcurl4-openssl-dev \
-    libffi-dev \
-    liblzma-dev \
-    libncurses5-dev \
-    libssl-dev \
-    make \
-    python3 \
-    python3-dev \
-    python3-pip \
-    software-properties-common \
-    wget \
-    zlib1g-dev
+		apt-transport-https \
+		build-essential \
+		bwa \
+		bzip2 \
+		ca-certificates \
+		curl \
+		gcc \
+		git \
+		gnupg \
+		gpg-agent \
+		jq \
+		libbz2-dev \
+		libcurl4-openssl-dev \
+		libffi-dev \
+		liblzma-dev \
+		libssl-dev \
+		make \
+		software-properties-common \
+		wget \
+		zlib1g-dev && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
+    pip install --no-cache-dir --upgrade pip
 
 ## Install Google cloud-sdk
 RUN curl https://sdk.cloud.google.com > install.sh && \
@@ -42,19 +37,6 @@ RUN curl https://sdk.cloud.google.com > install.sh && \
     rm install.sh
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
-
-WORKDIR /usr/local/bin/
-
-# Install Samtools
-ENV SAMTOOLS_VERSION="1.16.1"
-RUN wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && tar xjf samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && rm samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && cd samtools-${SAMTOOLS_VERSION} \
-    && ./configure \
-    && make \
-    && make install \
-    && make clean
 
 WORKDIR /usr/local/bin/
 
@@ -73,6 +55,17 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
     && mv REViewer-${REVIEWER_VERSION}-linux_x86_64 /usr/local/bin/REViewer \
     && chmod 755 /usr/local/bin/REViewer \
     && ln -s /usr/local/bin/REViewer /usr/bin/REViewer
+
+# Install Samtools
+ENV SAMTOOLS_VERSION="1.21"
+RUN wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && tar xjf samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && rm samtools-${SAMTOOLS_VERSION}.tar.bz2 \
+    && cd samtools-${SAMTOOLS_VERSION} \
+    && ./configure --without-curses \
+    && make \
+    && make install \
+    && make clean
 
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
