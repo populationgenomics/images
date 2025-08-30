@@ -1,4 +1,4 @@
-FROM
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/samtools:1.21-1
 
 ARG VERSION=v2.5
 
