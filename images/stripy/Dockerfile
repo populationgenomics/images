@@ -1,6 +1,6 @@
-FROM ubuntu:22.04
+FROM
 
-ARG VERSION=${VERSION:-v2.5}
+ARG VERSION=v2.5
 
 LABEL \
   version="v${VERSION}" \
@@ -11,30 +11,32 @@ ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    build-essential \
-    bwa \
-    bzip2 \
-    ca-certificates \
-    curl \
-    gcc \
-    git \
-    gnupg \
-    gpg-agent \
-    jq \
-    libbz2-dev \
-    libcurl4-openssl-dev \
-    libffi-dev \
-    liblzma-dev \
-    libncurses5-dev \
-    libssl-dev \
-    make \
-    python3 \
-    python3-dev \
-    python3-pip \
-    software-properties-common \
-    wget \
-    zlib1g-dev
+		apt-transport-https \
+		build-essential \
+		bwa \
+		bzip2 \
+		ca-certificates \
+		curl \
+		gcc \
+		git \
+		gnupg \
+		gpg-agent \
+		jq \
+		libbz2-dev \
+		libcurl4-openssl-dev \
+		libffi-dev \
+		liblzma-dev \
+		libssl-dev \
+		make \
+		python3 \
+		python3-dev \
+		python3-pip \
+		software-properties-common \
+		wget \
+		zlib1g-dev && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
+    pip install --no-cache-dir --upgrade pip
 
 ## Install Google cloud-sdk
 RUN curl https://sdk.cloud.google.com > install.sh && \
@@ -42,19 +44,6 @@ RUN curl https://sdk.cloud.google.com > install.sh && \
     rm install.sh
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
-
-WORKDIR /usr/local/bin/
-
-# Install Samtools
-ENV SAMTOOLS_VERSION="1.16.1"
-RUN wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && tar xjf samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && rm samtools-${SAMTOOLS_VERSION}.tar.bz2 \
-    && cd samtools-${SAMTOOLS_VERSION} \
-    && ./configure \
-    && make \
-    && make install \
-    && make clean
 
 WORKDIR /usr/local/bin/
 
