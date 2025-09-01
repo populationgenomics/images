@@ -2,4 +2,8 @@ FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.1
 
 ARG VERSION=${VERSION:-1.30}
 
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        procps
+
 RUN pip install multiqc==${VERSION}
