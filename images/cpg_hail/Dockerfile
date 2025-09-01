@@ -16,6 +16,7 @@ RUN apt-get update && \
         gnupg \
         jq \
         openjdk-17-jdk-headless \
+        procps \
         rsync \
         software-properties-common \
         wget \
