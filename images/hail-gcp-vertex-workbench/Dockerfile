@@ -43,7 +43,7 @@ ENV ENVIRONMENT_NAME="hail-${VERSION}"
 ENV MICROMAMBA_ENV_HOME="/opt/micromamba/envs"
 COPY requirements.txt requirements.txt
 
-# create env and install hail + dependences 
+# create env and install hail + dependencies 
 RUN micromamba create --prefix "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" python=3.10 ipykernel && \
     micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" pip install --no-cache-dir --no-deps -r requirements.txt && \
     micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" python -m ipykernel install --name "${ENVIRONMENT_NAME}" --display-name "${KERNEL_DISPLAY_NAME}" && \
