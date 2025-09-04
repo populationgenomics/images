@@ -49,4 +49,3 @@ RUN micromamba create --prefix "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" py
     micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" python -m ipykernel install --name "${ENVIRONMENT_NAME}" --display-name "${KERNEL_DISPLAY_NAME}" && \
     curl -o "$(micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" find_spark_home.py)/jars/gcs-connector-hadoop2-2.2.28.jar" https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop2-2.2.28.jar
 
-
