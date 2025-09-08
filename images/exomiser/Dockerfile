@@ -6,6 +6,7 @@ ARG DATA_VERSION=2502
 ENV EXOMISER_STEM="exomiser-cli-${VERSION}"
 ENV EXOMISER_ARCHIVE="${EXOMISER_STEM}-distribution.zip"
 ENV EXOMISER_URL="https://github.com/exomiser/Exomiser/releases/download/${VERSION}/${EXOMISER_ARCHIVE}"
+
 RUN mkdir /exomiser && \
     cd /exomiser && \
     wget "${EXOMISER_URL}" && \
