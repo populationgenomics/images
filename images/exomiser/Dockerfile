@@ -1,4 +1,4 @@
-FROM us.gcr.io/broad-gatk/gatk:4.4.0.0
+FROM us.gcr.io/broad-gatk/gatk:4.6.2.0
 
 ARG VERSION=14.1.0
 ARG DATA_VERSION=2502
