@@ -20,9 +20,11 @@ RUN apt update && \
         r-argparser \
         r-arrow \
         r-base \
+	r-broom.mixed \
         r-coloc \
         r-devtools \
         r-essentials \
+	r-lme4 \
         r-meta \
         r-rfast \
         r-susieR \
