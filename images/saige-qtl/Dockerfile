@@ -20,6 +20,7 @@ RUN apt-get update && \
     git clone https://github.com/weizhou0/qtl.git && \
     cd qtl && \
     git checkout $VERSION_COMMIT && \
+    sed -i $'/#include.*cassert/a\\\n#include <tbb/concurrent_vector.h>\n' src/GENO_null.hpp && \
     Rscript extdata/install_packages.R && \
     R CMD INSTALL . && \
     for f in step1_fitNULLGLMM_qtl.R step2_tests_qtl.R step3_gene_pvalue_qtl.R makeGroupFile.R; do \
