@@ -1,6 +1,9 @@
 FROM australia-southeast1-docker.pkg.dev/analysis-runner/images/driver-r:1.4
 
-ENV VERSION=main_initVal
+# Explicitly specify desired image label and corresponding commit, as the qtl fork doesn't have releases.
+# Currently building from the main_initVal branch
+ARG VERSION=0.3.2.1-c2c9fb2
+ARG VERSION_COMMIT=c2c9fb20a0efc4c9a4e7289f6f444d3e19f32ec9
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
@@ -16,7 +19,7 @@ RUN apt-get update && \
     pip3 install cget click && \
     git clone https://github.com/weizhou0/qtl.git && \
     cd qtl && \
-    git checkout $VERSION && \
+    git checkout $VERSION_COMMIT && \
     Rscript extdata/install_packages.R && \
     R CMD INSTALL . && \
     for f in step1_fitNULLGLMM_qtl.R step2_tests_qtl.R step3_gene_pvalue_qtl.R makeGroupFile.R; do \
