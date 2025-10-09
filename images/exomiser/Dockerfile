@@ -1,6 +1,6 @@
 FROM us.gcr.io/broad-gatk/gatk:4.6.2.0
 
-ARG VERSION=13.3.0
+ARG VERSION=14.0.0
 
 ENV EXOMISER_STEM="exomiser-cli-${VERSION}"
 ENV EXOMISER_ARCHIVE="${EXOMISER_STEM}-distribution.zip"
