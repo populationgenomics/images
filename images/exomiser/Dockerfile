@@ -1,7 +1,6 @@
 FROM us.gcr.io/broad-gatk/gatk:4.6.2.0
 
-ARG VERSION=14.1.0
-ARG DATA_VERSION=2502
+ARG VERSION=13.3.0
 
 ENV EXOMISER_STEM="exomiser-cli-${VERSION}"
 ENV EXOMISER_ARCHIVE="${EXOMISER_STEM}-distribution.zip"
@@ -30,11 +29,3 @@ RUN apt-get update && \
     pip3 install PyYAML
 
 COPY config_shuffle.py template.yaml ./
-
-# create the application.properties file, responsive to version ARGs
-RUN echo "exomiser.data-directory=/exomiser/${EXOMISER_STEM}/data" > /exomiser/${EXOMISER_STEM}/application.properties && \
-    echo "exomiser.hg38.data-version=${DATA_VERSION}" >> /exomiser/${EXOMISER_STEM}/application.properties && \
-    echo "exomiser.phenotype.data-version=${DATA_VERSION}" >> /exomiser/${EXOMISER_STEM}/application.properties && \
-    echo "exomiser.hg38.clin-var-data-version=${DATA_VERSION}" >> /exomiser/${EXOMISER_STEM}/application.properties && \
-    echo "exomiser.hg38.use-clinvar-white-list=true" >> /exomiser/${EXOMISER_STEM}/application.properties && \
-    echo "logging.level.com.zaxxer.hikari=ERROR" >> /exomiser/${EXOMISER_STEM}/application.properties
