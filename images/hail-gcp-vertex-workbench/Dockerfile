@@ -1,6 +1,6 @@
 # description of slim base container https://cloud.google.com/vertex-ai/docs/workbench/instances/create-custom-container#slim-base-container
 # NB: uses micromamba, NOT conda
-FROM us-docker.pkg.dev/deeplearning-platform-release/gcr.io/workbench-container-slim:latest AS base
+FROM gcr.io/deeplearning-platform-release/workbench-container-slim:latest AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -43,9 +43,8 @@ ENV ENVIRONMENT_NAME="hail-${VERSION}"
 ENV MICROMAMBA_ENV_HOME="/opt/micromamba/envs"
 COPY requirements.txt requirements.txt
 
-# create env and install hail + dependencies 
+# create env and install hail + dependencies
 RUN micromamba create --prefix "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" python=3.10 ipykernel && \
     micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" pip install --no-cache-dir --no-deps -r requirements.txt && \
     micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" python -m ipykernel install --name "${ENVIRONMENT_NAME}" --display-name "${KERNEL_DISPLAY_NAME}" && \
     curl -o "$(micromamba run -p "${MICROMAMBA_ENV_HOME}"/"${ENVIRONMENT_NAME}" find_spark_home.py)/jars/gcs-connector-hadoop2-2.2.28.jar" https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop2-2.2.28.jar
-
