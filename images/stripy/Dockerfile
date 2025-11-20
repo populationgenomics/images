@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ARG HASH=ee4482bc
-ARG VERSION="v2.5_ee4482bc"
+ARG VERSION=v2.5_ee4482bc
 
 LABEL \
   version="v${VERSION}" \
