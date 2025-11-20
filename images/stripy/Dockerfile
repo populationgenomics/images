@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-ARG VERSION=${VERSION:-v2.6}
+ARG VERSION=${VERSION:-v2.5_1}
 
 LABEL \
   version="v${VERSION}" \
