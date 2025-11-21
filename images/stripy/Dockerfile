@@ -1,43 +1,39 @@
-FROM ubuntu:22.04
+FROM python:3.10-slim-bookworm AS basic
 
 ARG HASH=ee4482bc
 ARG VERSION=v2.5_ee4482bc
-
-LABEL \
-  version="v${VERSION}" \
-  description="stripy-pipeline"
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/London
 
 # Run update and install necessary libraries, including BWA and python3
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    build-essential \
-    bwa \
-    bzip2 \
-    ca-certificates \
-    curl \
-    gcc \
-    git \
-    gnupg \
-    gpg-agent \
-    jq \
-    libbz2-dev \
-    libcurl4-openssl-dev \
-    libffi-dev \
-    liblzma-dev \
-    libncurses5-dev \
-    libssl-dev \
-    make \
-    python3 \
-    python3-dev \
-    python3-pip \
-    software-properties-common \
-    wget \
-    zlib1g-dev
+		apt-transport-https \
+		build-essential \
+		bwa \
+		bzip2 \
+		ca-certificates \
+		curl \
+		gcc \
+		git \
+		gnupg \
+		gpg-agent \
+		jq \
+		libbz2-dev \
+		libcurl4-openssl-dev \
+		libffi-dev \
+		liblzma-dev \
+		libssl-dev \
+		make \
+		software-properties-common \
+		wget \
+		zlib1g-dev && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
+    pip install --no-cache-dir --upgrade pip
 
-## Install Google cloud-sdk
+
+## Install Google cloud-sdk - needed for gcsfuse
 RUN curl https://sdk.cloud.google.com > install.sh && \
     bash install.sh --disable-prompts --install-dir=/opt && \
     rm install.sh
@@ -47,12 +43,12 @@ ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 WORKDIR /usr/local/bin/
 
 # Install Samtools
-ENV SAMTOOLS_VERSION="1.16.1"
+ENV SAMTOOLS_VERSION="1.21"
 RUN wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 \
     && tar xjf samtools-${SAMTOOLS_VERSION}.tar.bz2 \
     && rm samtools-${SAMTOOLS_VERSION}.tar.bz2 \
     && cd samtools-${SAMTOOLS_VERSION} \
-    && ./configure \
+    && ./configure --without-curses \
     && make \
     && make install \
     && make clean
@@ -85,7 +81,7 @@ RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
 
 WORKDIR /usr/local/bin/stripy-pipeline
 
-# Install gcsfuse to mount VEP cache files
+# Install gcsfuse to mount CRAM files
 RUN GCSFUSE_REPO=gcsfuse-$(lsb_release -c -s) && \
     echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list && \
     wget -qO - https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
