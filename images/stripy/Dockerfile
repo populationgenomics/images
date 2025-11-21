@@ -1,6 +1,7 @@
 FROM ubuntu:22.04
 
-ARG VERSION=${VERSION:-v2.5}
+ARG HASH=ee4482bc
+ARG VERSION=v2.5_ee4482bc
 
 LABEL \
   version="v${VERSION}" \
@@ -21,6 +22,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     git \
     gnupg \
     gpg-agent \
+    jq \
     libbz2-dev \
     libcurl4-openssl-dev \
     libffi-dev \
@@ -76,7 +78,7 @@ RUN wget https://github.com/Illumina/REViewer/releases/download/${REVIEWER_VERSI
 # Install STRipy by cloning from git repo (the most updated version)
 RUN git clone https://gitlab.com/andreassh/stripy-pipeline.git \
     && cd stripy-pipeline  \
-    && git checkout $VERSION \
+    && git checkout "${HASH}" \
     && cd .. \
     && chmod 755 stripy-pipeline/batch.sh \
     && python3 -m pip install -r stripy-pipeline/requirements.txt

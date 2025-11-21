@@ -46,6 +46,11 @@ ENV UTR38=/data/utr_annotator_38.txt
 # ./vep -i variants.vcf --plugin LoFtool,scores_file.txt
 ENV LOFTOOL_SCORES=/data/loftool_110_scores.txt
 
+# CADD
+# https://github.com/Ensembl/VEP_plugins/blob/release/110/CADD.pm
+#  ./vep -i variations.vcf --plugin CADD,snv=/FULL_PATH_TO_CADD_FILE/whole_genome_SNVs.tsv.gz,indels=/FULL_PATH_TO_CADD_FILE/InDels.tsv.gz
+ENV CADDPlugin=${VEP_DIR_PLUGINS}/CADD.pm
+
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -57,6 +62,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && curl https://raw.githubusercontent.com/Ensembl/UTRannotator/master/uORF_5UTR_GRCh38_PUBLIC.txt > ${UTR38} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/pLI_values.txt > ${PLI_SCORES} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/AlphaMissense.pm > ${VEP_DIR_PLUGINS}/AlphaMissense.pm \
+    && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/CADD.pm > ${VEP_DIR_PLUGINS}/CADD.pm \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/LoFtool_scores.txt > ${LOFTOOL_SCORES} \
     && git clone -b grch38 https://github.com/konradjk/loftee.git \
     && mv loftee/* ${VEP_DIR_PLUGINS} \

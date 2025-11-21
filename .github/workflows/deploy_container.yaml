@@ -61,10 +61,16 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_MAIN$DOCKER_IMAGE
-          docker push $DOCKER_MAIN$DOCKER_IMAGE
+          docker push $DOCKER_MAIN$DOCKER_IMAGE | tee push.log
+          digest=$(grep 'digest:' push.log | grep -o 'sha256:[0-9a-f]*')
+          echo ":package: Link to image:" >> $GITHUB_STEP_SUMMARY
+          echo "https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images/$IMAGE_NAME/$digest?project=cpg-common" >> $GITHUB_STEP_SUMMARY
 
       - name: "Push non-main branch to dev artifactory"
         if: ${{ github.ref_name != 'main' }}
         run: |
           docker tag $DOCKER_IMAGE $DOCKER_DEV$DOCKER_IMAGE
-          docker push $DOCKER_DEV$DOCKER_IMAGE
+          docker push $DOCKER_DEV$DOCKER_IMAGE | tee push.log
+          digest=$(grep 'digest:' push.log | grep -o 'sha256:[0-9a-f]*')
+          echo ":package: Link to image:" >> $GITHUB_STEP_SUMMARY
+          echo "https://console.cloud.google.com/artifacts/docker/cpg-common/australia-southeast1/images-dev/$IMAGE_NAME/$digest?project=cpg-common" >> $GITHUB_STEP_SUMMARY
