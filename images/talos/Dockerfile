@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye
 
-ARG VERSION=${VERSION:-5.0.0}
+ARG VERSION=${VERSION:-6.4.0}
 
 RUN apt update && apt install -y \
         apt-transport-https \
@@ -20,4 +20,4 @@ RUN apt update && apt install -y \
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
-RUN pip install --no-cache-dir metamist git+https://github.com/populationgenomics/automated-interpretation-pipeline.git@${VERSION}
+RUN pip install --no-cache-dir metamist git+https://github.com/populationgenomics/talos.git@${VERSION}
