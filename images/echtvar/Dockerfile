@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-ARG VERSION=${VERSION:-v0.2.1}
+ARG VERSION=v0.2.2
 
 ADD https://github.com/brentp/echtvar/releases/download/${VERSION}/echtvar /bin/echtvar
 
