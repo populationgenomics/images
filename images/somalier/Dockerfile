@@ -1,11 +1,11 @@
-FROM debian:bookworm-slim AS base
+FROM debian:trixie-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG VERSION=${VERSION:-0.3.1}
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    git wget bash bzip2 zip curl bc && \
+    git wget bzip2 zip curl bc && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 # Install somalier
