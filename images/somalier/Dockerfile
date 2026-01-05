@@ -7,7 +7,7 @@ ARG VERSION=${VERSION:-0.3.1}
 RUN apt-get update && apt-get install -y \
     git wget bash bzip2 zip curl bc && \
     rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/* 
+    rm -r /var/cache/apt/*
 # Install somalier
 RUN wget https://github.com/brentp/somalier/releases/download/v${VERSION}/somalier && \
     mv ./somalier /usr/local/bin/somalier && \
