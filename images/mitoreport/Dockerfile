@@ -40,11 +40,15 @@ ENV PATH=$PATH:/opt/google-cloud-sdk/bin
 
 WORKDIR /usr/local/bin/
 
-# Install mitoreport and resourses
-RUN curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/mitoreport-${VERSION}-all.jar \
-    && mv mitoreport-${VERSION}-all.jar mitoreport.jar \
-    && curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/resources.tgz \
-    && tar -zxvf resources.tgz
+# Instead of downloading JAR, clone and build
+# Modify UI to always bypass file:// protocol check (to allow viewing from cloud storage)
+RUN git clone https://github.com/bioinfomethods/mitoreport.git /tmp/mitoreport \
+    && cd /tmp/mitoreport \
+    && git checkout ${VERSION} \
+    && sed -i "s/if (window\.location\.protocol === 'file:')/if (true || window.location.protocol === 'file:')/" ui/src/main.js \
+    && ./gradlew build \
+    && cp build/libs/mitoreport-*-all.jar /usr/local/bin/mitoreport.jar \
+    && rm -rf /tmp/mitoreport
 
 # Requires samtools for local cram > bam
 ENV MAMBA_ROOT_PREFIX="/root/micromamba"
