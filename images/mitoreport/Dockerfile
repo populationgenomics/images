@@ -18,6 +18,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     gcc \
+    git \
     gnupg \
     gpg-agent \
     libbz2-dev \
