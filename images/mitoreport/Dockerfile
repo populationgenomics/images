@@ -38,15 +38,16 @@ RUN curl https://sdk.cloud.google.com > install.sh && \
     rm install.sh
 
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin
+ENV PROJECT_DIR=$(pwd)
 
 WORKDIR /usr/local/bin/
 
 # Instead of downloading JAR, clone and build
 # Modify UI to always bypass file:// protocol check (to allow viewing from cloud storage)
-RUN git clone https://github.com/bioinfomethods/mitoreport.git /tmp/mitoreport \
+RUN git clone --recursive https://github.com/bioinfomethods/mitoreport.git /tmp/mitoreport \
     && cd /tmp/mitoreport \
     && git checkout ${VERSION} \
-    && sed -i "s/if (window\.location\.protocol === 'file:')/if (true || window.location.protocol === 'file:')/" ui/src/main.js \
+    && sed -i "s/window.location.protocol/true || window.location.protocol/g" ui/src/main.js \
     && ./gradlew build \
     && cp build/libs/mitoreport-*-all.jar /usr/local/bin/mitoreport.jar \
     && rm -rf /tmp/mitoreport
