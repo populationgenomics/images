@@ -44,9 +44,7 @@ WORKDIR /usr/local/bin/
 RUN curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/mitoreport-${VERSION}-all.jar \
     && mv mitoreport-${VERSION}-all.jar mitoreport.jar \
     && curl -L -O https://github.com/bioinfomethods/mitoreport/releases/download/${VERSION}/resources.tgz \
-    && tar -zxvf resources.tgz \
-    && java -jar mitoreport.jar mito-map-download \
-        --output resources/mito_map_annotations.json
+    && tar -zxvf resources.tgz 
 
 # Requires samtools for local cram > bam
 ENV MAMBA_ROOT_PREFIX="/root/micromamba"
