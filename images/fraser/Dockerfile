@@ -20,3 +20,12 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
     bioconductor-org.hs.eg.db=3.20.0 && \
     micromamba clean --all --yes && \
     rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /RDrnaseq
+
+COPY count_split_reads.R RDrnaseq/
+COPY fraser_analysis.R RDrnaseq/
+COPY fraser_count_non_split.R RDrnaseq/
+COPY fraser_init.R RDrnaseq/
+COPY fraser_merge_non_split.R RDrnaseq/
+COPY fraser_merge_split.R RDrnaseq/
