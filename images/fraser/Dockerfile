@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
 
 RUN mkdir /RDrnaseq
 
-COPY count_split_reads.R RDrnaseq/
+COPY fraser_count_split.R RDrnaseq/
 COPY fraser_analysis.R RDrnaseq/
 COPY fraser_count_non_split.R RDrnaseq/
 COPY fraser_init.R RDrnaseq/
