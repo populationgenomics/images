@@ -1,8 +1,6 @@
-ARG PY_VER="3.10"
+ARG VERSION=0.2.137.cpg1
 
-ARG VERSION=0.2.134.cpg2
-
-FROM python:${PY_VER}-slim-bookworm AS basic
+FROM python:3.11-slim-bookworm AS basic
 
 ENV HAIL_QUERY_BACKEND="service"
 
@@ -42,7 +40,6 @@ RUN apt-get update && \
 
 RUN pip --no-cache-dir install \
         build && \
-    # Install Hail from the CPG fork.
     git clone https://github.com/populationgenomics/hail.git && \
     cd hail && \
     git checkout $VERSION && \
