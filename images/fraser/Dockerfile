@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
     r-base=4.4.3 \
     r-reshape2=1.4.5 \
     r-tidyverse=2.0.0 \
+    r-argparse=2.2.3 \
     bioconductor-fraser=${VERSION} \
     bioconductor-txdb.hsapiens.ucsc.hg38.knowngene=3.20.0 \
     bioconductor-org.hs.eg.db=3.20.0 && \
