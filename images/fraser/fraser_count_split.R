@@ -23,7 +23,9 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
 # 2. Force HDF5 and Configure Parallelism
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
-register(MulticoreParam(workers = args$nthreads))
+# Use MulticoreParam for Linux environments
+bpparam <- MulticoreParam(workers = args$nthreads)
+register(bpparam)
 
 # 3. Load the dataset
 # Note: name must match what was used in fraser_init.R
@@ -33,19 +35,23 @@ fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
 # Important: Ensure the strand matches your actual lab protocol
 strandSpecific(fds) <- 0
 
-# Use colData to update the localized BAM path
-if (args$sample_id %in% colData(fds)$sampleID) {
-    colData(fds)[colData(fds)$sampleID == args$sample_id, "bamFile"] <- args$bam_path
-} else {
-    stop("Sample ID not found in fds object.")
+# Subset the FDS object to ONLY this sample.
+# This prevents the worker from erroring out when looking for other samples' BAMs.
+if (!(args$sample_id %in% colData(fds)$sampleID)) {
+    stop(paste("Sample", args$sample_id, "not found in the provided FDS object."))
 }
-# 5. Run counting for the specific sample
-# countRNAData with sampleId filter is the standard way to run parallel counts
+fds <- fds[, fds$sampleID == args$sample_id]
+
+# Update the localized BAM path in colData
+colData(fds)$bamFile <- args$bam_path
+
+# 5. Run counting
+# We pass BPPARAM explicitly to ensure the worker uses the allocated threads
 fds <- countRNAData(
   fds,
   sampleIds = args$sample_id,
-  NcpuPerSample = args$nthreads,
-  recount = TRUE
+  recount = TRUE,
+  BPPARAM = bpparam
 )
 
 # 6. Verification
@@ -55,5 +61,10 @@ expected_out <- file.path(args$work_dir, "cache", "splitCounts", paste0("splitCo
 if (file.exists(expected_out)) {
     message("Successfully created split counts at: ", expected_out)
 } else {
-    stop("Split counts file was not found at expected location: ", expected_out)
+    # List files in the directory to help debug if it fails
+    found_files <- list.files(file.path(args$work_dir, "cache", "splitCounts"))
+    stop(paste0(
+        "Split counts file not found. Expected: ", expected_out,
+        "\nFound in cache: ", paste(found_files, collapse=", ")
+    ))
 }
