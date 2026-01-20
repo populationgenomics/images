@@ -29,11 +29,16 @@ register(MulticoreParam(workers = args$nthreads))
 # Note: name must match what was used in fraser_init.R
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
 
-# 4. Update the BAM path for this specific worker environment
-# This ensures that even if the BAM was at a different path during Init,
-# the worker uses the current localized path.
-bamData(fds)[bamData(fds)$sampleID == args$sample_id, "bamFile"] <- args$bam_path
+# 4. Update Metadata and Strand
+# Important: Ensure the strand matches your actual lab protocol
+strandSpecific(fds) <- 0
 
+# Use colData to update the localized BAM path
+if (args$sample_id %in% colData(fds)$sampleID) {
+    colData(fds)[colData(fds)$sampleID == args$sample_id, "bamFile"] <- args$bam_path
+} else {
+    stop("Sample ID not found in fds object.")
+}
 # 5. Run counting for the specific sample
 # countRNAData with sampleId filter is the standard way to run parallel counts
 fds <- countRNAData(
