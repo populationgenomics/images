@@ -1,5 +1,3 @@
-ARG VERSION=0.2.137.cpg1
-
 FROM python:3.11-slim-bookworm AS basic
 
 ENV HAIL_QUERY_BACKEND="service"
@@ -37,6 +35,8 @@ RUN apt-get update && \
         libopenblas-dev && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
+
+ARG VERSION=0.2.137.cpg1
 
 RUN pip --no-cache-dir install \
         build && \
