@@ -1,6 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.134.cpg2-3
-
-ARG VERSION=0.2.134.cpg2
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.137.cpg1-1
 
 # this is the installation code direct from google
 # https://cloud.google.com/sdk/docs/install#deb
@@ -12,3 +10,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     apt-get install google-cloud-cli --no-install-recommends -y && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
+
+ARG VERSION=0.2.137.cpg1
