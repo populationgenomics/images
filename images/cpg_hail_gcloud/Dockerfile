@@ -9,6 +9,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     apt-get update -y && \
     apt-get install google-cloud-cli --no-install-recommends -y && \
     rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/* \
+    rm -r /var/cache/apt/*
 
 ARG VERSION=0.2.137.cpg1
