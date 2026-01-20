@@ -34,7 +34,7 @@ register(bp)
 
 
 # We calculate initial metadata/PSI skeleton
-fds <- calculatePSIValues(fds, BPPARAM = bp)
+
 fds <- saveFraserDataSet(fds)
 
 #Print location for Python to capture if needed
