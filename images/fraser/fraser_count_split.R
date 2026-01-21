@@ -22,40 +22,40 @@ args <- parser$parse_args()
 fds_dir_name <- paste0("FRASER_", args$cohort_id)
 save_dir <- file.path(args$work_dir, "savedObjects", fds_dir_name)
 dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
-file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
+file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
 
 # 2. Force HDF5 and Configure Parallelism
 options("FRASER.maxSamplesNoHDF5" = 0)
-options("FRASER.maxJunctionsNoHDF5" = -1)
+options("FRASER.maxJunctionsNoHDF5" = 0) # Changed from -1 to 0 to be safer
 
-# Configure MulticoreParam with the 11GB limit in mind
-# Note: nthreads shares the 11GB pool
-bpparam <- MulticoreParam(
-    workers = args$nthreads,
-    stop.on.error = TRUE
-)
-register(bpparam)
-
-# 3. Load the dataset
-# Note: name must match what was used in fraser_init.R
+# 3. Load and Prune IMMEDIATELY
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
 
 # 4. Update Metadata and Strand
 # Important: Ensure the strand matches your actual lab protocol
 strandSpecific(fds) <- 0
 
-# Subset the FDS object to ONLY this sample.
-# This prevents the worker from erroring out when looking for other samples' BAMs.
-if (!(args$sample_id %in% colData(fds)$sampleID)) {
-    stop(paste("Sample", args$sample_id, "not found in the provided FDS object."))
-}
+# SUBSET FIRST: This is the most critical memory-saving step.
+# By subsetting here, we drop the metadata of all other samples.
 fds <- fds[, fds$sampleID == args$sample_id]
-
-# Update the localized BAM path in colData
 colData(fds)$bamFile <- args$bam_path
 
-# 5. Run counting
-# We pass BPPARAM explicitly to ensure the worker uses the allocated threads
+# Force Garbage Collection to reclaim memory from the full cohort load
+gc()
+
+# 4. Parallel vs Serial Logic
+# If you are hitting 11GB limits, 'MulticoreParam' is risky because it forks the process.
+# If nthreads > 1, we use a very conservative setup.
+if(args$nthreads > 1) {
+    # Using 'tasks' helps throttle the memory spikes
+    bpparam <- MulticoreParam(workers = args$nthreads, tasks = args$nthreads)
+} else {
+    bpparam <- SerialParam()
+}
+
+# 5. Run counting with minimal overhead
+# We use recount=FALSE if possible, but keeping TRUE as per your requirement.
+# junctionId is set to NULL to ensure a fresh scan of this specific BAM.
 fds <- countRNAData(
   fds,
   sampleIds = args$sample_id,
@@ -68,12 +68,7 @@ fds <- countRNAData(
 expected_out <- file.path(args$work_dir, "cache", "splitCounts", paste0("splitCounts-", args$sample_id, ".RDS"))
 
 if (file.exists(expected_out)) {
-    message("Successfully created split counts at: ", expected_out)
+    message("Success: ", expected_out)
 } else {
-    # List files in the directory to help debug if it fails
-    found_files <- list.files(file.path(args$work_dir, "cache", "splitCounts"))
-    stop(paste0(
-        "Split counts file not found. Expected: ", expected_out,
-        "\nFound in cache: ", paste(found_files, collapse=", ")
-    ))
+    stop("Counting failed to produce output.")
 }
