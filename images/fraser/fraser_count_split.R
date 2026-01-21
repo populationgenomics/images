@@ -26,7 +26,7 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE
 
 # 2. Force HDF5 and Configure Parallelism
 options("FRASER.maxSamplesNoHDF5" = 0)
-options("FRASER.maxJunctionsNoHDF5" = 0) # Changed from -1 to 0 to be safer
+options("FRASER.maxJunctionsNoHDF5" = 0)
 
 # 3. Load and Prune IMMEDIATELY
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
@@ -43,13 +43,27 @@ colData(fds)$bamFile <- args$bam_path
 # Force Garbage Collection to reclaim memory from the full cohort load
 gc()
 
-# 5. Run counting with minimal overhead
-# We use recount=FALSE if possible, but keeping TRUE as per your requirement.
-# junctionId is set to NULL to ensure a fresh scan of this specific BAM.
+# 4. Configure Conservative Parallelism
+# MulticoreParam (forking) is likely causing the 11GB overflow.
+# SerialParam is the safest for memory-constrained environments.
+if(args$nthreads > 1){
+    # If you MUST use multiple threads, SnowParam is often more memory-stable
+    # than MulticoreParam on some systems, but SerialParam is the safest.
+    bpparam <- SerialParam()
+    message("Note: Defaulting to SerialParam to stay within 14GB limit.")
+} else {
+    bpparam <- SerialParam()
+}
+
+# 5. Run counting
+# We use NcpuPerSample = 1 to prevent internal sub-parallelization
+# which often bypasses the BPPARAM settings.
 fds <- countRNAData(
   fds,
   sampleIds = args$sample_id,
   recount = TRUE,
+  NcpuPerSample = 1,
+  BPPARAM = bpparam
 )
 
 # 6. Verification
@@ -57,7 +71,7 @@ fds <- countRNAData(
 expected_out <- file.path(args$work_dir, "cache", "splitCounts", paste0("splitCounts-", args$sample_id, ".RDS"))
 
 if (file.exists(expected_out)) {
-    message("Success: ", expected_out)
+    message("Success: Created split counts at ", expected_out)
 } else {
-    stop("Counting failed to produce output.")
+    stop("Counting failed. Check if BAM index is valid and accessible.")
 }
