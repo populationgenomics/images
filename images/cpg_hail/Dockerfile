@@ -1,6 +1,6 @@
 ARG VERSION=0.2.137.cpg1
 
-FROM python:3.11-slim-bookworm AS basic
+FROM python:3.11-slim-bullseye AS basic
 
 ENV HAIL_QUERY_BACKEND="service"
 
@@ -13,7 +13,7 @@ RUN apt-get update && \
         git \
         gnupg \
         jq \
-        openjdk-17-jdk-headless \
+        openjdk-11-jdk-headless \
         procps \
         rsync \
         software-properties-common \
