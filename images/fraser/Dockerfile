@@ -16,9 +16,12 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
     r-reshape2=1.4.5 \
     r-tidyverse=2.0.0 \
     r-argparse=2.2.3 \
+    r-biocmanager \
     bioconductor-fraser=${VERSION} \
     bioconductor-txdb.hsapiens.ucsc.hg38.knowngene=3.20.0 \
     bioconductor-org.hs.eg.db=3.20.0 && \
+    # Install summarizedRT via BiocManager
+    micromamba run -n base Rscript -e 'BiocManager::install("summarizedRT", update=FALSE, ask=FALSE)' && \
     micromamba clean --all --yes && \
     rm -rf /var/lib/apt/lists/*
 

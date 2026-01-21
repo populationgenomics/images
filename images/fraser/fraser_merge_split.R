@@ -30,7 +30,7 @@ fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
 message("Merging split counts from cache...")
-fds <- countRNAData(fds, recount = FALSE, BPPARAM = bp)
+fds <- getSplitReadCountsForAllSamples(fds, recount = FALSE, BPPARAM = bp)
 
 # 5. Extract and Annotate Junctions
 # This identifies which junctions exist across the whole cohort
