@@ -31,12 +31,20 @@ bpparam <- SerialParam()
 
 # 3. Load Dataset and Coordinates
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
-strandSpecific(fds) <- 0
+filtered_coords <- readRDS(args$coords_path) # This is your splice_site_coords.RDS
 
-
-
+# 4. Critical: Subset and Inject
+# First, subset to the specific sample
 fds <- fds[, fds$sampleID == args$sample_id]
 colData(fds)$bamFile <- args$bam_path
+
+# Replace the internal splice site ranges with your filtered ones
+# This forces FRASER to only query these specific BP positions in the BAM
+nonDegenerated <- !duplicated(filtered_coords)
+mcols(fds)$spliceSiteCoords <- filtered_coords[nonDegenerated]
+
+# Set strand specificity (Ensure 0 is correct for your library!)
+strandSpecific(fds) <- 0
 
 # 5. Run Non-Split Counting
 # This writes the .h5 or .RDS file into the cache_dir created above
