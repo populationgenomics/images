@@ -1,5 +1,9 @@
 #!/usr/bin/env Rscript
 
+# Set memory limit at the environment level before loading heavy libraries
+# 11GB limit
+Sys.setenv("R_MAX_VSIZE" = "14Gb")
+
 library(argparse)
 library(FRASER)
 library(BiocParallel)
@@ -23,8 +27,13 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
 # 2. Force HDF5 and Configure Parallelism
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
-# Use MulticoreParam for Linux environments
-bpparam <- MulticoreParam(workers = args$nthreads)
+
+# Configure MulticoreParam with the 11GB limit in mind
+# Note: nthreads shares the 11GB pool
+bpparam <- MulticoreParam(
+    workers = args$nthreads,
+    stop.on.error = TRUE
+)
 register(bpparam)
 
 # 3. Load the dataset
