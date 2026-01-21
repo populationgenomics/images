@@ -45,9 +45,6 @@ colData(fds)$bamFile <- args$bam_path
 # We check the first 1 million reads to estimate junction density
 message("--- Memory Diagnostic: Pre-scanning BAM for junction density ---")
 sample_bam <- BamFile(args$bam_path, yieldSize = 1000000)
-tmp_juncs <- summarizeJunctions(sample_bam, genome = NULL)
-message(paste("Unique junctions found in first 1M reads:", length(tmp_juncs)))
-rm(tmp_juncs, sample_bam)
 gc()
 
 # 5. Run Counting with strict filters
