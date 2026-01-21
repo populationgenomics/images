@@ -43,16 +43,6 @@ colData(fds)$bamFile <- args$bam_path
 # Force Garbage Collection to reclaim memory from the full cohort load
 gc()
 
-# 4. Parallel vs Serial Logic
-# If you are hitting 11GB limits, 'MulticoreParam' is risky because it forks the process.
-# If nthreads > 1, we use a very conservative setup.
-if(args$nthreads > 1) {
-    # Using 'tasks' helps throttle the memory spikes
-    bpparam <- MulticoreParam(workers = args$nthreads, tasks = args$nthreads)
-} else {
-    bpparam <- SerialParam()
-}
-
 # 5. Run counting with minimal overhead
 # We use recount=FALSE if possible, but keeping TRUE as per your requirement.
 # junctionId is set to NULL to ensure a fresh scan of this specific BAM.
@@ -60,7 +50,6 @@ fds <- countRNAData(
   fds,
   sampleIds = args$sample_id,
   recount = TRUE,
-  BPPARAM = bpparam
 )
 
 # 6. Verification
