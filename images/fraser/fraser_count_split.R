@@ -27,6 +27,7 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE
 # 2. Force HDF5 and Configure Parallelism
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = 0)
+bpparam <- SerialParam()
 
 # 3. Load and Prune IMMEDIATELY
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
@@ -40,30 +41,28 @@ strandSpecific(fds) <- 0
 fds <- fds[, fds$sampleID == args$sample_id]
 colData(fds)$bamFile <- args$bam_path
 
-# Force Garbage Collection to reclaim memory from the full cohort load
+# 4. PRE-SCAN DIAGNOSTIC
+# We check the first 1 million reads to estimate junction density
+message("--- Memory Diagnostic: Pre-scanning BAM for junction density ---")
+sample_bam <- BamFile(args$bam_path, yieldSize = 1000000)
+tmp_juncs <- summarizeJunctions(sample_bam, genome = NULL)
+message(paste("Unique junctions found in first 1M reads:", length(tmp_juncs)))
+rm(tmp_juncs, sample_bam)
 gc()
 
-# 4. Configure Conservative Parallelism
-# MulticoreParam (forking) is likely causing the 11GB overflow.
-# SerialParam is the safest for memory-constrained environments.
-if(args$nthreads > 1){
-    # If you MUST use multiple threads, SnowParam is often more memory-stable
-    # than MulticoreParam on some systems, but SerialParam is the safest.
-    bpparam <- SerialParam()
-    message("Note: Defaulting to SerialParam to stay within 14GB limit.")
-} else {
-    bpparam <- SerialParam()
-}
-
-# 5. Run counting
-# We use NcpuPerSample = 1 to prevent internal sub-parallelization
-# which often bypasses the BPPARAM settings.
+# 5. Run Counting with strict filters
+# minCount = 2 ignores junctions with only 1 supporting read (saves massive RAM)
+message(paste("Starting countRNAData for sample:", args$sample_id))
 fds <- countRNAData(
   fds,
   sampleIds = args$sample_id,
   recount = TRUE,
   NcpuPerSample = 1,
-  BPPARAM = bpparam
+  minCount = 2,
+  BPPARAM = bpparam,
+  param = ScanBamParam(
+    flag = scanBamFlag(isDuplicate = FALSE, isSecondaryAlignment = FALSE)
+  )
 )
 
 # 6. Verification
