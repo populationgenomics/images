@@ -3,7 +3,7 @@
 library(argparse)
 library(FRASER)
 library(BiocParallel)
-library(summarizedRT) # Useful for rowMaxs/assay handling
+library(SummarizedExperiment) # Useful for rowMaxs/assay handling
 
 parser <- ArgumentParser(description = "Merge Split Read Counts")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to FDS RDS file")
