@@ -32,8 +32,6 @@ bpparam <- SerialParam()
 # 3. Load and Prune IMMEDIATELY
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
 
-# 4. Update Metadata and Strand
-# Important: Ensure the strand matches your actual lab protocol
 strandSpecific(fds) <- 0
 
 # SUBSET FIRST: This is the most critical memory-saving step.
@@ -41,26 +39,13 @@ strandSpecific(fds) <- 0
 fds <- fds[, fds$sampleID == args$sample_id]
 colData(fds)$bamFile <- args$bam_path
 
-# 4. PRE-SCAN DIAGNOSTIC
-# We check the first 1 million reads to estimate junction density
-message("--- Memory Diagnostic: Pre-scanning BAM for junction density ---")
-sample_bam <- BamFile(args$bam_path, yieldSize = 1000000)
-gc()
 
 # 5. Run Counting with strict filters
 # minCount = 2 ignores junctions with only 1 supporting read (saves massive RAM)
 message(paste("Starting countRNAData for sample:", args$sample_id))
-fds <- countRNAData(
-  fds,
-  sampleIds = args$sample_id,
-  recount = TRUE,
-  NcpuPerSample = 1,
-  minCount = 2,
-  BPPARAM = bpparam,
-  param = ScanBamParam(
-    flag = scanBamFlag(isDuplicate = FALSE, isSecondaryAlignment = FALSE)
-  )
-)
+
+fds <- getSplitReadCountsForAllSamples(fds,
+                    recount = TRUE)
 
 # 6. Verification
 # FRASER writes split counts to: {work_dir}/cache/splitCounts/splitCounts-{sample_id}.RDS

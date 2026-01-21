@@ -27,28 +27,22 @@ dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 # 2. Configure Parallelism and HDF5
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
-register(MulticoreParam(workers = args$nthreads))
+bpparam <- SerialParam()
 
 # 3. Load Dataset and Coordinates
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
-splice_site_coords <- readRDS(args$coords_path)
+strandSpecific(fds) <- 0
 
-# 4. Synchronize BAM Path
-# Ensure the FDS object points to the current local BAM location on the worker
-bamData(fds)[bamData(fds)$sampleID == args$sample_id, "bamFile"] <- args$bam_path
+
+
+fds <- fds[, fds$sampleID == args$sample_id]
+colData(fds)$bamFile <- args$bam_path
 
 # 5. Run Non-Split Counting
 # This writes the .h5 or .RDS file into the cache_dir created above
 message(paste("Counting non-split reads for sample:", args$sample_id))
-countNonSplicedReads(
-  sampleID = args$sample_id,
-  fds = fds,
-  spliceSiteCoords = splice_site_coords,
-  splitCountRanges = NULL, # Already handled in merge_split
-  minAnchor = 5,
-  NcpuPerSample = args$nthreads,
-  recount = TRUE
-)
+getNonSplitReadCountsForAllSamples(fds,
+                    recount = TRUE)
 
 # 6. Verification
 # The Python script uses a 'find' command to move this output.
