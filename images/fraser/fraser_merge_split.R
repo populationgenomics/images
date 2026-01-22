@@ -21,19 +21,30 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE
 # 2. Configure Backend
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
+
+
 bp <- MulticoreParam(workers = args$nthreads)
 register(bp)
 
 # 3. Load Dataset
+# Match the name exactly as defined in the init stage
+fds_name <- paste0("FRASER_", args$cohort_id)
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# --- VULNERABILITY FIX: HAIL LOCALIZATION ---
-# Re-assert the dummy BAM path to prevent seqlevelsStyle crashes
-# during junction metadata extraction.
-dir.create("/io/batch/input_bams", recursive = TRUE, showWarnings = FALSE)
-dummy_bam <- "/io/batch/input_bams/dummy.bam"
-if(!file.exists(dummy_bam)) file.create(dummy_bam)
-colData(fds)$bamFile <- dummy_bam
+# --- VULNERABILITY FIX: BAM Metadata Extraction ---
+# Instead of a dummy file, point metadata queries to an existing BAM
+# to ensure chromosome naming (seqlevelsStyle) can be validated.
+# We assume the symlinks were created in /io/batch/input_bams/
+available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
+if(length(available_bams) > 0){
+    colData(fds)$bamFile <- available_bams[1]
+} else {
+    # Fallback if no bams localized (though this shouldn't happen)
+    dummy_bam <- "/io/batch/input_bams/dummy.bam"
+    dir.create("/io/batch/input_bams", recursive = TRUE, showWarnings = FALSE)
+    if(!file.exists(dummy_bam)) file.create(dummy_bam)
+    colData(fds)$bamFile <- dummy_bam
+}
 strandSpecific(fds) <- 0
 # --------------------------------------------
 
@@ -50,26 +61,24 @@ split_ranges <- rowRanges(split_counts_se)
 # Explicitly annotate splice sites to get donor/acceptor positions
 message("Annotating splice sites...")
 split_ranges <- FRASER:::annotateSpliceSite(split_ranges)
-saveRDS(split_ranges, "g_ranges_split_counts.RDS")
 
 # 6. Filtering for Non-Split Counting (Optimization)
-# We only want to count non-split reads for junctions that actually show up
-# in our data to save massive amounts of compute time.
 message("Filtering ranges for non-split counting...")
 minExpressionInOneSample <- 20
-# Use assay(..., "rawCountsJ") to get the counts for junctions
 raw_counts <- assay(split_counts_se, "rawCountsJ")
 max_count <- rowMaxs(raw_counts)
 passed <- max_count >= minExpressionInOneSample
 
 filtered_ranges <- split_ranges[passed, ]
-saveRDS(filtered_ranges, "g_ranges_non_split_counts.RDS")
 
 # 7. Extract Splice Site Coordinates
-# These are the specific base-pair positions the next jobs will query in the BAMs
 message("Extracting splice site coordinates...")
 splice_site_coords <- FRASER:::extractSpliceSiteCoordinates(filtered_ranges, fds)
-saveRDS(splice_site_coords, "splice_site_coords.RDS")
+
+# Use absolute paths for saving to match Python 'mv' commands
+saveRDS(split_ranges,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
+saveRDS(filtered_ranges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
+saveRDS(splice_site_coords, file.path(args$work_dir, "splice_site_coords.RDS"))
 
 # 8. Save the updated FDS
 saveFraserDataSet(fds)
