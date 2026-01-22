@@ -11,6 +11,9 @@ args <- parser$parse_args()
 
 # 1. Read the static mapping created by the Python job
 sample_map <- read.csv(args$sample_map, stringsAsFactors = FALSE)
+# Define the dataset name consistently with the Python expectations
+fds_name <- paste0("FRASER_", args$cohort_id)
+
 
 sample_table <- DataFrame(
   sampleID  = as.character(sample_map$sample_id),
