@@ -16,7 +16,7 @@ args <- parser$parse_args()
 fds_name <- paste0("FRASER_", args$cohort_id)
 save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
 dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
-file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
+file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
 
 # 2. Configure Backend
 options("FRASER.maxSamplesNoHDF5" = 0)
@@ -26,6 +26,16 @@ register(bp)
 
 # 3. Load Dataset
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
+
+# --- VULNERABILITY FIX: HAIL LOCALIZATION ---
+# Re-assert the dummy BAM path to prevent seqlevelsStyle crashes
+# during junction metadata extraction.
+dir.create("/io/batch/input_bams", recursive = TRUE, showWarnings = FALSE)
+dummy_bam <- "/io/batch/input_bams/dummy.bam"
+if(!file.exists(dummy_bam)) file.create(dummy_bam)
+colData(fds)$bamFile <- dummy_bam
+strandSpecific(fds) <- 0
+# --------------------------------------------
 
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
