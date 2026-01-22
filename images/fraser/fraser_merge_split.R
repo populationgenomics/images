@@ -59,10 +59,12 @@ strandSpecific(fds) <- 0
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
 message("Merging split counts from cache...")
 fds <- getSplitReadCountsForAllSamples(fds, recount = FALSE, BPPARAM = bp)
+split_counts_se <- SummarizedExperiment(
+    assays  = list(rawCountsJ = K(fds, type="j")),
+    rowRanges = rowRanges(fds, type="j"),
+    colData   = colData(fds)
+)
 
-# 5. Extract and Annotate Junctions
-# This identifies which junctions exist across the whole cohort
-split_counts_se <- asSE(fds, type = "j")
 split_ranges <- rowRanges(split_counts_se)
 
 # Explicitly annotate splice sites to get donor/acceptor positions
@@ -73,8 +75,8 @@ split_ranges <- FRASER:::annotateSpliceSite(split_ranges)
 message("Filtering ranges for non-split counting...")
 minExpressionInOneSample <- 20
 raw_counts <- assay(split_counts_se, "rawCountsJ")
-max_count <- rowMaxs(raw_counts)
-passed <- max_count >= minExpressionInOneSample
+max_count  <- rowMaxs(raw_counts)
+passed     <- max_count >= minExpressionInOneSample
 
 filtered_ranges <- split_ranges[passed, ]
 
