@@ -4,7 +4,8 @@ library(argparse)
 library(FRASER)
 library(BiocParallel)
 library(SummarizedExperiment)
-library(Rsamtools) # Added for BamFile validation
+library(Rsamtools)
+library(DelayedMatrixStats) # Crucial for rowMaxs on HDF5 data
 
 parser <- ArgumentParser(description = "Merge Split Read Counts")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to FDS RDS file")
@@ -32,11 +33,9 @@ register(bp)
 fds_name <- paste0("FRASER_", args$cohort_id)
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# --- VULNERABILITY FIX: BAM Metadata Extraction ---
-# Instead of a dummy file, point metadata queries to an existing BAM
-# to ensure chromosome naming (seqlevelsStyle) can be validated.
-# We assume the symlinks were created in /io/batch/input_bams/
+# --- NUCLEAR FIX: Force Valid Metadata ---
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
+
 if(length(available_bams) > 0){
     message("Using reference BAM for metadata: ", available_bams[1])
 
@@ -50,7 +49,7 @@ if(length(available_bams) > 0){
     # This satisfies the internal check that is currently crashing.
     seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(available_bams[1]))
 } else {
-    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams. The merge cannot proceed without at least one valid BAM header for seqlevelsStyle validation.")
+    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams.")
 }
 strandSpecific(fds) <- 0
 # --------------------------------------------
@@ -60,20 +59,21 @@ strandSpecific(fds) <- 0
 message("Merging split counts from cache...")
 fds <- getSplitReadCountsForAllSamples(fds, recount = FALSE, BPPARAM = bp)
 split_counts_se <- SummarizedExperiment(
-    assays  = list(rawCountsJ = K(fds, type="j")),
+    assays    = list(rawCountsJ = K(fds, type="j")),
     rowRanges = rowRanges(fds, type="j"),
     colData   = colData(fds)
 )
 
 split_ranges <- rowRanges(split_counts_se)
 
-# Explicitly annotate splice sites to get donor/acceptor positions
 message("Annotating splice sites...")
 split_ranges <- FRASER:::annotateSpliceSite(split_ranges)
 
 # 6. Filtering for Non-Split Counting (Optimization)
 message("Filtering ranges for non-split counting...")
 minExpressionInOneSample <- 20
+
+# Use assay() and rowMaxs from DelayedMatrixStats for HDF5 compatibility
 raw_counts <- assay(split_counts_se, "rawCountsJ")
 max_count  <- rowMaxs(raw_counts)
 passed     <- max_count >= minExpressionInOneSample
