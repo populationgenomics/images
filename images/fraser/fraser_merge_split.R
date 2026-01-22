@@ -3,7 +3,8 @@
 library(argparse)
 library(FRASER)
 library(BiocParallel)
-library(SummarizedExperiment) # Useful for rowMaxs/assay handling
+library(SummarizedExperiment)
+library(Rsamtools) # Added for BamFile validation
 
 parser <- ArgumentParser(description = "Merge Split Read Counts")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to FDS RDS file")
@@ -37,13 +38,19 @@ fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 # We assume the symlinks were created in /io/batch/input_bams/
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
 if(length(available_bams) > 0){
-    colData(fds)$bamFile <- available_bams[1]
+    message("Using reference BAM for metadata: ", available_bams[1])
+
+    # Force-update colData for ALL samples to point to a valid file.
+    # This prevents the 'dummy.bam' error during internal validation.
+    new_colData <- colData(fds)
+    new_colData$bamFile <- available_bams[1]
+    colData(fds) <- new_colData
+
+    # Manually assert the seqlevelsStyle (e.g., 'UCSC' or 'Ensembl')
+    # This satisfies the internal check that is currently crashing.
+    seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(available_bams[1]))
 } else {
-    # Fallback if no bams localized (though this shouldn't happen)
-    dummy_bam <- "/io/batch/input_bams/dummy.bam"
-    dir.create("/io/batch/input_bams", recursive = TRUE, showWarnings = FALSE)
-    if(!file.exists(dummy_bam)) file.create(dummy_bam)
-    colData(fds)$bamFile <- dummy_bam
+    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams. The merge cannot proceed without at least one valid BAM header for seqlevelsStyle validation.")
 }
 strandSpecific(fds) <- 0
 # --------------------------------------------
