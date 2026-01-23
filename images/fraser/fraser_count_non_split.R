@@ -48,8 +48,6 @@ strandSpecific(fds) <- 0
 # 5. Run Non-Split Counting
 # This writes the .h5 or .RDS file into the cache_dir created above
 message(paste("Counting non-split reads for sample:", args$sample_id))
-getNonSplitReadCountsForAllSamples(fds,
-                    recount = TRUE)
 
 sample_result <- countNonSplicedReads(args$sample_id,
                                       splitCountRanges = NULL,
