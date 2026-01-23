@@ -41,18 +41,6 @@ if(args$nthreads > 1){
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 filtered_coords <- readRDS(args$coords_path) # This is your splice_site_coords.RDS
 
-# 4. Inject coordinates FIRST (before subsetting)
-nonDegenerated <- !duplicated(filtered_coords)
-mcols(fds)$spliceSiteCoords <- filtered_coords[nonDegenerated]
-
-# THEN subset to the specific sample
-fds <- fds[, fds$sampleID == args$sample_id]
-
-# Validate the BAM path - Ensure the R script sees what Hail localized
-if(!file.exists(args$bam_path)){
-    stop(paste("BAM file not found at:", args$bam_path))
-}
-colData(fds)$bamFile <- args$bam_path
 
 # Set strand specificity
 strandSpecific(fds) <- 0
@@ -63,7 +51,13 @@ message(paste("Counting non-split reads for sample:", args$sample_id))
 getNonSplitReadCountsForAllSamples(fds,
                     recount = TRUE)
 
-
+sample_result <- countNonSplicedReads(args$sample_id,
+                                      splitCountRanges = NULL,
+                                      fds = fds,
+                                      NcpuPerSample = args$nthreads,
+                                      minAnchor=5,
+                                      recount= TRUE,
+                                      spliceSiteCoords=filtered_coords)
 # 6. Verification
 # FRASER saves individual counts to: cache/splitCounts/splitCounts-{sample_id}.RDS
 expected_out <- file.path(args$work_dir, "cache", "nonSplicedCounts-", paste0("nonSplicedCounts--", args$sample_id, ".RDS"))
