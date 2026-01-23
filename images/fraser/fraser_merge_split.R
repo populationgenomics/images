@@ -5,7 +5,8 @@ library(FRASER)
 library(BiocParallel)
 library(SummarizedExperiment)
 library(Rsamtools)
-library(DelayedMatrixStats) # Crucial for rowMaxs on HDF5 data
+library(DelayedMatrixStats)
+
 
 parser <- ArgumentParser(description = "Merge Split Read Counts")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to FDS RDS file")
@@ -33,7 +34,7 @@ register(bp)
 fds_name <- paste0("FRASER_", args$cohort_id)
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# --- NUCLEAR FIX: Force Valid Metadata ---
+
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
 
 if(length(available_bams) > 0){
@@ -53,42 +54,28 @@ if(length(available_bams) > 0){
 }
 strandSpecific(fds) <- 0
 # --------------------------------------------
-
+minExpressionInOneSample <- 20
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
 message("Merging split counts from cache...")
-fds <- getSplitReadCountsForAllSamples(fds, recount = FALSE, BPPARAM = bp)
-split_counts_se <- SummarizedExperiment(
-    assays    = list(rawCountsJ = K(fds, type="j")),
-    rowRanges = rowRanges(fds, type="j"),
-    colData   = colData(fds)
-)
+splitCounts <- getSplitReadCountsForAllSamples(fds=fds,
+                                               recount=FALSE)
+splitCountRanges <- rowRanges(splitCounts)
+splitCountRangesNonFilt <- FRASER:::annotateSpliceSite(splitCountRanges)
 
-split_ranges <- rowRanges(split_counts_se)
+maxCount <- rowMaxs(assay(splitCounts, "rawCountsJ"))
+passed <- maxCount >= minExpressionInOneSample
+# extract granges after filtering
+splitCountRanges <- splitCountRangesNonFilt[passed,]
+spliceSiteCoords <- FRASER:::extractSpliceSiteCoordinates(splitCountRanges)
 
-message("Annotating splice sites...")
-split_ranges <- FRASER:::annotateSpliceSite(split_ranges)
-
-# 6. Filtering for Non-Split Counting (Optimization)
-message("Filtering ranges for non-split counting...")
-minExpressionInOneSample <- 20
-
-# Use assay() and rowMaxs from DelayedMatrixStats for HDF5 compatibility
-raw_counts <- assay(split_counts_se, "rawCountsJ")
-max_count  <- rowMaxs(raw_counts)
-passed     <- max_count >= minExpressionInOneSample
-
-filtered_ranges <- split_ranges[passed, ]
-
-# 7. Extract Splice Site Coordinates
-message("Extracting splice site coordinates...")
-splice_site_coords <- FRASER:::extractSpliceSiteCoordinates(filtered_ranges, fds)
 
 # Use absolute paths for saving to match Python 'mv' commands
-saveRDS(split_ranges,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
-saveRDS(filtered_ranges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
-saveRDS(splice_site_coords, file.path(args$work_dir, "splice_site_coords.RDS"))
+#This is sslightly confusing, but the filtered granges will be used to annotate non_split counts
+saveRDS(splitCountRangesNonFilt,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
+saveRDS(splitCountRanges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
+saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
 
-# 8. Save the updated FDS
-saveFraserDataSet(fds)
+# 8. Save the updated FDS note that the dummy bams were used here so we dont have to localised the bam paths every time
+saveFraserDataSet(splitCounts)
 message("Merge split complete.")
