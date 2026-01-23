@@ -76,6 +76,3 @@ saveRDS(splitCountRangesNonFilt,       file.path(args$work_dir, "g_ranges_split_
 saveRDS(splitCountRanges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
 saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
 
-# 8. Save the updated FDS note that the dummy bams were used here so we dont have to localised the bam paths every time
-saveFraserDataSet(splitCounts)
-message("Merge split complete.")
