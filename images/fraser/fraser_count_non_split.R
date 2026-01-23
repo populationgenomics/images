@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+# Set memory limit - increased slightly to allow for HDF5 overhead
+Sys.setenv("R_MAX_VSIZE" = "16Gb")
+
 library(argparse)
 library(FRASER)
 library(BiocParallel)
@@ -27,23 +30,31 @@ dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 # 2. Configure Parallelism and HDF5
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
-bpparam <- SerialParam()
+# Use MulticoreParam if threads > 1, else Serial
+if(args$nthreads > 1){
+    bpparam <- MulticoreParam(workers = args$nthreads)
+} else {
+    bpparam <- SerialParam()
+}
 
 # 3. Load Dataset and Coordinates
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 filtered_coords <- readRDS(args$coords_path) # This is your splice_site_coords.RDS
 
-# 4. Critical: Subset and Inject
-# First, subset to the specific sample
-fds <- fds[, fds$sampleID == args$sample_id]
-colData(fds)$bamFile <- args$bam_path
-
-# Replace the internal splice site ranges with your filtered ones
-# This forces FRASER to only query these specific BP positions in the BAM
+# 4. Inject coordinates FIRST (before subsetting)
 nonDegenerated <- !duplicated(filtered_coords)
 mcols(fds)$spliceSiteCoords <- filtered_coords[nonDegenerated]
 
-# Set strand specificity (Ensure 0 is correct for your library!)
+# THEN subset to the specific sample
+fds <- fds[, fds$sampleID == args$sample_id]
+
+# Validate the BAM path - Ensure the R script sees what Hail localized
+if(!file.exists(args$bam_path)){
+    stop(paste("BAM file not found at:", args$bam_path))
+}
+colData(fds)$bamFile <- args$bam_path
+
+# Set strand specificity
 strandSpecific(fds) <- 0
 
 # 5. Run Non-Split Counting
@@ -52,12 +63,17 @@ message(paste("Counting non-split reads for sample:", args$sample_id))
 getNonSplitReadCountsForAllSamples(fds,
                     recount = TRUE)
 
+
 # 6. Verification
-# The Python script uses a 'find' command to move this output.
-# We just need to check if the file was created in the cache.
-out_file <- list.files(cache_dir, pattern = paste0("nonSplicedCounts-", args$sample_id))
-if (length(out_file) > 0) {
-    message("Successfully created non-split counts: ", out_file[1])
+# FRASER saves individual counts to: cache/splitCounts/splitCounts-{sample_id}.RDS
+expected_out <- file.path(args$work_dir, "cache", "nonSplicedCounts-", paste0("nonSplicedCounts--", args$sample_id, ".RDS"))
+
+if (file.exists(expected_out)) {
+    message("Success: Created split counts at ", expected_out)
 } else {
-    stop("Non-split counts file was not found in: ", cache_dir)
+    # Check for common Bioinformatic failures
+    if(!file.exists(paste0(args$bam_path, ".bai"))){
+        stop("BAM Index (.bai) missing. FRASER cannot perform random access counting.")
+    }
+    stop("Counting failed. The RDS file was not generated in the cache.")
 }
