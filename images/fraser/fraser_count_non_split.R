@@ -57,15 +57,25 @@ sample_result <- countNonSplicedReads(args$sample_id,
                                       recount= TRUE,
                                       spliceSiteCoords=filtered_coords)
 # 6. Verification
-# FRASER saves individual counts to: cache/splitCounts/splitCounts-{sample_id}.RDS
-expected_out <- file.path(args$work_dir, "cache", "nonSplicedCounts-", paste0("nonSplicedCounts--", args$sample_id, ".RDS"))
+# Define the actual subdirectory FRASER uses: cache/nonSplicedCounts/FRASER_{cohort_id}/
+actual_cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts", fds_name)
 
-if (file.exists(expected_out)) {
-    message("Success: Created split counts at ", expected_out)
+# FRASER typically names these files "nonSplicedCounts-{sample_id}.h5" or .RDS
+expected_h5  <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".h5"))
+expected_rds <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".RDS"))
+
+if (file.exists(expected_h5)) {
+    message("Success: Created non-split counts (HDF5) at ", expected_h5)
+} else if (file.exists(expected_rds)) {
+    message("Success: Created non-split counts (RDS) at ", expected_rds)
 } else {
-    # Check for common Bioinformatic failures
-    if(!file.exists(paste0(args$bam_path, ".bai"))){
-        stop("BAM Index (.bai) missing. FRASER cannot perform random access counting.")
+    # Debugging: List files in the directory to see what actually happened
+    if(dir.exists(actual_cache_dir)){
+        message("Files found in cache dir: ", paste(list.files(actual_cache_dir), collapse=", "))
     }
-    stop("Counting failed. The RDS file was not generated in the cache.")
+
+    if(!file.exists(paste0(args$bam_path, ".bai"))){
+        stop("BAM Index (.bai) missing. FRASER cannot perform random access.")
+    }
+    stop(paste("Counting failed. Output not found for sample:", args$sample_id))
 }
