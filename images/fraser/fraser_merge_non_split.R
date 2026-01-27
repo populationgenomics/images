@@ -33,19 +33,18 @@ fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
 
 if(length(available_bams) > 0){
-    message("Using reference BAM for metadata: ", available_bams[1])
+    # We use the reference BAM to satisfy the internal 'file.exists' checks.
+    # available_bams[1] should be the 'reference.bam' symlinked by the Python task.
+    ref_bam <- available_bams[1]
+    message("Validating metadata against reference BAM: ", ref_bam)
 
-    # Force-update colData for ALL samples to point to a valid file.
-    # This prevents the 'dummy.bam' error during internal validation.
-    new_colData <- colData(fds)
-    new_colData$bamFile <- available_bams[1]
-    colData(fds) <- new_colData
+    # Update colData paths for all samples to the reference BAM
+    colData(fds)$bamFile <- ref_bam
 
-    # Manually assert the seqlevelsStyle (e.g., 'UCSC' or 'Ensembl')
-    # This satisfies the internal check that is currently crashing.
-    seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(available_bams[1]))
+    # Ensure seqlevels match (e.g., 'chr1' vs '1') to prevent crashing during merge
+    seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(ref_bam))
 } else {
-    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams.")
+    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams. Validation will fail.")
 }
 strandSpecific(fds) <- 0
 # 4. Merge Split Counts
