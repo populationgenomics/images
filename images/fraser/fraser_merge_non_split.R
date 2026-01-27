@@ -47,10 +47,6 @@ if(length(available_bams) > 0){
     stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams. Validation will fail.")
 }
 strandSpecific(fds) <- 0
-# 4. Merge Split Counts
-# This step updates the fds with the junctions identified in Step 3
-message("Merging all split-read counts...")
-fds <- getSplitReadCountsForAllSamples(fds, recount = FALSE)
 
 # 5. Merge Non-Split Counts
 # We use the filtered ranges from Step 3 to define the 'at-site' junctions
@@ -60,7 +56,7 @@ fds <- getNonSplitReadCountsForAllSamples(
   fds = fds,
   splitCountRanges = split_count_ranges,
   minAnchor = 5,
-  recount = FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
+  recount =FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
 )
 
 # 6. Statistical Normalization (PSI and Jaccard)
