@@ -26,8 +26,28 @@ register(bp)
 
 # 3. Load Dataset
 # This loads the metadata; the counts will be pulled from the cache symlinked by Python
+fds_name <- paste0("FRASER_", args$cohort_id)
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
+
+available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
+
+if(length(available_bams) > 0){
+    message("Using reference BAM for metadata: ", available_bams[1])
+
+    # Force-update colData for ALL samples to point to a valid file.
+    # This prevents the 'dummy.bam' error during internal validation.
+    new_colData <- colData(fds)
+    new_colData$bamFile <- available_bams[1]
+    colData(fds) <- new_colData
+
+    # Manually assert the seqlevelsStyle (e.g., 'UCSC' or 'Ensembl')
+    # This satisfies the internal check that is currently crashing.
+    seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(available_bams[1]))
+} else {
+    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams.")
+}
+strandSpecific(fds) <- 0
 # 4. Merge Split Counts
 # This step updates the fds with the junctions identified in Step 3
 message("Merging all split-read counts...")
