@@ -51,18 +51,13 @@ strandSpecific(fds) <- 0
 # 5. Merge Non-Split Counts
 # We use the filtered ranges from Step 3 to define the 'at-site' junctions
 message("Merging all non-split-read counts from cache...")
-split_count_ranges <- readRDS(args$filtered_ranges_path)
+non_split_count_ranges <- readRDS(args$filtered_ranges_path)
 fds <- getNonSplitReadCountsForAllSamples(
   fds = fds,
-  splitCountRanges = split_count_ranges,
+  splitCountRanges = non_split_count_ranges,
   minAnchor = 5,
   recount =FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
 )
-
-# 6. Statistical Normalization (PSI and Jaccard)
-# This is the 'FRASER 2.0' logic. It calculates the metrics used for outlier detection.
-message("Calculating PSI and Jaccard Index values...")
-fds <- calculatePSIValues(fds, BPPARAM = bp)
 
 # 7. Final Save
 # This creates the complete 'fitted' dataset that the analysis script will use
