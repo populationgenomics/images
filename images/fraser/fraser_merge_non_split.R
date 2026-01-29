@@ -30,8 +30,19 @@ for(f in h5_files) {
     file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
 
-# Create the se.rds 'glue' file that loadHDF5SummarizedExperiment requires
-tmp_se <- SummarizedExperiment(rowRanges = non_split_count_ranges)
+# 1. Create a dummy matrix with the right number of samples (columns)
+# This satisfies the: if(all(samples(fds) %in% colnames(siteCounts))) check
+sample_names <- samples(fds)
+dummy_matrix <- matrix(0, nrow=length(non_split_count_ranges), ncol=length(sample_names))
+colnames(dummy_matrix) <- sample_names
+
+# 2. Create the SE object with the dummy matrix
+tmp_se <- SummarizedExperiment(
+    assays = list(rawCountsSS = dummy_matrix), # Name must match what FRASER expects
+    rowRanges = non_split_count_ranges
+)
+
+# 3. Save it to the cache directory
 saveRDS(tmp_se, file.path(out_dir, "se.rds"))
 # -----------------------------------------------------------------------
 
