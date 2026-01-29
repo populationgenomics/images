@@ -34,3 +34,4 @@ COPY fraser_count_non_split.R RDrnaseq/
 COPY fraser_init.R RDrnaseq/
 COPY fraser_merge_non_split.R RDrnaseq/
 COPY fraser_merge_split.R RDrnaseq/
+COPY fraser_join_counts.R RDrnaseq/
