@@ -71,5 +71,13 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 # 7. Final Save
 # This creates the complete 'fitted' dataset that the analysis script will use
 
-saveRDS(non_split_counts, file.path(args$work_dir, "non_split_counts.RDS"))
+# Use the HDF5-safe saving method for the counts object specifically
+# We save this to a new directory to avoid clobbering the input cache
+saveHDF5SummarizedExperiment(
+    non_split_counts,
+    dir = file.path(args$work_dir, "merged_non_split_counts"),
+    replace = TRUE
+)
 
+# Also save the updated FDS object (this updates the internal fds-object.RDS)
+fds <- saveFraserDataSet(fds)
