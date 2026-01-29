@@ -4,6 +4,7 @@ library(argparse)
 library(FRASER)
 library(BiocParallel)
 library(SummarizedExperiment)
+library(HDF5Array)
 
 parser <- ArgumentParser(description = "Merge Non-Split Counts and Calculate PSI")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to localized FDS RDS file")
@@ -15,40 +16,32 @@ args <- parser$parse_args()
 
 # 1. Load the ranges first so they are available for all steps
 non_split_count_ranges <- readRDS(args$filtered_ranges_path)
-
-# 2. Reconstruct Directory Structure
 fds_name <- paste0("FRASER_", args$cohort_id)
 save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
 out_dir <- file.path(save_dir, "nonSplitCounts")
-
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
 
-# --- MINIMUM FIX: Move files and create the missing 'se.rds' metadata ---
+# 2. Load FDS
+fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
+
+# 3. Anchor HDF5 Directory
 h5_files <- list.files("/io/batch", pattern = "\\.h5$", recursive = TRUE, full.names = TRUE)
 for(f in h5_files) {
     file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
-# 3. Load Dataset
-fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# 1. Create a dummy matrix with the right number of samples (columns)
-# This satisfies the: if(all(samples(fds) %in% colnames(siteCounts))) check
-sample_names <- samples(fds)
-dummy_matrix <- matrix(0, nrow=length(non_split_count_ranges), ncol=length(sample_names))
-colnames(dummy_matrix) <- sample_names
-
-# 2. Create the SE object with the dummy matrix
-tmp_se <- SummarizedExperiment(
-    assays = list(rawCountsSS = dummy_matrix), # Name must match what FRASER expects
+anchor_se <- SummarizedExperiment(
+    assays = list(rawCountsSS = matrix(0,
+                                       nrow = length(non_split_count_ranges),
+                                       ncol = length(samples(fds)),
+                                       dimnames = list(NULL, samples(fds)))),
     rowRanges = non_split_count_ranges
 )
+# This creates the se.rds that FRASER's loadHDF5SummarizedExperiment needs
+saveHDF5SummarizedExperiment(anchor_se, dir = out_dir, replace = TRUE, prefix = "")
 
-# 3. Save it to the cache directory
-saveRDS(tmp_se, file.path(out_dir, "se.rds"))
-# -----------------------------------------------------------------------
-
-# 2. Configure Backend
+# 4. Configure Backend
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
 bp <- MulticoreParam(workers = args$nthreads)
