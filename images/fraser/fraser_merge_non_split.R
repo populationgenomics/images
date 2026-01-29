@@ -22,8 +22,7 @@ save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
 out_dir <- file.path(save_dir, "nonSplitCounts")
 
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
-file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
+file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
 
 # --- MINIMUM FIX: Move files and create the missing 'se.rds' metadata ---
 h5_files <- list.files("/io/batch", pattern = "\\.h5$", recursive = TRUE, full.names = TRUE)
@@ -31,8 +30,7 @@ for(f in h5_files) {
     file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
 
-# Create the se.rds 'glue' file that FRASER/HDF5Array looks for
-non_split_count_ranges <- readRDS(args$filtered_ranges_path)
+# Create the se.rds 'glue' file that loadHDF5SummarizedExperiment requires
 tmp_se <- SummarizedExperiment(rowRanges = non_split_count_ranges)
 saveRDS(tmp_se, file.path(out_dir, "se.rds"))
 # -----------------------------------------------------------------------
@@ -59,8 +57,7 @@ if(length(available_bams) > 0){
 strandSpecific(fds) <- 0
 
 # --- 6. Merge Non-Split Counts ---
-message("Merging counts using HDF5 files in: ", new_dir)
-non_split_count_ranges <- readRDS(args$filtered_ranges_path)
+message("Merging counts using HDF5 files in: ", out_dir)
 non_split_counts <- getNonSplitReadCountsForAllSamples(
   fds = fds,
   splitCountRanges = non_split_count_ranges,
@@ -71,5 +68,5 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 # 7. Final Save
 # This creates the complete 'fitted' dataset that the analysis script will use
 
-saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
+saveRDS(non_split_counts, file.path(args$work_dir, "non_split_counts.RDS"))
 
