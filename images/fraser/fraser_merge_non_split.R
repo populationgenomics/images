@@ -14,43 +14,46 @@ args <- parser$parse_args()
 
 # 1. Reconstruct Directory Structure
 fds_name <- paste0("FRASER_", args$cohort_id)
+# Where the pipeline put them
+old_dir <- file.path(args$work_dir, "savedObjects", "Data_Analysis", "nonSplitCounts")
+# Where FRASER expects them
+new_dir <- file.path(args$work_dir, "savedObjects", fds_name, "nonSplitCounts")
+
+# --- 2. Move Files to Correct Location ---
+if (dir.exists(old_dir)) {
+    message("Moving .h5 files from ", old_dir, " to ", new_dir)
+    dir.create(new_dir, recursive = TRUE, showWarnings = FALSE)
+
+    h5_files <- list.files(old_dir, pattern = "\\.h5$", full.names = TRUE)
+    for (f in h5_files) {
+        dest <- file.path(new_dir, basename(f))
+        file.rename(f, dest)
+    }
+} else {
+    message("Notice: Source directory ", old_dir, " not found. Checking if files are already in place.")
+}
+
+# --- 3. Prepare FDS for Loading ---
+# FRASER's loadFraserDataSet looks for the .RDS file in a specific subfolder
 save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
+dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
+file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
 
-# Create the specific sub-directory for nonSplitCounts
-dir.create(file.path(save_dir, "nonSplitCounts"), recursive = TRUE, showWarnings = FALSE)
-
-# Copy the object so loadFraserDataSet can find it
-file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
-
-# 2. Configure Backend
-options("FRASER.maxSamplesNoHDF5" = 0)
-options("FRASER.maxJunctionsNoHDF5" = -1)
-bp <- MulticoreParam(workers = args$nthreads)
-register(bp)
-
-# --- 3. Load Dataset ---
+# --- 4. Load Dataset ---
+# dir is the ROOT workdir, name is the cohort folder name
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
-
 if(length(available_bams) > 0){
-    # We use the reference BAM to satisfy the internal 'file.exists' checks.
-    # available_bams[1] should be the 'reference.bam' symlinked by the Python task.
     ref_bam <- available_bams[1]
-    message("Validating metadata against reference BAM: ", ref_bam)
-
-    # Update colData paths for all samples to the reference BAM
     colData(fds)$bamFile <- ref_bam
     seqlevelsStyle(fds) <- seqlevelsStyle(Rsamtools::BamFile(ref_bam))
-} else {
-    stop("CRITICAL ERROR: No BAM files found.")
 }
 strandSpecific(fds) <- 0
 
-# 5. Merge Non-Split Counts
-# We use the filtered ranges from Step 3 to define the 'at-site' junctions
-message("Merging all non-split-read counts from cache...")
+# --- 6. Merge Non-Split Counts ---
+message("Merging counts using HDF5 files in: ", new_dir)
 non_split_count_ranges <- readRDS(args$filtered_ranges_path)
 non_split_counts <- getNonSplitReadCountsForAllSamples(
   fds = fds,
@@ -61,7 +64,6 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 
 # 7. Final Save
 # This creates the complete 'fitted' dataset that the analysis script will use
-message("Saving final merged FraserDataSet...")
+
 saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
 
-message("Merge non-split and PSI calculation complete.")
