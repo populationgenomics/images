@@ -29,6 +29,8 @@ h5_files <- list.files("/io/batch", pattern = "\\.h5$", recursive = TRUE, full.n
 for(f in h5_files) {
     file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
+# 3. Load Dataset
+fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 # 1. Create a dummy matrix with the right number of samples (columns)
 # This satisfies the: if(all(samples(fds) %in% colnames(siteCounts))) check
@@ -51,9 +53,6 @@ options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
 bp <- MulticoreParam(workers = args$nthreads)
 register(bp)
-
-# 3. Load Dataset
-fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
