@@ -15,7 +15,11 @@ args <- parser$parse_args()
 # 1. Reconstruct Directory Structure
 fds_name <- paste0("FRASER_", args$cohort_id)
 save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
-dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Create the specific sub-directory for nonSplitCounts
+dir.create(file.path(save_dir, "nonSplitCounts"), recursive = TRUE, showWarnings = FALSE)
+
+# Copy the object so loadFraserDataSet can find it
 file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
 
 # 2. Configure Backend
@@ -24,9 +28,7 @@ options("FRASER.maxJunctionsNoHDF5" = -1)
 bp <- MulticoreParam(workers = args$nthreads)
 register(bp)
 
-# 3. Load Dataset
-# This loads the metadata; the counts will be pulled from the cache symlinked by Python
-fds_name <- paste0("FRASER_", args$cohort_id)
+# --- 3. Load Dataset ---
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 
@@ -40,11 +42,9 @@ if(length(available_bams) > 0){
 
     # Update colData paths for all samples to the reference BAM
     colData(fds)$bamFile <- ref_bam
-
-    # Ensure seqlevels match (e.g., 'chr1' vs '1') to prevent crashing during merge
-    seqlevelsStyle(fds) <- seqlevelsStyle(BamFile(ref_bam))
+    seqlevelsStyle(fds) <- seqlevelsStyle(Rsamtools::BamFile(ref_bam))
 } else {
-    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams. Validation will fail.")
+    stop("CRITICAL ERROR: No BAM files found.")
 }
 strandSpecific(fds) <- 0
 
@@ -52,16 +52,16 @@ strandSpecific(fds) <- 0
 # We use the filtered ranges from Step 3 to define the 'at-site' junctions
 message("Merging all non-split-read counts from cache...")
 non_split_count_ranges <- readRDS(args$filtered_ranges_path)
-fds <- getNonSplitReadCountsForAllSamples(
+non_split_counts <- getNonSplitReadCountsForAllSamples(
   fds = fds,
   splitCountRanges = non_split_count_ranges,
   minAnchor = 5,
-  recount =FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
+  recount = FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
 )
 
 # 7. Final Save
 # This creates the complete 'fitted' dataset that the analysis script will use
 message("Saving final merged FraserDataSet...")
-fds <- saveFraserDataSet(fds)
+saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
 
 message("Merge non-split and PSI calculation complete.")
