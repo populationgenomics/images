@@ -3,6 +3,7 @@
 library(argparse)
 library(FRASER)
 library(BiocParallel)
+library(SummarizedExperiment)
 
 parser <- ArgumentParser(description = "Merge Non-Split Counts and Calculate PSI")
 parser$add_argument("--fds_path", required = TRUE, help = "Path to localized FDS RDS file")
@@ -12,43 +13,48 @@ parser$add_argument("--work_dir", default = "/io/work", help = "Working director
 parser$add_argument("--nthreads", type = "integer", default = 1, help = "Number of threads")
 args <- parser$parse_args()
 
-# 1. Reconstruct Directory Structure
+# 1. Load the ranges first so they are available for all steps
+non_split_count_ranges <- readRDS(args$filtered_ranges_path)
+
+# 2. Reconstruct Directory Structure
 fds_name <- paste0("FRASER_", args$cohort_id)
-# Where the pipeline put them
-old_dir <- file.path(args$work_dir, "savedObjects", "Data_Analysis", "nonSplitCounts")
-# Where FRASER expects them
-new_dir <- file.path(args$work_dir, "savedObjects", fds_name, "nonSplitCounts")
+save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
+out_dir <- file.path(save_dir, "nonSplitCounts")
 
-# --- 2. Move Files to Correct Location ---
-if (dir.exists(old_dir)) {
-    message("Moving .h5 files from ", old_dir, " to ", new_dir)
-    dir.create(new_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-    h5_files <- list.files(old_dir, pattern = "\\.h5$", full.names = TRUE)
-    for (f in h5_files) {
-        dest <- file.path(new_dir, basename(f))
-        file.rename(f, dest)
-    }
-} else {
-    message("Notice: Source directory ", old_dir, " not found. Checking if files are already in place.")
+file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
+
+# --- MINIMUM FIX: Move files and create the missing 'se.rds' metadata ---
+h5_files <- list.files("/io/batch", pattern = "\\.h5$", recursive = TRUE, full.names = TRUE)
+for(f in h5_files) {
+    file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
 
-# --- 3. Prepare FDS for Loading ---
-# FRASER's loadFraserDataSet looks for the .RDS file in a specific subfolder
-save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
-dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
-file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE)
+# Create the se.rds 'glue' file that FRASER/HDF5Array looks for
+non_split_count_ranges <- readRDS(args$filtered_ranges_path)
+tmp_se <- SummarizedExperiment(rowRanges = non_split_count_ranges)
+saveRDS(tmp_se, file.path(out_dir, "se.rds"))
+# -----------------------------------------------------------------------
 
-# --- 4. Load Dataset ---
-# dir is the ROOT workdir, name is the cohort folder name
+# 2. Configure Backend
+options("FRASER.maxSamplesNoHDF5" = 0)
+options("FRASER.maxJunctionsNoHDF5" = -1)
+bp <- MulticoreParam(workers = args$nthreads)
+register(bp)
+
+# 3. Load Dataset
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 
 available_bams <- list.files("/io/batch/input_bams", pattern = "\\.bam$", full.names = TRUE)
 if(length(available_bams) > 0){
     ref_bam <- available_bams[1]
+    message("Validating metadata against reference BAM: ", ref_bam)
     colData(fds)$bamFile <- ref_bam
     seqlevelsStyle(fds) <- seqlevelsStyle(Rsamtools::BamFile(ref_bam))
+} else {
+    stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams.")
 }
 strandSpecific(fds) <- 0
 
