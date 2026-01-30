@@ -3,7 +3,6 @@ library(argparse)
 library(FRASER)
 library(SummarizedExperiment)
 library(HDF5Array)
-library(BiocParallel)
 
 parser <- ArgumentParser(description = "Join Split and Non-Split Counts")
 parser$add_argument("--fds_path", required = TRUE)
@@ -13,55 +12,64 @@ parser$add_argument("--nthreads", type = "integer", default = 1)
 args <- parser$parse_args()
 
 fds_name <- paste0("FRASER_", args$cohort_id)
-# The orchestrator puts the non-split ranges here:
-filtered_ranges_path <- file.path(args$work_dir, "g_ranges_non_split_counts.RDS")
+saveDir <- file.path(args$work_dir, "savedObjects", fds_name)
 
 # Paths to the HDF5 anchor directories
-split_dir <- file.path(args$work_dir, "savedObjects", fds_name, "splitCounts")
-non_split_dir <- file.path(args$work_dir, "savedObjects", fds_name, "nonSplitCounts")
+split_dir <- file.path(saveDir, "splitCounts")
+non_split_dir <- file.path(saveDir, "nonSplitCounts")
+
+# Paths to the RDS files generated in previous steps
+gRangesSplitPath <- file.path(args$work_dir, "g_ranges_split_counts.RDS")
+spliceSitePath <- file.path(args$work_dir, "g_ranges_non_split_counts.RDS")
 
 # 1. Load the FDS object
+message("Loading Fraser Data Set...")
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# 2. Re-attach Split Counts (Junctions)
-# This prevents the "Missing rawCounts for 'j'" error
-if(file.exists(file.path(split_dir, "se.rds"))){
-    message("Linking split counts (rawCountsJ)...")
-    split_se <- loadHDF5SummarizedExperiment(dir = split_dir)
-    assay(fds, "rawCountsJ", withDimnames=FALSE) <- assay(split_se[, samples(fds)])
-}
+# Load the ranges
+splitCounts_gRanges <- readRDS(gRangesSplitPath)
+spliceSiteCoords <- readRDS(spliceSitePath)
 
-# 3. Handle Non-Split Counts (Splice Sites - 'ss')
-# We must use the ranges generated in the 'Merge Split' step
-if(!file.exists(filtered_ranges_path)){
-    stop(paste("Required non-split ranges not found at:", filtered_ranges_path))
-}
-non_split_count_ranges <- readRDS(filtered_ranges_path)
+# 2. Get splitReads counts
+# The HDF5 file is named 'rawCountsJ.h5' inside the splitCounts subdir
+splitCounts_h5_path <- file.path(split_dir, "rawCountsJ.h5")
+message(paste("Loading split counts from:", splitCounts_h5_path))
 
-if(!file.exists(file.path(non_split_dir, "se.rds"))){
-    message("Creating HDF5 anchor for non-split counts (rawCountsSS)...")
+splitCounts_h5 <- HDF5Array::HDF5Array(splitCounts_h5_path, "rawCountsJ")
+splitCounts_se <- SummarizedExperiment(
+  colData = colData(fds),
+  rowRanges = splitCounts_gRanges,
+  assays = list(rawCountsJ = splitCounts_h5)
+)
 
-    # Create the container matching the dimensions FRASER expects
-    anchor_se <- SummarizedExperiment(
-        assays = list(rawCountsSS = matrix(0,
-                                           nrow = length(non_split_count_ranges),
-                                           ncol = length(samples(fds)),
-                                           dimnames = list(NULL, samples(fds)))),
-        rowRanges = non_split_count_ranges
-    )
-    # This creates the se.rds that FRASER needs to 'see' the .h5 files
-    saveHDF5SummarizedExperiment(anchor_se, dir = non_split_dir, replace = TRUE, prefix = "")
-}
+# 3. Get nonSplitRead counts
+# The HDF5 file is named 'rawCountsSS.h5' inside the nonSplitCounts subdir
+nonSplitCounts_h5_path <- file.path(non_split_dir, "rawCountsSS.h5")
+message(paste("Loading non-split counts from:", nonSplitCounts_h5_path))
 
-# 4. Final Join and PSI Calculation
-message("Loading non-split counts...")
-non_split_se <- loadHDF5SummarizedExperiment(dir = non_split_dir)
-assay(fds, "rawCountsSS", withDimnames=FALSE) <- assay(non_split_se[, samples(fds)])
+nonSplitCounts_h5 <- HDF5Array::HDF5Array(nonSplitCounts_h5_path, "rawCountsSS")
+nonSplitCounts_se <- SummarizedExperiment(
+  colData = colData(fds),
+  rowRanges = spliceSiteCoords,
+  assays = list(rawCountsSS = nonSplitCounts_h5)
+)
 
-# Calculate ratios (PSI)
+# 4. Add Counts to FRASER object
+# This function automatically populates the internal slots correctly
+message("Joining assays into FDS object...")
+fds <- addCountsToFraserDataSet(
+  fds = fds,
+  splitCounts = splitCounts_se,
+  nonSplitCounts = nonSplitCounts_se
+)
+
+# 5. Calculate PSI values
 message("Calculating PSI values...")
 bp <- MulticoreParam(workers = args$nthreads)
 fds <- calculatePSIValues(fds, BPPARAM = bp)
 
-# 5. Save the final integrated object
+# 6. Save final FRASER object
+message("Saving integrated FDS...")
 fds <- saveFraserDataSet(fds)
+
+message("FRASER join complete.")
