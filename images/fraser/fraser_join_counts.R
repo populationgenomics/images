@@ -16,16 +16,14 @@ saveDir <- file.path(args$work_dir, "savedObjects", fds_name)
 
 # Paths to the RDS files generated in previous steps
 gRangesSplitPath <- file.path(args$work_dir, "g_ranges_split_counts.RDS")
-spliceSitePath <- file.path(args$work_dir, "splice_site_coords.RDS")  # Correct file
+spliceSitePath <- file.path(args$work_dir, "splice_site_coords.RDS")
 
-# Load the ranges
-splitCounts_gRanges <- readRDS(gRangesSplitPath)
-spliceSiteCoords <- readRDS(spliceSitePath)  # Now loads the actual splice site coords
+# 1. Load the FDS object DIRECTLY from RDS (not using loadFraserDataSet)
+message("Loading Fraser Data Set from RDS...")
+fds <- readRDS(args$fds_path)
 
-
-# 1. Load the FDS object
-message("Loading Fraser Data Set...")
-fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
+# Update the internal directory path to match the current work directory
+workingDir(fds) <- saveDir
 
 # Load the ranges
 splitCounts_gRanges <- readRDS(gRangesSplitPath)
