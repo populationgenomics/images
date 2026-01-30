@@ -14,13 +14,14 @@ args <- parser$parse_args()
 fds_name <- paste0("FRASER_", args$cohort_id)
 saveDir <- file.path(args$work_dir, "savedObjects", fds_name)
 
-# Paths to the HDF5 anchor directories
-split_dir <- file.path(saveDir, "splitCounts")
-non_split_dir <- file.path(saveDir, "nonSplitCounts")
-
 # Paths to the RDS files generated in previous steps
 gRangesSplitPath <- file.path(args$work_dir, "g_ranges_split_counts.RDS")
-spliceSitePath <- file.path(args$work_dir, "g_ranges_non_split_counts.RDS")
+spliceSitePath <- file.path(args$work_dir, "splice_site_coords.RDS")  # Correct file
+
+# Load the ranges
+splitCounts_gRanges <- readRDS(gRangesSplitPath)
+spliceSiteCoords <- readRDS(spliceSitePath)  # Now loads the actual splice site coords
+
 
 # 1. Load the FDS object
 message("Loading Fraser Data Set...")
@@ -32,21 +33,19 @@ spliceSiteCoords <- readRDS(spliceSitePath)
 
 # 2. Get splitReads counts
 message("Loading split counts...")
-splitCounts_h5 <- HDF5Array(file.path(split_dir, "rawCountsJ"), "rawCountsJ")
-splitCounts_se <- SummarizedExperiment(
-  colData = colData(fds),
-  rowRanges = splitCounts_gRanges,
-  assays = list(rawCountsJ = splitCounts_h5)
-)
+split_se_path <- file.path(saveDir, "splitCounts", "se.rds")
+if(!file.exists(split_se_path)){
+    stop(paste("Missing splitCounts anchor at:", split_se_path))
+}
+splitCounts_se <- readRDS(split_se_path)
 
 # 3. Get nonSplitRead counts
 message("Loading non-split counts...")
-nonSplitCounts_h5 <- HDF5Array(file.path(non_split_dir, "rawCountsSS"), "rawCountsSS")
-nonSplitCounts_se <- SummarizedExperiment(
-  colData = colData(fds),
-  rowRanges = spliceSiteCoords,
-  assays = list(rawCountsSS = nonSplitCounts_h5)
-)
+non_split_se_path <- file.path(saveDir, "nonSplitCounts", "se.rds")
+if(!file.exists(non_split_se_path)){
+    stop(paste("Missing nonSplitCounts anchor at:", non_split_se_path))
+}
+nonSplitCounts_se <- readRDS(non_split_se_path)
 
 # 4. Add Counts to FRASER object
 # This function automatically populates the internal slots correctly
@@ -57,13 +56,8 @@ fds <- addCountsToFraserDataSet(
   nonSplitCounts = nonSplitCounts_se
 )
 
-# 5. Calculate PSI values
-message("Calculating PSI values...")
-bp <- MulticoreParam(workers = args$nthreads)
-fds <- calculatePSIValues(fds, BPPARAM = bp)
-
-# 6. Save final FRASER object
-message("Saving integrated FDS...")
+# 5. Save final FRASER object
+message("Saving final integrated FDS...")
 fds <- saveFraserDataSet(fds)
 
 message("FRASER join complete.")
