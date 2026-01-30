@@ -23,14 +23,13 @@ workingDir(fds) <- saveDir
 message("Loading split counts...")
 split_se_dir <- file.path(saveDir, "splitCounts")
 if(!dir.exists(split_se_dir)){
-    stop(paste("Missing splitCounts directory at:", split_se_dir,
-               "\nYou need to run the split counting step first"))
+    stop(paste("Missing splitCounts directory at:", split_se_dir))
 }
 splitCounts_se <- loadHDF5SummarizedExperiment(dir = split_se_dir)
 
 # 3. Load merged non-split counts
 message("Loading merged non-split counts...")
-merged_non_split_dir <- file.path(args$work_dir, "merged_non_split_counts")
+merged_non_split_dir <- file.path(saveDir, "nonSplitCounts")
 if(!dir.exists(merged_non_split_dir)){
     stop(paste("Missing merged non-split counts directory at:", merged_non_split_dir))
 }
