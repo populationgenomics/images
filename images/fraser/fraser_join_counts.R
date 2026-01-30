@@ -31,11 +31,8 @@ splitCounts_gRanges <- readRDS(gRangesSplitPath)
 spliceSiteCoords <- readRDS(spliceSitePath)
 
 # 2. Get splitReads counts
-# The HDF5 file is named 'rawCountsJ.h5' inside the splitCounts subdir
-splitCounts_h5_path <- file.path(split_dir, "rawCountsJ.h5")
-message(paste("Loading split counts from:", splitCounts_h5_path))
-
-splitCounts_h5 <- HDF5Array::HDF5Array(splitCounts_h5_path, "rawCountsJ")
+message("Loading split counts...")
+splitCounts_h5 <- HDF5Array(file.path(split_dir, "rawCountsJ"), "rawCountsJ")
 splitCounts_se <- SummarizedExperiment(
   colData = colData(fds),
   rowRanges = splitCounts_gRanges,
@@ -43,11 +40,8 @@ splitCounts_se <- SummarizedExperiment(
 )
 
 # 3. Get nonSplitRead counts
-# The HDF5 file is named 'rawCountsSS.h5' inside the nonSplitCounts subdir
-nonSplitCounts_h5_path <- file.path(non_split_dir, "rawCountsSS.h5")
-message(paste("Loading non-split counts from:", nonSplitCounts_h5_path))
-
-nonSplitCounts_h5 <- HDF5Array::HDF5Array(nonSplitCounts_h5_path, "rawCountsSS")
+message("Loading non-split counts...")
+nonSplitCounts_h5 <- HDF5Array(file.path(non_split_dir, "rawCountsSS"), "rawCountsSS")
 nonSplitCounts_se <- SummarizedExperiment(
   colData = colData(fds),
   rowRanges = spliceSiteCoords,
