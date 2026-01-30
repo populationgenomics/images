@@ -14,39 +14,42 @@ args <- parser$parse_args()
 fds_name <- paste0("FRASER_", args$cohort_id)
 saveDir <- file.path(args$work_dir, "savedObjects", fds_name)
 
-# Paths to the RDS files generated in previous steps
-gRangesSplitPath <- file.path(args$work_dir, "g_ranges_split_counts.RDS")
-spliceSitePath <- file.path(args$work_dir, "splice_site_coords.RDS")
-
-# 1. Load the FDS object DIRECTLY from RDS (not using loadFraserDataSet)
+# 1. Load the FDS object
 message("Loading Fraser Data Set from RDS...")
 fds <- readRDS(args$fds_path)
 
 # Update the internal directory path to match the current work directory
 workingDir(fds) <- saveDir
 
-# Load the ranges
-splitCounts_gRanges <- readRDS(gRangesSplitPath)
-spliceSiteCoords <- readRDS(spliceSitePath)
-
-# 2. Get splitReads counts
+# 2. Load split counts
 message("Loading split counts...")
-split_se_path <- file.path(saveDir, "splitCounts", "se.rds")
-if(!file.exists(split_se_path)){
-    stop(paste("Missing splitCounts anchor at:", split_se_path))
+split_counts_path <- file.path(args$work_dir, "g_ranges_split_counts.RDS")
+if(!file.exists(split_counts_path)){
+    stop(paste("Missing split counts at:", split_counts_path))
 }
-splitCounts_se <- readRDS(split_se_path)
+splitCounts_se <- readRDS(split_counts_path)
 
-# 3. Get nonSplitRead counts
-message("Loading non-split counts...")
-non_split_se_path <- file.path(saveDir, "nonSplitCounts", "se.rds")
-if(!file.exists(non_split_se_path)){
-    stop(paste("Missing nonSplitCounts anchor at:", non_split_se_path))
+# CRITICAL: Materialize the assays if they're HDF5-backed with broken paths
+message("Materializing split counts assays...")
+for(assay_name in names(assays(splitCounts_se))){
+    assays(splitCounts_se)[[assay_name]] <- as.matrix(assays(splitCounts_se)[[assay_name]])
 }
-nonSplitCounts_se <- readRDS(non_split_se_path)
 
-# 4. Add Counts to FRASER object
-# This function automatically populates the internal slots correctly
+# 3. Load merged non-split counts
+message("Loading merged non-split counts...")
+merged_non_split_dir <- file.path(args$work_dir, "merged_non_split_counts")
+if(!dir.exists(merged_non_split_dir)){
+    stop(paste("Missing merged non-split counts directory at:", merged_non_split_dir))
+}
+nonSplitCounts_se <- loadHDF5SummarizedExperiment(dir = merged_non_split_dir)
+
+# CRITICAL: Materialize non-split counts assays too
+message("Materializing non-split counts assays...")
+for(assay_name in names(assays(nonSplitCounts_se))){
+    assays(nonSplitCounts_se)[[assay_name]] <- as.matrix(assays(nonSplitCounts_se)[[assay_name]])
+}
+
+# 4. Add counts to FRASER object
 message("Joining assays into FDS object...")
 fds <- addCountsToFraserDataSet(
   fds = fds,
