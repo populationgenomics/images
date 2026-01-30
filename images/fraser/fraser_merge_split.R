@@ -58,8 +58,15 @@ minExpressionInOneSample <- 20
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
 message("Merging split counts from cache...")
-splitCounts <- getSplitReadCountsForAllSamples(fds=fds,
-                                               recount=FALSE)
+splitCounts <- getSplitReadCountsForAllSamples(fds=fds, recount=FALSE)
+
+# SAVE THE SPLIT COUNTS BEFORE FILTERING
+message("Saving merged split counts SummarizedExperiment...")
+split_counts_dir <- file.path(save_dir, "splitCounts")
+dir.create(split_counts_dir, recursive = TRUE, showWarnings = FALSE)
+saveHDF5SummarizedExperiment(splitCounts, dir = split_counts_dir, replace = TRUE)
+
+# Now continue with filtering for annotations
 splitCountRanges <- rowRanges(splitCounts)
 splitCountRangesNonFilt <- FRASER:::annotateSpliceSite(splitCountRanges)
 
@@ -71,7 +78,7 @@ spliceSiteCoords <- FRASER:::extractSpliceSiteCoordinates(splitCountRanges)
 
 
 # Use absolute paths for saving to match Python 'mv' commands
-#This is sslightly confusing, but the filtered granges will be used to annotate non_split counts
+#This is slightly confusing, but the filtered granges will be used to annotate non_split counts
 saveRDS(splitCountRangesNonFilt,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
 saveRDS(splitCountRanges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
 saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
