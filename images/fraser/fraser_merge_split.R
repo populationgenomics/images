@@ -6,6 +6,7 @@ library(BiocParallel)
 library(SummarizedExperiment)
 library(Rsamtools)
 library(DelayedMatrixStats)
+library(HDF5Array)
 
 
 parser <- ArgumentParser(description = "Merge Split Read Counts")

@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
     # Install summarizedRT via BiocManager
     micromamba run -n base Rscript -e 'BiocManager::install("SummarizedExperiment", update=FALSE, ask=FALSE)' && \
     micromamba run -n base Rscript -e 'BiocManager::install("Rsamtools", update=FALSE, ask=FALSE)' && \
+    micromamba run -n base Rscript -e 'BiocManager::install("HDF5Array", update=FALSE, ask=FALSE)' && \
     micromamba clean --all --yes && \
     rm -rf /var/lib/apt/lists/*
 
