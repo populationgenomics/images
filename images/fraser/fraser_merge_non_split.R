@@ -68,6 +68,11 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
   recount = FALSE # Crucial: FALSE ensures it uses the .h5 files from the cache
 )
 
+# CRITICAL ADDITION: Annotate the non-split counts object!
+# This assigns 'spliceSiteID' to the rowRanges of your non-split object.
+message("Annotating non-split splice site IDs...")
+non_split_counts <- annotateSpliceSites(non_split_counts)
+
 # 7. Final Save
 # This populates the internal 'nonSplicedReads' slot and the SS map
 nonSplicedReads(fds) <- non_split_counts
