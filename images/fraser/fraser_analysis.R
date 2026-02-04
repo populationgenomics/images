@@ -23,25 +23,26 @@ args <- parser$parse_args()
 bp <- MulticoreParam(workers = args$nthreads)
 register(bp)
 
-# 1. Load the merged FDS
-# Python extracted the tar into args$fds_dir.
-# Inside is 'savedObjects/FRASER_{cohort_id}/...'
-
+# --- 2. Load the Dataset ---
+options(delayedArray.block.size = 1e9)
 fds_name <- paste0("FRASER_", args$cohort_id)
 message(paste0("Loading Fraser Data Set: ", fds_name))
 fds <- loadFraserDataSet(dir = file.path(args$fds_dir, fds_name), name = fds_name)
 
 # REPAIR: If spliceSiteID is missing, FRASER 2.0 cannot calculate Jaccard/PSI
-if(is.null(nonSplicedReads(fds)) || !("spliceSiteID" %in% colnames(mcols(fds, type="ss")))){
-    message("Restoring missing Splice Site IDs for Jaccard calculation...")
+if(! "spliceSiteID" %in% colnames(mcols(fds, type="ss"))){
+  message("Manually injecting Splice Site IDs...")
 
-    # We re-extract the splice site map from the existing junctions
-    # this forces FRASER to re-index the donor/acceptor relationships
-    fds <- makeFraserDataSet(colData=colData(fds),
-                            junctions=rowRanges(fds, type="j"))
+  # This internal FRASER call generates the mapping without needing the full constructor
+  # It populates the 'spliceSiteCoords' slot which calculatePSIValues needs
+  fds <- FRASER:::annotateSpliceSite(fds)
 
-    # Re-assign counts if they were lost during the re-make
-    # (Usually not necessary if using loadFraserDataSet, but good for safety)
+  # We also need to ensure the Jaccard-specific metadata is initialized
+  # Often, this is what's missing when the merge.data.table fails
+  if(is.null(mcols(fds, type="j")$startID)){
+    # This maps junctions to the spliceSiteIDs we just generated
+    fds <- FRASER:::updateIndices(fds)
+  }
 }
 
 # --- 3. Filtering ---
