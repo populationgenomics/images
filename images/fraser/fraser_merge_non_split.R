@@ -80,6 +80,6 @@ saveHDF5SummarizedExperiment(
     replace = TRUE
 )
 
-fds <- calculatePSIValues(fds)
+
 # Also save the updated FDS object (this updates the internal fds-object.RDS)
 fds <- saveFraserDataSet(fds)
