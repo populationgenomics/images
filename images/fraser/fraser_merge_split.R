@@ -61,15 +61,20 @@ minExpressionInOneSample <- 20
 message("Merging split counts from cache...")
 splitCounts <- getSplitReadCountsForAllSamples(fds=fds, recount=FALSE)
 
-# SAVE THE SPLIT COUNTS BEFORE FILTERING
-message("Saving merged split counts SummarizedExperiment...")
+# --- CRITICAL FIX: Annotate the object ITSELF, not a temporary variable ---
+# This generates startID and endID and attaches them to the rowRanges
+message("Generating Splice Site IDs...")
+rowRanges(splitCounts) <- FRASER:::annotateSpliceSite(rowRanges(splitCounts))
+
+# 5. Now save the Annotated SE
+message("Saving merged split counts SummarizedExperiment with IDs...")
 split_counts_dir <- file.path(save_dir, "splitCounts")
 dir.create(split_counts_dir, recursive = TRUE, showWarnings = FALSE)
 saveHDF5SummarizedExperiment(splitCounts, dir = split_counts_dir, replace = TRUE)
 
-# Now continue with filtering for annotations
-splitCountRanges <- rowRanges(splitCounts)
-splitCountRangesNonFilt <- FRASER:::annotateSpliceSite(splitCountRanges)
+# 6. Extract coordinates for the next pipeline steps
+# We use the rowRanges that NOW HAVE the startID/endID columns
+splitCountRangesNonFilt <- rowRanges(splitCounts)
 
 maxCount <- rowMaxs(assay(splitCounts, "rawCountsJ"))
 passed <- maxCount >= minExpressionInOneSample

@@ -69,7 +69,8 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 )
 
 # 7. Final Save
-# This creates the complete 'fitted' dataset that the analysis script will use
+# This populates the internal 'nonSplicedReads' slot and the SS map
+nonSplicedReads(fds) <- non_split_counts
 
 # Use the HDF5-safe saving method for the counts object specifically
 # We save this to a new directory to avoid clobbering the input cache
@@ -79,5 +80,6 @@ saveHDF5SummarizedExperiment(
     replace = TRUE
 )
 
+fds <- calculatePSIValues(fds)
 # Also save the updated FDS object (this updates the internal fds-object.RDS)
 fds <- saveFraserDataSet(fds)

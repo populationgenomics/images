@@ -11,6 +11,48 @@ parser$add_argument("--work_dir", default = "/io/work")
 parser$add_argument("--nthreads", type = "integer", default = 1)
 args <- parser$parse_args()
 
+check_fds_integrity <- function(fds) {
+    message("\n--- Running FDS Integrity Check ---")
+
+    # 1. Check for basic ID existence
+    j_cols <- colnames(mcols(fds, type="j"))
+    ss_cols <- colnames(mcols(fds, type="ss"))
+
+    has_ids <- all(c("startID", "endID") %in% j_cols) && ("spliceSiteID" %in% ss_cols)
+
+    if(has_ids) {
+        message("SUCCESS: SpliceSiteIDs found in both Junctions and SpliceSites.")
+    } else {
+        stop("CRITICAL ERROR: SpliceSiteID metadata is missing. Analysis will fail.")
+    }
+
+    # 2. Check for ID alignment (The "by.y" error test)
+    # Are all junction startIDs present in the Splice Site map?
+    missing_starts <- !all(mcols(fds, type="j")$startID %in% mcols(fds, type="ss")$spliceSiteID)
+    if(missing_starts) {
+        stop("CRITICAL ERROR: Junction startIDs do not match SpliceSiteIDs. Map is broken.")
+    }
+    message("SUCCESS: Junction IDs are correctly mapped to Splice Sites.")
+
+    # 3. Check HDF5 Backend connectivity
+    # Ensure the pointers to the .h5 files are valid and readable
+    tryCatch({
+        test_val <- as.matrix(counts(fds, type="j")[1, 1])
+        message("SUCCESS: HDF5 backends are reachable and readable.")
+    }, error = function(e) {
+        stop("CRITICAL ERROR: HDF5 files are missing or paths are broken: ", e$message)
+    })
+
+    # 4. Check for Non-Split Counts
+    if("rawCountsSS" %in% assayNames(fds)) {
+        message("SUCCESS: Non-split counts (rawCountsSS) are present.")
+    } else {
+        warning("WARNING: Non-split counts are missing. Jaccard/PSI calculation may fail.")
+    }
+
+    message("--- Integrity Check Passed ---\n")
+}
+
 fds_name <- paste0("FRASER_", args$cohort_id)
 saveDir <- file.path(args$work_dir, "savedObjects", fds_name)
 
@@ -43,6 +85,12 @@ fds <- addCountsToFraserDataSet(
   nonSplitCounts = nonSplitCounts_se
 )
 
+# Instead of updateIndices, use this to force the internal ID mapping
+# This will populate the 'ss' (splice site) metadata correctly
+fds <- calculatePSIValues(fds, types="psi5")
+
+# --- Call the check before finishing ---
+check_fds_integrity(fds)
 # 5. Save final FRASER object
 message("Saving final integrated FDS...")
 fds <- saveFraserDataSet(fds)
