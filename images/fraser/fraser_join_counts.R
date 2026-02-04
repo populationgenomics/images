@@ -77,7 +77,13 @@ if(!dir.exists(merged_non_split_dir)){
 }
 nonSplitCounts_se <- loadHDF5SummarizedExperiment(dir = merged_non_split_dir)
 
-# 4. Add counts to FRASER object
+# 4. Annotate the Split Counts
+# This is the missing link. It generates the spliceSiteID mapping
+# that calculatePSIValues needs later.
+message("Annotating splice sites...")
+splitCounts_se <- annotateSpliceSites(splitCounts_se)
+
+# 5. Add counts to FRASER object
 message("Joining assays into FDS object...")
 fds <- addCountsToFraserDataSet(
   fds = fds,
@@ -85,9 +91,11 @@ fds <- addCountsToFraserDataSet(
   nonSplitCounts = nonSplitCounts_se
 )
 
-# Instead of updateIndices, use this to force the internal ID mapping
+# --- Call the check before finishing ---
+check_fds_integrity(fds)
+
 # This will populate the 'ss' (splice site) metadata correctly
-fds <- calculatePSIValues(fds, types="psi5")
+fds <- calculatePSIValues(fds, types="jaccard")
 
 # --- Call the check before finishing ---
 check_fds_integrity(fds)
