@@ -26,11 +26,23 @@ register(bp)
 # 1. Load the merged FDS
 # Python extracted the tar into args$fds_dir.
 # Inside is 'savedObjects/FRASER_{cohort_id}/...'
-options(delayedArray.block.size = 1e9) # 1GB blocks
+
 fds_name <- paste0("FRASER_", args$cohort_id)
-message(paste0("Loading Fraser Data Set: ", fds_name, " from ", args$fds_dir))
+message(paste0("Loading Fraser Data Set: ", fds_name))
 fds <- loadFraserDataSet(dir = file.path(args$fds_dir, fds_name), name = fds_name)
 
+# REPAIR: If spliceSiteID is missing, FRASER 2.0 cannot calculate Jaccard/PSI
+if(is.null(nonSplicedReads(fds)) || !("spliceSiteID" %in% colnames(mcols(fds, type="ss")))){
+    message("Restoring missing Splice Site IDs for Jaccard calculation...")
+
+    # We re-extract the splice site map from the existing junctions
+    # this forces FRASER to re-index the donor/acceptor relationships
+    fds <- makeFraserDataSet(colData=colData(fds),
+                            junctions=rowRanges(fds, type="j"))
+
+    # Re-assign counts if they were lost during the re-make
+    # (Usually not necessary if using loadFraserDataSet, but good for safety)
+}
 
 # --- 3. Filtering ---
 # It is critical to filter before fitting to reduce the size of the latent space matrices
