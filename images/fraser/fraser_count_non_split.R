@@ -43,7 +43,7 @@ filtered_coords <- readRDS(args$coords_path) # This is your splice_site_coords.R
 
 
 # Set strand specificity
-strandSpecific(fds) <- 0
+strandSpecific(fds) <- 2
 
 # 5. Run Non-Split Counting
 # This writes the .h5 or .RDS file into the cache_dir created above

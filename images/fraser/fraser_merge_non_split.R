@@ -57,7 +57,7 @@ if(length(available_bams) > 0){
 } else {
     stop("CRITICAL ERROR: No BAM files found in /io/batch/input_bams.")
 }
-strandSpecific(fds) <- 0
+strandSpecific(fds) <- 2
 
 # --- 6. Merge Non-Split Counts ---
 message("Merging counts using HDF5 files in: ", out_dir)

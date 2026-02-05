@@ -36,7 +36,7 @@ if(args$nthreads > 1){
 # 3. Load and Prune IMMEDIATELY
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_dir_name)
 
-strandSpecific(fds) <- 0
+strandSpecific(fds) <- 2
 
 # SUBSET FIRST: This is the most critical memory-saving step.
 # By subsetting here, we drop the metadata of all other samples.
