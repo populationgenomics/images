@@ -39,7 +39,7 @@ anchor_se <- SummarizedExperiment(
     rowRanges = non_split_count_ranges
 )
 # This creates the se.rds that FRASER's loadHDF5SummarizedExperiment needs
-saveHDF5SummarizedExperiment(anchor_se, dir = out_dir, replace = TRUE, prefix = "")
+saveHDF5SummarizedExperiment(anchor_se, dir = out_dir, replace = TRUE, prefix = "rawCountsSS")
 
 # 4. Configure Backend
 options("FRASER.maxSamplesNoHDF5" = 0)
@@ -72,6 +72,21 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 # This assigns 'spliceSiteID' to the rowRanges of your non-split object.
 message("Annotating non-split splice site IDs...")
 non_split_counts <- FRASER:::annotateSpliceSite(non_split_counts)
+
+# --- Verification Block ---
+# 1. Check if the assay exists
+if(!"rawCountsSS" %in% assayNames(non_split_counts)){
+    stop("Merge failed: 'rawCountsSS' assay not found in merged object.")
+}
+
+# 2. Check for zeros (Common sign of a path/naming mismatch)
+total_counts <- sum(assay(non_split_counts, "rawCountsSS"))
+if(total_counts == 0){
+    stop("Merge Error: The merged non-split counts matrix is empty (all zeros).
+          Check if sample IDs in fds match the filenames in the cache.")
+}
+
+message("Merge verified: Found ", total_counts, " total site coverage counts.")
 
 # 7. Final Save
 # This populates the internal 'nonSplicedReads' slot and the SS map

@@ -40,7 +40,8 @@ if(args$nthreads > 1){
 # 3. Load Dataset and Coordinates
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 filtered_coords <- readRDS(args$coords_path) # This is your splice_site_coords.RDS
-
+# Add this before calling countNonSplicedReads
+colData(fds)$bamFile <- args$bam_path
 
 # Set strand specificity
 strandSpecific(fds) <- 2
