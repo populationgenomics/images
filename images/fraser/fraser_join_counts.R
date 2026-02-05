@@ -81,7 +81,7 @@ nonSplitCounts_se <- loadHDF5SummarizedExperiment(dir = merged_non_split_dir)
 # This is the missing link. It generates the spliceSiteID mapping
 # that calculatePSIValues needs later.
 message("Annotating splice sites...")
-splitCounts_se <- annotateSpliceSites(splitCounts_se)
+splitCounts_se <- FRASER:::annotateSpliceSite(splitCounts_se)
 
 # 5. Add counts to FRASER object
 message("Joining assays into FDS object...")

@@ -71,7 +71,7 @@ non_split_counts <- getNonSplitReadCountsForAllSamples(
 # CRITICAL ADDITION: Annotate the non-split counts object!
 # This assigns 'spliceSiteID' to the rowRanges of your non-split object.
 message("Annotating non-split splice site IDs...")
-non_split_counts <- annotateSpliceSites(non_split_counts)
+non_split_counts <- FRASER:::annotateSpliceSite(non_split_counts)
 
 # 7. Final Save
 # This populates the internal 'nonSplicedReads' slot and the SS map
