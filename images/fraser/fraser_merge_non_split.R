@@ -25,8 +25,10 @@ file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"), overwrite = TRUE
 # 2. Load FDS
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
-# 3. Anchor HDF5 Directory
-h5_files <- list.files("/io/batch", pattern = "\\.h5$", recursive = TRUE, full.names = TRUE)
+# 3. Copy H5 files from cache to the proper output directory
+cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts")
+h5_files <- list.files(cache_dir, pattern = "\\.h5$", full.names = TRUE)
+message("Copying ", length(h5_files), " HDF5 files from cache to output directory...")
 for(f in h5_files) {
     file.copy(f, file.path(out_dir, basename(f)), overwrite = TRUE)
 }
@@ -82,24 +84,21 @@ if(!"rawCountsSS" %in% assayNames(non_split_counts)){
 # 2. Check for zeros (Common sign of a path/naming mismatch)
 total_counts <- sum(assay(non_split_counts, "rawCountsSS"))
 if(total_counts == 0){
-    stop("Merge Error: The merged non-split counts matrix is empty (all zeros).
-          Check if sample IDs in fds match the filenames in the cache.")
+    stop("Merge Error: The merged non-split counts matrix is empty (all zeros).")
 }
 
 message("Merge verified: Found ", total_counts, " total site coverage counts.")
 
-# 7. Final Save
-# This populates the internal 'nonSplicedReads' slot and the SS map
-nonSplicedReads(fds) <- non_split_counts
-
-# Use the HDF5-safe saving method for the counts object specifically
-# We save this to a new directory to avoid clobbering the input cache
+# 8. Save the merged non-split counts to the correct location for join step
+message("Saving merged non-split counts to: ", out_dir)
 saveHDF5SummarizedExperiment(
     non_split_counts,
-    dir = file.path(args$work_dir, "merged_non_split_counts"),
+    dir = out_dir,
     replace = TRUE
 )
 
-
-# Also save the updated FDS object (this updates the internal fds-object.RDS)
+# 9. Update FDS object and save
+nonSplicedReads(fds) <- non_split_counts
 fds <- saveFraserDataSet(fds)
+
+message("Non-split merge complete!")
