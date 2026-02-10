@@ -23,8 +23,9 @@ save_dir <- file.path(args$work_dir, "savedObjects", fds_name)
 dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 file.copy(args$fds_path, file.path(save_dir, "fds-object.RDS"))
 
-# Create the specific cache directory for non-split counts
-cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts", fds_name)
+# Create the cache directory WITHOUT the fds_name subdirectory
+# This matches what the merge script expects
+cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts")
 dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
 # 2. Configure Parallelism and HDF5
@@ -58,12 +59,9 @@ sample_result <- countNonSplicedReads(args$sample_id,
                                       recount= TRUE,
                                       spliceSiteCoords=filtered_coords)
 # 6. Verification
-# Define the actual subdirectory FRASER uses: cache/nonSplicedCounts/FRASER_{cohort_id}/
-actual_cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts", fds_name)
-
-# FRASER typically names these files "nonSplicedCounts-{sample_id}.h5" or .RDS
-expected_h5  <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".h5"))
-expected_rds <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".RDS"))
+# The H5 file should now be at cache_dir/nonSplicedCounts-{sample_id}.h5
+expected_h5  <- file.path(cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".h5"))
+expected_rds <- file.path(cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".RDS"))
 
 if (file.exists(expected_h5)) {
     message("Success: Created non-split counts (HDF5) at ", expected_h5)
@@ -71,8 +69,8 @@ if (file.exists(expected_h5)) {
     message("Success: Created non-split counts (RDS) at ", expected_rds)
 } else {
     # Debugging: List files in the directory to see what actually happened
-    if(dir.exists(actual_cache_dir)){
-        message("Files found in cache dir: ", paste(list.files(actual_cache_dir), collapse=", "))
+    if(dir.exists(cache_dir)){
+        message("Files found in cache dir: ", paste(list.files(cache_dir), collapse=", "))
     }
 
     if(!file.exists(paste0(args$bam_path, ".bai"))){
