@@ -106,29 +106,59 @@ message("Non-split counts dimensions: ", nrow(nonSplitCounts_se), " sites x ", n
 message("Re-annotating non-split counts with splice site IDs...")
 nonSplitCounts_se <- FRASER:::annotateSpliceSite(nonSplitCounts_se)
 
-# 5. Verify ID consistency before joining
-message("\n[5/7] Verifying ID consistency...")
-split_start_ids <- na.omit(unique(mcols(splitCounts_se)$startID))
-split_end_ids <- na.omit(unique(mcols(splitCounts_se)$endID))
-nonsplit_ids <- na.omit(unique(mcols(nonSplitCounts_se)$spliceSiteID))
+# 5. Filter split counts to only include junctions that reference the non-split splice sites
+message("\n[5/7] Filtering split counts to match non-split coordinate space...")
 
-message("  Split startIDs: ", length(split_start_ids))
-message("  Split endIDs: ", length(split_end_ids))
-message("  Non-split spliceSiteIDs: ", length(nonsplit_ids))
+# Get the valid splice site IDs from non-split counts
+nonsplit_ids <- mcols(nonSplitCounts_se)$spliceSiteID
 
-# Check overlap - both split start/end should be subsets of nonsplit
-missing_start <- sum(!split_start_ids %in% nonsplit_ids)
-missing_end <- sum(!split_end_ids %in% nonsplit_ids)
+# Get split junction IDs
+split_start_ids <- mcols(splitCounts_se)$startID
+split_end_ids <- mcols(splitCounts_se)$endID
 
-if(missing_start > 0 || missing_end > 0) {
-    message("NOTE: Some split junction IDs are not in non-split IDs:")
-    message("  Missing startIDs: ", missing_start, " out of ", length(split_start_ids))
-    message("  Missing endIDs: ", missing_end, " out of ", length(split_end_ids))
-    message("  This is expected if junctions reference splice sites not in the filtered set")
+# Find junctions where BOTH start and end are in the non-split coordinate set
+valid_junctions <- (!is.na(split_start_ids) & !is.na(split_end_ids) &
+                     split_start_ids %in% nonsplit_ids &
+                     split_end_ids %in% nonsplit_ids)
+
+n_valid <- sum(valid_junctions)
+n_total <- nrow(splitCounts_se)
+message("  Junctions with both start/end in non-split coords: ", n_valid, " / ", n_total)
+message("  Filtering out ", n_total - n_valid, " junctions that reference sites outside the coordinate set")
+
+if(n_valid == 0) {
+    stop("ERROR: No junctions have both start and end in the non-split coordinate set!")
 }
 
-# 6. Add counts to FRASER object
-message("\n[6/7] Joining split and non-split counts into FDS object...")
+# Filter the split counts to only valid junctions
+splitCounts_se_filtered <- splitCounts_se[valid_junctions, ]
+message("  Filtered split counts dimensions: ", nrow(splitCounts_se_filtered), " junctions x ",
+        ncol(splitCounts_se_filtered), " samples")
+
+# Update the splitCounts_se to use the filtered version
+splitCounts_se <- splitCounts_se_filtered
+
+# 6. Verify ID consistency after filtering
+message("\n[6/7] Verifying ID consistency after filtering...")
+split_start_ids_filtered <- na.omit(unique(mcols(splitCounts_se)$startID))
+split_end_ids_filtered <- na.omit(unique(mcols(splitCounts_se)$endID))
+
+message("  Filtered split startIDs: ", length(split_start_ids_filtered))
+message("  Filtered split endIDs: ", length(split_end_ids_filtered))
+message("  Non-split spliceSiteIDs: ", length(nonsplit_ids))
+
+# Check overlap - should be 100% now
+missing_start <- sum(!split_start_ids_filtered %in% nonsplit_ids)
+missing_end <- sum(!split_end_ids_filtered %in% nonsplit_ids)
+
+if(missing_start > 0 || missing_end > 0) {
+    stop("ERROR: After filtering, still have missing IDs! startIDs: ", missing_start, ", endIDs: ", missing_end)
+}
+
+message("SUCCESS: All split junction IDs now exist in non-split coordinate set!")
+
+# 7. Add counts to FRASER object
+message("\n[7/7] Joining split and non-split counts into FDS object...")
 fds <- addCountsToFraserDataSet(
   fds = fds,
   splitCounts = splitCounts_se,
@@ -139,11 +169,9 @@ message("Counts successfully joined!")
 message("  - Split junctions: ", nrow(counts(fds, type = "j")))
 message("  - Splice sites: ", nrow(counts(fds, type = "ss")))
 
-# Run integrity check
-check_fds_integrity(fds)
 
-# 7. Calculate PSI values
-message("\n[7/7] Calculating PSI values...")
+# 8. Calculate PSI values
+message("\n[8/8] Calculating PSI values...")
 fds <- calculatePSIValues(fds, types = c("psi3", "psi5", "jaccard"))
 
 message("PSI values calculated successfully!")
@@ -152,7 +180,7 @@ message("Available assays: ", paste(assayNames(fds), collapse = ", "))
 # Final integrity check
 check_fds_integrity(fds)
 
-# 8. Save final FRASER object
+# 9. Save final FRASER object
 message("\nSaving final integrated FDS...")
 fds <- saveFraserDataSet(fds)
 
