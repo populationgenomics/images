@@ -86,13 +86,10 @@ if(!dir.exists(split_se_dir)){
 splitCounts_se <- loadHDF5SummarizedExperiment(dir = split_se_dir)
 message("Split counts dimensions: ", nrow(splitCounts_se), " junctions x ", ncol(splitCounts_se), " samples")
 
-# Annotate split counts using the master coordinates to ensure consistency
-message("Annotating split counts with master splice site IDs...")
-# Use FRASER's internal function but with our master coordinates
-splitCountRanges <- rowRanges(splitCounts_se)
-# Generate IDs based on the genomic positions
-splitCountRanges <- FRASER:::annotateSpliceSite(splitCountRanges, master_splice_coords)
-rowRanges(splitCounts_se) <- splitCountRanges
+# Annotate split counts with splice site IDs
+# NOTE: This must be done AFTER loading and works on the whole object
+message("Annotating split counts with splice site IDs...")
+splitCounts_se <- FRASER:::annotateSpliceSite(splitCounts_se)
 
 # 4. Load merged non-split counts
 message("\n[4/7] Loading merged non-split counts...")
@@ -109,12 +106,12 @@ if(nrow(nonSplitCounts_se) != length(master_splice_coords)) {
          ") don't match master coordinates (", length(master_splice_coords), ")")
 }
 
-# Verify non-split counts are annotated - they should already be from the merge step
+# Non-split counts should already be annotated from the merge step
+# Verify the annotation is present
 if(!"spliceSiteID" %in% colnames(mcols(nonSplitCounts_se))) {
-    message("Annotating non-split counts with master splice site IDs...")
-    nonSplitRanges <- rowRanges(nonSplitCounts_se)
-    nonSplitRanges <- FRASER:::annotateSpliceSite(nonSplitRanges, master_splice_coords)
-    rowRanges(nonSplitCounts_se) <- nonSplitRanges
+    message("WARNING: Non-split counts missing spliceSiteID annotation!")
+    message("Annotating non-split counts with splice site IDs...")
+    nonSplitCounts_se <- FRASER:::annotateSpliceSite(nonSplitCounts_se)
 }
 
 # 5. Verify ID consistency before joining
