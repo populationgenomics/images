@@ -88,4 +88,3 @@ spliceSiteCoords <- FRASER:::extractSpliceSiteCoordinates(splitCountRanges)
 saveRDS(splitCountRangesNonFilt,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
 saveRDS(splitCountRanges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
 saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))
-
