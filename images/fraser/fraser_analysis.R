@@ -45,13 +45,14 @@ if(! "spliceSiteID" %in% colnames(mcols(fds, type="ss"))){
   }
 }
 
-# --- 3. Filtering ---
-# It is critical to filter before fitting to reduce the size of the latent space matrices
-fds <- calculatePSIValues(fds, types = "jaccard", BPPARAM = bp)
-
 # Create QC directory
 dir.create("qc_plots", showWarnings = FALSE)
 
+# --- 3. Calculate Filter Values FIRST (required for plotting) ---
+message("Calculating filter expression values...")
+fds <- filterExpressionAndVariability(fds, minDeltaPsi = 0.0, filter = FALSE)
+
+# --- 4. Generate QC Plots ---
 # DOWNSAMPLING FOR PLOTS: Use 30,000 random junctions for QC to keep it fast
 set.seed(42)
 plot_idx <- sample(nrow(fds), min(nrow(fds), 30000))
@@ -62,12 +63,12 @@ png("qc_plots/filter_expression.png", width = 1200, height = 1200, res = 150)
 plotFilterExpression(fds_plot_subset, bins = 100)
 dev.off()
 
-# Apply actual filtering to full dataset
-fds <- filterExpressionAndVariability(fds, minDeltaPsi = 0.0, filter = TRUE)
-
-# --- 4. Dimensionality Message ---
-raw_dim <- nrow(fds)
+# --- 5. Apply Filtering ---
+message("Applying filtering based on calculated values...")
 fds_filtered <- fds[mcols(fds, type = "j")[, "passed"], ]
+
+# Dimensionality Message
+raw_dim <- nrow(fds)
 filtered_dim <- nrow(fds_filtered)
 
 message(paste0("\n--- Filtering Summary ---"))
@@ -75,28 +76,33 @@ message(paste0("Original junctions:   ", raw_dim))
 message(paste0("Filtered junctions:   ", filtered_dim))
 message(paste0("Reduction:            ", round((1 - (filtered_dim / raw_dim)) * 100, 2), "%"))
 
-# --- 5. Hyperparameter Optimization ---
+# --- 6. Hyperparameter Optimization ---
 # Optimization must run on the filtered set
+message("Optimizing encoding dimension (q)...")
 opt_q <- bestQ(fds_filtered, type = "jaccard")
 
 png("qc_plots/best_q_optimization.png", width = 1200, height = 1200, res = 150)
 plotEncDimSearch(fds_filtered, type = "jaccard")
 dev.off()
 
-# --- 6. Fitting ---
+# --- 7. Fitting ---
+message(paste0("Fitting FRASER model with q = ", opt_q, "..."))
 fds_fit <- FRASER(fds_filtered, q = opt_q, type = "jaccard", BPPARAM = bp)
 
-# QQ Plot (also uses a subset internally in FRASER, but we'll be explicit)
+# QQ Plot
+message("Generating QQ plot...")
 png("qc_plots/qq_plot.png", width = 1200, height = 1200, res = 150)
 plotQQ(fds_fit, type = "jaccard")
 dev.off()
 
-# --- 7. Annotation ---
+# --- 8. Annotation ---
+message("Annotating results with gene information...")
 fds_fit <- annotateRangesWithTxDb(fds_fit,
                                   txdb = TxDb.Hsapiens.UCSC.hg38.knownGene,
                                   orgDb = org.Hs.eg.db)
 
-# --- 8. Results & Compressed Export ---
+# --- 9. Results & Compressed Export ---
+message("Extracting results...")
 res <- results(fds_fit,
                padjCutoff = args$pval_cutoff,
                deltaPsiCutoff = args$delta_psi_cutoff,
@@ -110,6 +116,7 @@ message("Saving results...")
 write_csv(as.data.frame(res), paste0(args$cohort_id, ".significant.csv"))
 write_csv(as.data.frame(res_all), paste0(args$cohort_id, ".all_results.csv.gz"))
 
-# --- 9. Final Save ---
+# --- 10. Final Save ---
+message("Saving final FRASER object...")
 saveFraserDataSet(fds_fit, dir = getwd(), name = paste0(args$cohort_id, "_final"))
 message("Analysis Complete.")
