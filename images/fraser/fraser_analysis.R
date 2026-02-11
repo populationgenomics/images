@@ -89,19 +89,20 @@ dev.off()
 message(paste0("Fitting FRASER model with q = ", opt_q, "..."))
 fds_fit <- FRASER(fds_filtered, q = opt_q, type = "jaccard", BPPARAM = bp)
 
-# QQ Plot
-message("Generating QQ plot...")
-png("qc_plots/qq_plot.png", width = 1200, height = 1200, res = 150)
-plotQQ(fds_fit, type = "jaccard")
-dev.off()
-
-# --- 8. Annotation ---
+# --- 8. Annotation (MUST happen before plotting QQ) ---
 message("Annotating results with gene information...")
 fds_fit <- annotateRangesWithTxDb(fds_fit,
                                   txdb = TxDb.Hsapiens.UCSC.hg38.knownGene,
                                   orgDb = org.Hs.eg.db)
 
-# --- 9. Results & Compressed Export ---
+# --- 9. QQ Plot (after annotation) ---
+message("Generating QQ plot...")
+png("qc_plots/qq_plot.png", width = 1200, height = 1200, res = 150)
+# plotQQ expects the FDS object and sample/gene arguments, not 'type'
+plotQQ(fds_fit, aggregate = TRUE, global = TRUE)
+dev.off()
+
+# --- 10. Results & Compressed Export ---
 message("Extracting results...")
 res <- results(fds_fit,
                padjCutoff = args$pval_cutoff,
@@ -116,7 +117,7 @@ message("Saving results...")
 write_csv(as.data.frame(res), paste0(args$cohort_id, ".significant.csv"))
 write_csv(as.data.frame(res_all), paste0(args$cohort_id, ".all_results.csv.gz"))
 
-# --- 10. Final Save ---
+# --- 11. Final Save ---
 message("Saving final FRASER object...")
 saveFraserDataSet(fds_fit, dir = getwd(), name = paste0(args$cohort_id, "_final"))
 message("Analysis Complete.")
