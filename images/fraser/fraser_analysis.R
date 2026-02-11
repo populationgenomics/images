@@ -2,7 +2,7 @@
 
 library(argparse)
 library(FRASER)
-library(tidyverse)
+library(readr)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(org.Hs.eg.db)
 library(HDF5Array)
@@ -89,25 +89,33 @@ dev.off()
 message(paste0("Fitting FRASER model with q = ", opt_q, "..."))
 fds_fit <- FRASER(fds_filtered, q = opt_q, type = "jaccard", BPPARAM = bp)
 
-# --- 8. Annotation (MUST happen before plotting QQ) ---
+# --- 8. Annotation (MUST happen BEFORE calculating gene-level p-values) ---
 message("Annotating results with gene information...")
 fds_fit <- annotateRangesWithTxDb(fds_fit,
                                   txdb = TxDb.Hsapiens.UCSC.hg38.knownGene,
                                   orgDb = org.Hs.eg.db)
 
-# --- 9. QQ Plot (after annotation) ---
-message("Generating QQ plot...")
-png("qc_plots/qq_plot.png", width = 1200, height = 1200, res = 150)
-# plotQQ expects the FDS object and sample/gene arguments, not 'type'
-plotQQ(fds_fit, aggregate = TRUE, global = TRUE)
-dev.off()
+# --- 9. Calculate gene-level p-values (after annotation) ---
+message("Calculating gene-level p-values...")
+fds_fit <- calculatePadjValues(fds_fit, type = "jaccard")
 
-# --- 10. Results & Compressed Export ---
+# --- 10. QQ Plot (after gene-level p-values are calculated) ---
+message("Generating QQ plot...")
+tryCatch({
+  png("qc_plots/qq_plot.png", width = 1200, height = 1200, res = 150)
+  plotQQ(fds_fit, aggregate = TRUE, global = TRUE)
+  dev.off()
+}, error = function(e) {
+  dev.off()  # Close any open graphics device
+  message("Warning: QQ plot generation failed: ", e$message)
+  message("Skipping QQ plot and continuing with analysis...")
+})
+
+# --- 11. Results & Compressed Export ---
 message("Extracting results...")
 res <- results(fds_fit,
                padjCutoff = args$pval_cutoff,
                deltaPsiCutoff = args$delta_psi_cutoff,
-               zScoreCutoff = args$z_cutoff,
                minCount = args$min_count)
 
 # Extract all results for Jaccard
@@ -117,7 +125,7 @@ message("Saving results...")
 write_csv(as.data.frame(res), paste0(args$cohort_id, ".significant.csv"))
 write_csv(as.data.frame(res_all), paste0(args$cohort_id, ".all_results.csv.gz"))
 
-# --- 11. Final Save ---
+# --- 12. Final Save ---
 message("Saving final FRASER object...")
 saveFraserDataSet(fds_fit, dir = getwd(), name = paste0(args$cohort_id, "_final"))
 message("Analysis Complete.")
