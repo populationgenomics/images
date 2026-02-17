@@ -57,7 +57,6 @@ strandSpecific(fds) <- 2
 minExpressionInOneSample <- 20
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
-#TODO: We could add an explicit check here to ensure the expected files are present before calling this function.
 message("Merging split counts from cache...")
 splitCounts <- getSplitReadCountsForAllSamples(fds=fds, recount=FALSE)
 
