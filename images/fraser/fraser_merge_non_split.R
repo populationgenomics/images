@@ -61,16 +61,34 @@ if(length(h5_files) == 0) {
 # Copy with standardized naming convention
 for(i in seq_along(sample_ids)) {
     sid <- sample_ids[i]
-    src_file <- h5_files[grepl(sid, h5_files)][1]
 
-    if(is.na(src_file)) {
+    # 1. Precise matching using word boundaries (\\b)
+    # This ensures "S1" doesn't match "S10"
+    match_idx <- grep(paste0("\\b", sid, "\\b"), h5_files)
+
+    # 2. Safety check: Did we find a match?
+    if(length(match_idx) == 0) {
         warning("No H5 file found for sample: ", sid)
         next
     }
 
+    # 3. Extract the first matching file path
+    src_file <- h5_files[match_idx[1]]
+
+    # 4. Define destination and copy
+    # Constructing the new filename: nonSplicedCounts-[sid].h5
     dest <- file.path(out_dir, paste0("nonSplicedCounts-", sid, ".h5"))
-    file.copy(src_file, dest, overwrite = TRUE)
-    message("  Copied: ", basename(src_file), " -> ", basename(dest))
+
+    success <- file.copy(src_file, dest, overwrite = TRUE)
+
+    # 5. Provide feedback
+    if(success) {
+        message("Successfully Copied: ", sid)
+        message("  From: ", basename(src_file))
+        message("  To:   ", basename(dest))
+    } else {
+        warning("Failed to copy file for sample: ", sid)
+    }
 }
 
 # 5. Validate H5 files and build combined count matrix

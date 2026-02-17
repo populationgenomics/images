@@ -68,17 +68,9 @@ message("\n[1/7] Loading Fraser Data Set from RDS...")
 fds <- readRDS(args$fds_path)
 workingDir(fds) <- saveDir
 
-# 2. Load the master splice site coordinates that were used to create non-split counts
-message("\n[2/7] Loading master splice site coordinates...")
-splice_coords_path <- file.path(dirname(dirname(saveDir)), "splice_site_coords.RDS")
-if(!file.exists(splice_coords_path)) {
-    stop("ERROR: splice_site_coords.RDS not found at: ", splice_coords_path)
-}
-master_splice_coords <- readRDS(splice_coords_path)
-message("Master coordinates loaded: ", length(master_splice_coords), " sites")
 
-# 3. Load split counts
-message("\n[3/7] Loading split counts...")
+# 2. Load split counts
+message("\n[2/7] Loading split counts...")
 split_se_dir <- file.path(saveDir, "splitCounts")
 if(!dir.exists(split_se_dir)){
     stop(paste("Missing splitCounts directory at:", split_se_dir))
@@ -92,8 +84,8 @@ message("Split counts dimensions: ", nrow(splitCounts_se), " junctions x ", ncol
 message("Annotating split counts with splice site IDs...")
 splitCounts_se <- FRASER:::annotateSpliceSite(splitCounts_se)
 
-# 4. Load merged non-split counts
-message("\n[4/7] Loading merged non-split counts...")
+# 3. Load merged non-split counts
+message("\n[3/7] Loading merged non-split counts...")
 merged_non_split_dir <- file.path(saveDir, "nonSplitCounts")
 if(!dir.exists(merged_non_split_dir)){
     stop(paste("Missing merged non-split counts directory at:", merged_non_split_dir))
@@ -106,8 +98,8 @@ message("Non-split counts dimensions: ", nrow(nonSplitCounts_se), " sites x ", n
 message("Re-annotating non-split counts with splice site IDs...")
 nonSplitCounts_se <- FRASER:::annotateSpliceSite(nonSplitCounts_se)
 
-# 5. Filter split counts to only include junctions that reference the non-split splice sites
-message("\n[5/7] Filtering split counts to match non-split coordinate space...")
+# 4. Filter split counts to only include junctions that reference the non-split splice sites
+message("\n[4/7] Filtering split counts to match non-split coordinate space...")
 
 # Get the valid splice site IDs from non-split counts
 nonsplit_ids <- mcols(nonSplitCounts_se)$spliceSiteID
@@ -138,8 +130,8 @@ message("  Filtered split counts dimensions: ", nrow(splitCounts_se_filtered), "
 # Update the splitCounts_se to use the filtered version
 splitCounts_se <- splitCounts_se_filtered
 
-# 6. Verify ID consistency after filtering
-message("\n[6/7] Verifying ID consistency after filtering...")
+# 5. Verify ID consistency after filtering
+message("\n[5/7] Verifying ID consistency after filtering...")
 split_start_ids_filtered <- na.omit(unique(mcols(splitCounts_se)$startID))
 split_end_ids_filtered <- na.omit(unique(mcols(splitCounts_se)$endID))
 
@@ -157,8 +149,8 @@ if(missing_start > 0 || missing_end > 0) {
 
 message("SUCCESS: All split junction IDs now exist in non-split coordinate set!")
 
-# 7. Add counts to FRASER object
-message("\n[7/7] Joining split and non-split counts into FDS object...")
+# 6. Add counts to FRASER object
+message("\n[6/7] Joining split and non-split counts into FDS object...")
 fds <- addCountsToFraserDataSet(
   fds = fds,
   splitCounts = splitCounts_se,
@@ -170,8 +162,8 @@ message("  - Split junctions: ", nrow(counts(fds, type = "j")))
 message("  - Splice sites: ", nrow(counts(fds, type = "ss")))
 
 
-# 8. Calculate PSI values
-message("\n[8/8] Calculating PSI values...")
+# 7. Calculate PSI values
+message("\n[7/7] Calculating PSI values...")
 fds <- calculatePSIValues(fds, types = c("psi3", "psi5", "jaccard"))
 
 message("PSI values calculated successfully!")
@@ -180,7 +172,7 @@ message("Available assays: ", paste(assayNames(fds), collapse = ", "))
 # Final integrity check
 check_fds_integrity(fds)
 
-# 9. Save final FRASER object
+# 8. Save final FRASER object
 message("\nSaving final integrated FDS...")
 fds <- saveFraserDataSet(fds)
 

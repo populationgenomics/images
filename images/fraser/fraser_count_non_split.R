@@ -31,12 +31,6 @@ dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 # 2. Configure Parallelism and HDF5
 options("FRASER.maxSamplesNoHDF5" = 0)
 options("FRASER.maxJunctionsNoHDF5" = -1)
-# Use MulticoreParam if threads > 1, else Serial
-if(args$nthreads > 1){
-    bpparam <- MulticoreParam(workers = args$nthreads)
-} else {
-    bpparam <- SerialParam()
-}
 
 # 3. Load Dataset and Coordinates
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
@@ -55,14 +49,12 @@ sample_result <- countNonSplicedReads(args$sample_id,
                                       splitCountRanges = NULL,
                                       fds = fds,
                                       NcpuPerSample = args$nthreads,
-                                      minAnchor=5,
-                                      recount= TRUE,
-                                      spliceSiteCoords=filtered_coords)
+                                      minAnchor = 5,
+                                      recount = TRUE,
+                                      spliceSiteCoords = filtered_coords)
 # 6. Verification
 # Define the actual subdirectory FRASER uses: cache/nonSplicedCounts/FRASER_{cohort_id}/
 actual_cache_dir <- file.path(args$work_dir, "cache", "nonSplicedCounts", fds_name)
-
-# FRASER typically names these files "nonSplicedCounts-{sample_id}.h5" or .RDS
 expected_h5  <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".h5"))
 expected_rds <- file.path(actual_cache_dir, paste0("nonSplicedCounts-", args$sample_id, ".RDS"))
 
@@ -75,6 +67,9 @@ if (file.exists(expected_h5)) {
     if(dir.exists(actual_cache_dir)){
         message("Files found in cache dir: ", paste(list.files(actual_cache_dir), collapse=", "))
     }
+    else {
+		message("Cache directory not found: ", actual_cache_dir)
+	}
 
     if(!file.exists(paste0(args$bam_path, ".bai"))){
         stop("BAM Index (.bai) missing. FRASER cannot perform random access.")

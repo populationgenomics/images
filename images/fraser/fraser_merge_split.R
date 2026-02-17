@@ -32,7 +32,6 @@ register(bp)
 
 # 3. Load Dataset
 # Match the name exactly as defined in the init stage
-fds_name <- paste0("FRASER_", args$cohort_id)
 fds <- loadFraserDataSet(dir = args$work_dir, name = fds_name)
 
 
@@ -58,6 +57,7 @@ strandSpecific(fds) <- 2
 minExpressionInOneSample <- 20
 # 4. Merge individual split count RDS files from the cache
 # FRASER automatically looks in: {work_dir}/cache/splitCounts/
+#TODO: We could add an explicit check here to ensure the expected files are present before calling this function.
 message("Merging split counts from cache...")
 splitCounts <- getSplitReadCountsForAllSamples(fds=fds, recount=FALSE)
 
@@ -84,7 +84,6 @@ spliceSiteCoords <- FRASER:::extractSpliceSiteCoordinates(splitCountRanges)
 
 
 # Use absolute paths for saving to match Python 'mv' commands
-#This is slightly confusing, but the filtered granges will be used to annotate non_split counts
 saveRDS(splitCountRangesNonFilt,       file.path(args$work_dir, "g_ranges_split_counts.RDS"))
 saveRDS(splitCountRanges,    file.path(args$work_dir, "g_ranges_non_split_counts.RDS"))
 saveRDS(spliceSiteCoords, file.path(args$work_dir, "splice_site_coords.RDS"))

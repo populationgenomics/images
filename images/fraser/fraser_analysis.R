@@ -12,7 +12,6 @@ parser <- ArgumentParser(description = "FRASER 2.0 Statistical Analysis")
 parser$add_argument("--fds_dir", required = TRUE, help = "Base directory containing the output folder")
 parser$add_argument("--cohort_id", required = TRUE, help = "Cohort ID")
 parser$add_argument("--pval_cutoff", type = "double", default = 0.05)
-parser$add_argument("--z_cutoff", type = "double")
 parser$add_argument("--delta_psi_cutoff", type = "double", default = 0.3)
 parser$add_argument("--min_count", type = "integer", default = 5)
 parser$add_argument("--nthreads", type = "integer", default = 1)
@@ -74,7 +73,7 @@ filtered_dim <- nrow(fds_filtered)
 message(paste0("\n--- Filtering Summary ---"))
 message(paste0("Original junctions:   ", raw_dim))
 message(paste0("Filtered junctions:   ", filtered_dim))
-message(paste0("Reduction:            ", round((1 - (filtered_dim / raw_dim)) * 100, 2), "%"))
+if (raw_dim > 0) { message(paste0("Reduction: ", round((1 - (filtered_dim / raw_dim)) * 100, 2), "%")) }
 
 # --- 6. Hyperparameter Optimization ---
 # Optimization must run on the filtered set

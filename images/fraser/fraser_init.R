@@ -29,7 +29,7 @@ fds <- FraserDataSet(
   name       = fds_name
 )
 
-#Setup parallel execution
+# Setup parallel execution
 bp <- MulticoreParam(workers = args$nthreads)
 register(bp)
 
@@ -38,7 +38,7 @@ register(bp)
 
 fds <- saveFraserDataSet(fds)
 
-#Print location for Python to capture if needed
+# Print location for Python to capture if needed
 fds_save_path <- file.path(
   args$work_dir,
   "savedObjects",
