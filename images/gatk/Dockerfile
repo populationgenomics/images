@@ -11,6 +11,7 @@ RUN apt-get update && \
         git \
         gnupg \
         jq \
+        libgomp1 \
         openjdk-17-jdk-headless \
         procps \
         rsync \
