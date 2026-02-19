@@ -9,12 +9,14 @@ RUN apt-get update && apt-get install -y \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 # Install Google Cloud SDK (gcloud)
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
-    apt-get update && apt-get install -y google-cloud-cli && \
-    rm -r /var/lib/apt/lists/*
+    wget -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt-get update -y && \
+    apt-get install google-cloud-cli --no-install-recommends -y && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/*
 # Install somalier
 RUN wget https://github.com/brentp/somalier/releases/download/v${VERSION}/somalier && \
     mv ./somalier /usr/local/bin/somalier && \
