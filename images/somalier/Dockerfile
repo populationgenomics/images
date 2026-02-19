@@ -3,11 +3,17 @@ FROM debian:trixie-slim AS base
 ENV DEBIAN_FRONTEND=noninteractive
 ARG VERSION=${VERSION:-0.3.1}
 
-# Install dependencies
 RUN apt-get update && apt-get install -y \
-    git wget bzip2 zip curl bc && \
-    rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/*
+    git \
+    wget \
+    bzip2 \
+    zip \
+    curl \
+    bc \
+    gnupg \
+    python3 && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install Google Cloud SDK (gcloud)
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
