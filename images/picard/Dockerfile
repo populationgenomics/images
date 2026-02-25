@@ -47,3 +47,7 @@ COPY --from=builder /usr/picard/build/libs/picard.jar /usr/picard/picard.jar
 
 # Setup working directory
 WORKDIR /usr/working
+
+RUN echo 'alias picard="java -jar /usr/picard/picard.jar"' >> /root/.bashrc
+
+CMD ["/bin/bash"]
