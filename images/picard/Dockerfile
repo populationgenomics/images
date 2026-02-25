@@ -41,13 +41,8 @@ RUN mkdir -p ${MAMBA_ROOT_PREFIX} && \
     openjdk=17 && \
     micromamba clean --all --yes
 
-# Copy the JAR from the builder stage
+# Copy the JAR from the builder stage and set up the entrypoint script
 RUN mkdir /usr/picard
 COPY --from=builder /usr/picard/build/libs/picard.jar /usr/picard/picard.jar
-
-# Setup working directory
-WORKDIR /usr/working
-
-RUN echo 'alias picard="java -jar /usr/picard/picard.jar"' >> /root/.bashrc
-
-CMD ["/bin/bash"]
+COPY picard.sh /usr/local/bin/picard
+RUN chmod +x /usr/local/bin/picard
