@@ -31,14 +31,15 @@ RUN wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | \
     tar -xvj -C /usr/local/bin --strip-components=1 bin/micromamba && \
     chmod +x /usr/local/bin/micromamba
 
-# Install samtools, gcloud-sdk, and the Java Runtime (JRE)
+# Install samtools, gcloud-sdk, R, and the Java Runtime (JRE)
 # We use 'openjdk' here because the JAR needs a Java environment to run.
 RUN mkdir -p ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} \
     -c bioconda -c conda-forge \
     samtools \
     google-cloud-sdk \
-    openjdk=17 && \
+    openjdk=17 \
+    r-base && \
     micromamba clean --all --yes
 
 # Copy the JAR from the builder stage and set up the entrypoint script
