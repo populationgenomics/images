@@ -4,27 +4,7 @@ set -eu -o pipefail
 
 export LC_ALL=en_US.UTF-8
 
-# Find original directory of bash script, resolving symlinks
-# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in/246128#246128
-SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-    SOURCE="$(readlink "$SOURCE")"
-    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-done
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-
-JAR_DIR=$DIR
-ENV_PREFIX="$(dirname $(dirname $DIR))"
-# Use Java installed with Anaconda to ensure correct version
-java="$ENV_PREFIX/bin/java"
-
-# if JAVA_HOME is set (non-empty), use it. Otherwise keep "java"
-if [ -n "${JAVA_HOME:=}" ]; then
-  if [ -e "$JAVA_HOME/bin/java" ]; then
-      java="$JAVA_HOME/bin/java"
-  fi
-fi
+JAR_DIR="/usr/picard"
 
 # extract memory and system property Java arguments from the list of provided arguments
 # http://java.dzone.com/articles/better-java-shell-script
@@ -61,8 +41,8 @@ fi
 pass_arr=($pass_args)
 if [[ ${pass_arr[0]:=} == org* ]]
 then
-    eval "$java" $jvm_mem_opts $jvm_prop_opts -cp "$JAR_DIR/picard.jar" $pass_args
+    eval java $jvm_mem_opts $jvm_prop_opts -cp "$JAR_DIR/picard.jar" $pass_args
 else
-    eval "$java" $jvm_mem_opts $jvm_prop_opts -jar "$JAR_DIR/picard.jar" $pass_args
+    eval java $jvm_mem_opts $jvm_prop_opts -jar "$JAR_DIR/picard.jar" $pass_args
 fi
 exit
