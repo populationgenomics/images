@@ -4,6 +4,8 @@
 # We use the official Rust image as our builder. It provides cargo, rustc, etc.
 FROM rust:1.93-trixie AS builder
 
+ENV VERSION=0.1.0
+
 # htslib (and its underlying libz-sys) requires cmake, a C/C++ compiler,
 # and zlib development headers to build successfully.
 RUN apt-get update && apt-get install -y \
@@ -21,6 +23,7 @@ RUN apt-get update && apt-get install -y \
 ## This will output the compiled binary at target/release/dupmark
 RUN git clone https://github.com/populationgenomics/rust_dupmark.git && \
     cd rust_dupmark && \
+    git checkout $VERSION && \
     cargo build --release
 
 # ------------------------------------------------------------------------------
