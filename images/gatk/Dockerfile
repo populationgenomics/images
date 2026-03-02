@@ -65,7 +65,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     rm -r /var/cache/apt/*
 
 # Clone GATK source code (including large files with git-lfs) and build the GATK jar file
-RUN git clone --branch ${VERSION} --depth 1 https://github.com/broadinstitute/gatk.git
+RUN git clone --branch 4.6.2.0 --depth 1 https://github.com/broadinstitute/gatk.git
 
 RUN git lfs install && \
     git lfs pull
