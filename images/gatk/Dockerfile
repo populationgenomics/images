@@ -14,7 +14,6 @@ RUN apt-get update && \
         libgomp1 \
         openjdk-17-jdk-headless \
         procps \
-        r-base=4.3.1 \
         rsync \
         software-properties-common \
         unzip \
