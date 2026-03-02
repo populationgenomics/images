@@ -65,10 +65,10 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     rm -r /var/cache/apt/*
 
 # Clone GATK source code (including large files with git-lfs) and build the GATK jar file
-RUN git clone --branch ${VERSION} https://github.com/broadinstitute/gatk.git /usr/gatk && \
-    git lfs pull
-WORKDIR /usr/gatk
+RUN git clone --branch ${VERSION} --depth 1 https://github.com/broadinstitute/gatk.git
 
+RUN git lfs install && \
+    git lfs pull
 # Build GATK with htsjdk 4.3.0 for CRAM v3.1 support
 RUN ./gradlew clean printVersion shadowJar -Dhtsjdk.version=4.3.0
 
