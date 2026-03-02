@@ -9,6 +9,7 @@ RUN apt-get update && \
         ca-certificates \
         curl \
         git \
+        git-lfs \
         gnupg \
         jq \
         libgomp1 \
@@ -21,8 +22,7 @@ RUN apt-get update && \
         zip && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
-    pip install --no-cache-dir --upgrade pip && \
-    git lfs install
+    pip install --no-cache-dir --upgrade pip
 
 # build bcftools from source
 FROM base AS compiler
@@ -75,7 +75,7 @@ RUN ./gradlew clean printVersion shadowJar -Dhtsjdk.version=4.3.0
 ENV PATH=$PATH:/gatk-4.6.2.0
 WORKDIR /gatk-4.6.2.0
 
-# Install Miniconda3-py310_23.10.0-1 
+# Install Miniconda3-py310_23.10.0-1
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.10.0-1-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -p /opt/miniconda -b && \
     rm /tmp/miniconda.sh && \
@@ -83,4 +83,4 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.10.0-1-Linux-x8
     conda config --set auto_update_conda false && \
     conda config --set solver libmamba && \
     ./gradlew localDevCondaEnv && \
-    source activate gatk 
+    source activate gatk
