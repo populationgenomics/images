@@ -58,13 +58,15 @@ COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/l
 
 # Install Google Cloud CLI and runtime libraries for BCFtools
 RUN apt-get update && \
-    # 1. Add Google Cloud repo
+    # 1. Ensure the keyrings directory exists
+    mkdir -p /usr/share/keyrings && \
+    # 2. Add Google Cloud repo
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
     > /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    # 2. Add GPG key with --batch to avoid TTY errors
-    wget -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --batch --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    # 3. Install CLI and runtime libs
+    # 3. Use curl + gpg with --yes (to overwrite) and --batch
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --batch --yes --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    # 4. Final update and install
     apt-get update && \
     apt-get install -y --no-install-recommends \
         google-cloud-cli \
@@ -73,6 +75,5 @@ RUN apt-get update && \
         zlib1g \
         libbz2-1.0 \
         liblzma5 && \
-    # 4. Clean up to reduce image size
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
