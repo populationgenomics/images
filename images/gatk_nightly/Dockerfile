@@ -39,14 +39,15 @@ RUN apt-get update && apt-get install -y \
     wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     tar -xf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     cd bcftools-${BCFTOOLS_VERSION} && \
-    # UNSET conflicting paths so the compiler looks in /usr/include
+    # Reset PATH to exclude Conda, and unset the include variables
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
     unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH && \
-    ./configure --enable-libcurl --enable-s3 --enable-gcs && \
+    # Run configure with explicit help from pkg-config
+    PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig ./configure --enable-libcurl --enable-s3 --enable-gcs && \
     make && \
     strip bcftools plugins/*.so && \
     make DESTDIR=/bcftools_install install && \
-    # The internal htslib directory name in the release tarball 
-    # is usually just 'htslib' or 'htslib-<version>'
+    # Building HTSlib explicitly to ensure headers are moved
     make -C htslib-${BCFTOOLS_VERSION} DESTDIR=/bcftools_install install
 
 
