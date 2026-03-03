@@ -1,6 +1,6 @@
 ARG VERSION=4.6.2.0
 
-FROM gatk:4.6.2.0-21-ge8c49f600-NIGHTLY-SNAPSHOT AS base
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:4.6.2.0-21-ge8c49f600-NIGHTLY-SNAPSHOT AS base
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
