@@ -54,8 +54,8 @@ FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:${VERSION}
 # Metadata for better maintainability
 LABEL description="GATK with BCFtools and Google Cloud CLI"
 
-COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
-COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
+# Copy everything installed under /usr/local in one go
+COPY --from=compiler /bcftools_install/usr/local/ /usr/local/
 
 # Install Google Cloud CLI and runtime libraries for BCFtools
 RUN apt-get update && \
