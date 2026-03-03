@@ -56,11 +56,23 @@ FROM base
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
 COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
 
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
-    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+# Install Google Cloud CLI and runtime libraries for BCFtools
+RUN apt-get update && \
+    # 1. Add Google Cloud repo
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    # 2. Add GPG key with --batch to avoid TTY errors
     wget -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    apt-get update -y && \
-    apt-get install google-cloud-cli --no-install-recommends -y && \
-    rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/*
+    gpg --batch --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    # 3. Install CLI and runtime libs
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        google-cloud-cli \
+        libcurl4 \
+        libgomp1 \
+        zlib1g \
+        libbz2-1.0 \
+        liblzma5 && \
+    # 4. Clean up to reduce image size
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
