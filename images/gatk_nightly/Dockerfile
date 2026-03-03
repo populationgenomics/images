@@ -1,9 +1,13 @@
-ARG VERSION=4.6.2.0
+# Build from the Nightly Snapshot of GATK from 2026-03-01
+ARG VERSION=4.6.2.0-21-ge8c49f600-NIGHTLY-SNAPSHOT
 
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:4.6.2.0-21-ge8c49f600-NIGHTLY-SNAPSHOT AS base
+# Stage 1: Base image with common dependencies
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:${VERSION} AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    apt-get install --no-install-recommends -y \
         apt-transport-https \
         bzip2 \
         ca-certificates \
@@ -18,40 +22,37 @@ RUN apt-get update && \
         unzip \
         wget \
         zip && \
-    rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/*
+    rm -rf /var/lib/apt/lists/*
 
-# build bcftools from source
+# Stage 2: Compiler stage (Build BCFtools)
 FROM base AS compiler
 
 ARG BCFTOOLS_VERSION=1.22
 RUN apt-get update && apt-get install -y \
-        bzip2 \
         gcc \
         libbz2-dev \
         libcurl4-openssl-dev \
         liblzma-dev \
         libssl-dev \
         make \
-        wget \
+        pkg-config \
         zlib1g-dev && \
-    # Install bcftools
     wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     tar -xf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     cd bcftools-${BCFTOOLS_VERSION} && \
-    # Reset PATH to exclude Conda, and unset the include variables
+    # Neutralize Conda paths for clean compilation
     export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
     unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH && \
-    # Run configure with explicit help from pkg-config
     PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig ./configure --enable-libcurl --enable-s3 --enable-gcs && \
     make && \
     strip bcftools plugins/*.so && \
-    make DESTDIR=/bcftools_install install && \
-    # Building HTSlib explicitly to ensure headers are moved
     make -C htslib-${BCFTOOLS_VERSION} DESTDIR=/bcftools_install install
 
+# Stage 3: Final Runtime Image
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:${VERSION}
 
-FROM base
+# Metadata for better maintainability
+LABEL description="GATK with BCFtools and Google Cloud CLI"
 
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
 COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
