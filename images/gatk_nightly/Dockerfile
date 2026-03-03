@@ -39,11 +39,15 @@ RUN apt-get update && apt-get install -y \
     wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     tar -xf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     cd bcftools-${BCFTOOLS_VERSION} && \
+    # UNSET conflicting paths so the compiler looks in /usr/include
+    unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH && \
     ./configure --enable-libcurl --enable-s3 --enable-gcs && \
     make && \
     strip bcftools plugins/*.so && \
     make DESTDIR=/bcftools_install install && \
-    make -C htslib-$BCFTOOLS_VERSION DESTDIR=/bcftools_install install
+    # The internal htslib directory name in the release tarball 
+    # is usually just 'htslib' or 'htslib-<version>'
+    make -C htslib-${BCFTOOLS_VERSION} DESTDIR=/bcftools_install install
 
 
 FROM base
