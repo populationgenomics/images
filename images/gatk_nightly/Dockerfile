@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y \
     make -C htslib-${BCFTOOLS_VERSION} DESTDIR=/bcftools_install install
 
 # Stage 3: Final Runtime Image
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/gatk:${VERSION}
+FROM base
 
 # Metadata for better maintainability
 LABEL description="GATK with BCFtools and Google Cloud CLI"
