@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y \
         libssl-dev \
         make \
         wget \
-        zlib-devel && \
+        zlib1g-dev && \
     # Install bcftools
     wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
     tar -xf bcftools-${BCFTOOLS_VERSION}.tar.bz2 && \
