@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
     wget https://github.com/samtools/bcftools/releases/download/${VERSION}/bcftools-${VERSION}.tar.bz2 && \
     tar -xf bcftools-${VERSION}.tar.bz2 && \
     cd bcftools-${VERSION} && \
+    # Remove any existing array to vcf plugins and replace with the latest from the gtc2vcf repository
+    /bin/rm -f plugins/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c} && \
+    wget -P plugins http://raw.githubusercontent.com/freeseek/gtc2vcf/master/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c,BAFregress.c} && \
     ./configure --enable-libcurl --enable-s3 --enable-gcs && \
     make && \
     strip bcftools plugins/*.so && \
