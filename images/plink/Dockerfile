@@ -1,5 +1,5 @@
 # Minimal Multi-Arch PLINK2 Image
-FROM debian:stable-slim
+FROM python:3.11-slim-bookworm
 
 # Build metadata
 ENV VERSION=2.0-alpha-20260307
