@@ -42,7 +42,7 @@ RUN wget -q https://s3.amazonaws.com/plink2-assets/alpha6/plink2_linux_x86_64_20
     && rm -rf generic.zip /tmp/generic
 
 # 3. Install the multi-version wrapper script
-COPY src/popgen_genotyping/scripts/plink_wrapper.sh /usr/local/bin/plink-wrapper
+COPY scripts/plink_wrapper.sh /usr/local/bin/plink-wrapper
 RUN chmod +x /usr/local/bin/plink-wrapper /usr/local/bin/plink1.9 /usr/local/bin/variants/plink2_* && \
     ln -s /usr/local/bin/plink-wrapper /usr/local/bin/plink && \
     ln -s /usr/local/bin/plink-wrapper /usr/local/bin/plink2
