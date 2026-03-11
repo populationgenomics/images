@@ -2,8 +2,9 @@
 FROM python:3.11-slim-bookworm
 
 # Build metadata
+ENV VERSION=1.9-20250819-PLINK-2.0-20260228
 LABEL maintainer="Population Genomics Team"
-LABEL version="PLINK-1.9-20250819-PLINK-2.0-20260228"
+LABEL version="${VERSION}"
 
 # Install dependencies and cleanup in a single layer to minimize size
 RUN apt-get update && apt-get install -y --no-install-recommends \
