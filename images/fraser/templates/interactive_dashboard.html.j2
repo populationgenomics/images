@@ -647,16 +647,28 @@
             const colors = getColors(filteredPadjust, filteredDeltaPsi,
                                     currentPvalueThreshold, currentDeltaPsiThreshold);
 
-            const hoverText = filteredGene.map((g, i) =>
-                `Gene: ${g}<br>` +
-                `Position: ${filteredChr[i]}:${filteredStart[i]}-${filteredEnd[i]}<br>` +
-                `Sample: ${filteredSampleID[i]}<br>` +
-                `Family: ${filteredFamilyID[i]}<br>` +
-                `P-value: ${filteredPadjust[i].toExponential(2)}<br>` +
-                `Delta PSI: ${filteredDeltaPsi[i].toFixed(3)}<br>` +
-                `PSI Value: ${filteredPsi[i].toFixed(3)}<br>` +
-                `Type: ${filteredType[i]}`
-            );
+            const hoverText = filteredGene.map((g, i) => {
+                let text = `Gene: ${g}<br>` +
+                    `Position: ${filteredChr[i]}:${filteredStart[i]}-${filteredEnd[i]}<br>` +
+                    `Sample: ${filteredSampleID[i]}<br>` +
+                    `Family: ${filteredFamilyID[i]}<br>` +
+                    `P-value: ${filteredPadjust[i].toExponential(2)}<br>` +
+                    `Delta PSI: ${filteredDeltaPsi[i].toFixed(3)}<br>` +
+                    `PSI Value: ${filteredPsi[i].toFixed(3)}<br>` +
+                    `Type: ${filteredType[i]}`;
+
+                // Add variant proximity information if available
+                if (volcanoData.closest_variant_pos && volcanoData.closest_variant_pos[i] > 0) {
+                    const distance = volcanoData.closest_variant_distance[i];
+                    const distanceKb = (distance / 1000).toFixed(1);
+                    text += `<br><b>Closest Variant:</b><br>` +
+                        `  ${volcanoData.closest_variant_chr[i]}:${volcanoData.closest_variant_pos[i]}<br>` +
+                        `  ${volcanoData.closest_variant_ref[i]} > ${volcanoData.closest_variant_alt[i]}<br>` +
+                        `  Distance: ${distanceKb} kb`;
+                }
+
+                return text;
+            });
 
             const trace = {
                 x: filteredDeltaPsi,
@@ -773,16 +785,28 @@
             const colors = getColors(filteredPadjust, filteredDeltaPsi,
                                     currentPvalueThreshold, currentDeltaPsiThreshold);
 
-            const hoverText = filteredGene.map((g, i) =>
-                `Gene: ${g}<br>` +
-                `Position: ${filteredChr[i]}:${filteredStart[i]}-${filteredEnd[i]}<br>` +
-                `Sample: ${filteredSampleID[i]}<br>` +
-                `Family: ${filteredFamilyID[i]}<br>` +
-                `P-value: ${filteredPadjust[i].toExponential(2)}<br>` +
-                `Delta PSI: ${filteredDeltaPsi[i].toFixed(3)}<br>` +
-                `PSI Value: ${filteredPsi[i].toFixed(3)}<br>` +
-                `Type: ${filteredType[i]}`
-            );
+            const hoverText = filteredGene.map((g, i) => {
+                let text = `Gene: ${g}<br>` +
+                    `Position: ${filteredChr[i]}:${filteredStart[i]}-${filteredEnd[i]}<br>` +
+                    `Sample: ${filteredSampleID[i]}<br>` +
+                    `Family: ${filteredFamilyID[i]}<br>` +
+                    `P-value: ${filteredPadjust[i].toExponential(2)}<br>` +
+                    `Delta PSI: ${filteredDeltaPsi[i].toFixed(3)}<br>` +
+                    `PSI Value: ${filteredPsi[i].toFixed(3)}<br>` +
+                    `Type: ${filteredType[i]}`;
+
+                // Add variant proximity information if available
+                if (manhattanData.closest_variant_pos && manhattanData.closest_variant_pos[i] > 0) {
+                    const distance = manhattanData.closest_variant_distance[i];
+                    const distanceKb = (distance / 1000).toFixed(1);
+                    text += `<br><b>Closest Variant:</b><br>` +
+                        `  ${manhattanData.closest_variant_chr[i]}:${manhattanData.closest_variant_pos[i]}<br>` +
+                        `  ${manhattanData.closest_variant_ref[i]} > ${manhattanData.closest_variant_alt[i]}<br>` +
+                        `  Distance: ${distanceKb} kb`;
+                }
+
+                return text;
+            });
 
             const trace = {
                 x: filteredCumPos,

@@ -3,15 +3,18 @@
 Create an interactive dashboard with volcano plot, manhattan plot, and IGV browser.
 
 Supports FRASER and OUTRIDER results with optional TABIX indexing for efficient
-region-based queries.
+region-based queries. Optionally annotates FRASER results with proximity to rare
+variants from a Hail table.
 
 Usage:
     python create_interactive_dashboard.py --fraser fraser_results.csv --output dashboard.html
     python create_interactive_dashboard.py --fraser fraser.tsv.gz --outrider outrider.tsv.gz --output dashboard.html
+    python create_interactive_dashboard.py --fraser fraser.csv --variant-table variants.ht --output dashboard.html
 
 Input file formats:
     - CSV files: Will be converted to tabix-indexed format automatically
     - .gz files with .tbi index: Used directly for tabix queries
+    - Hail tables (.ht): Used for variant proximity annotation
 
 Required FRASER columns: seqnames, start, end, pValue, padjust, deltaPsi, psiValue, type, hgncSymbol
 Required OUTRIDER columns: seqnames, start, end, pValue, padjust, (optional: zScore, log2fc, geneID/hgncSymbol)
@@ -41,6 +44,14 @@ try:
 except ImportError:
     HAS_PYSAM = False
     print("Warning: pysam not installed. Tabix queries will use subprocess fallback.")
+
+# Try to import hail for variant table support
+try:
+    import hail as hl
+    HAS_HAIL = True
+except ImportError:
+    HAS_HAIL = False
+    print("Warning: hail not installed. Variant proximity annotations will not be available.")
 
 
 # =============================================================================
@@ -113,6 +124,144 @@ def add_family_ids(df: pd.DataFrame, cpg_to_family: dict) -> pd.DataFrame:
     print(f"  Mapped {len(df)} variants to {len(family_counts)} families")
 
     return df
+
+
+# =============================================================================
+# Hail Variant Loading and Proximity Annotation
+# =============================================================================
+
+def load_hail_variants(hail_table_path: str) -> pd.DataFrame:
+    """
+    Load variants from a Hail table and extract genomic positions.
+
+    Args:
+        hail_table_path: Path to Hail table (.ht)
+
+    Returns:
+        DataFrame with columns: chr, pos, ref, alt (and any additional fields)
+    """
+    if not HAS_HAIL:
+        raise RuntimeError("Hail is not installed. Cannot load Hail variant table.")
+
+    print(f"Loading Hail variant table from {hail_table_path}...")
+
+    # Initialize Hail if not already done
+    try:
+        hl.init(quiet=True, log='/tmp/hail.log')
+    except Exception:
+        pass  # Already initialized
+
+    # Load the Hail table
+    ht = hl.read_table(hail_table_path)
+
+    # Extract locus and alleles information
+    # Assuming the table has a 'locus' field and 'alleles' field (standard Hail format)
+    if 'locus' not in ht.row:
+        raise ValueError("Hail table must have a 'locus' field")
+
+    # Select relevant fields
+    ht_selected = ht.select(
+        chr=ht.locus.contig,
+        pos=ht.locus.position,
+        ref=ht.alleles[0] if 'alleles' in ht.row else '',
+        alt=ht.alleles[1] if 'alleles' in ht.row else ''
+    )
+
+    # Convert to pandas DataFrame
+    df = ht_selected.to_pandas()
+
+    print(f"  Loaded {len(df)} variants from Hail table")
+    print(f"  Chromosomes: {sorted(df['chr'].unique())}")
+
+    return df
+
+
+def find_closest_variant(fraser_df: pd.DataFrame, variants_df: pd.DataFrame,
+                         max_distance: int = 1000000) -> pd.DataFrame:
+    """
+    Annotate Fraser results with the closest rare variant of interest.
+
+    Args:
+        fraser_df: DataFrame with Fraser results
+        variants_df: DataFrame with variants (chr, pos, ref, alt)
+        max_distance: Maximum distance to consider (default 1MB)
+
+    Returns:
+        DataFrame with additional columns:
+        - closest_variant_chr
+        - closest_variant_pos
+        - closest_variant_ref
+        - closest_variant_alt
+        - closest_variant_distance
+    """
+    print("\nAnnotating Fraser results with closest variants...")
+
+    fraser_annotated = fraser_df.copy()
+
+    # Initialize annotation columns
+    fraser_annotated['closest_variant_chr'] = None
+    fraser_annotated['closest_variant_pos'] = None
+    fraser_annotated['closest_variant_ref'] = None
+    fraser_annotated['closest_variant_alt'] = None
+    fraser_annotated['closest_variant_distance'] = None
+
+    # Normalize chromosome names in both dataframes
+    fraser_annotated['chr_normalized'] = fraser_annotated['seqnames'].apply(normalize_chromosome)
+    variants_df_copy = variants_df.copy()
+    variants_df_copy['chr_normalized'] = variants_df_copy['chr'].apply(normalize_chromosome)
+
+    # Group variants by chromosome for efficient lookup
+    variants_by_chr = {}
+    for chr_name in variants_df_copy['chr_normalized'].unique():
+        chr_variants = variants_df_copy[variants_df_copy['chr_normalized'] == chr_name].copy()
+        # Sort by position for efficient searching
+        chr_variants = chr_variants.sort_values('pos')
+        variants_by_chr[chr_name] = chr_variants
+
+    print(f"  Processing {len(fraser_annotated)} Fraser results...")
+
+    # For each Fraser result, find the closest variant
+    for idx, row in fraser_annotated.iterrows():
+        chr_name = row['chr_normalized']
+        fraser_start = row['start']
+        fraser_end = row['end']
+        fraser_middle = (fraser_start + fraser_end) / 2
+
+        # Get variants on the same chromosome
+        if chr_name not in variants_by_chr:
+            continue
+
+        chr_variants = variants_by_chr[chr_name]
+
+        # Find variants within max_distance
+        nearby_variants = chr_variants[
+            (chr_variants['pos'] >= fraser_start - max_distance) &
+            (chr_variants['pos'] <= fraser_end + max_distance)
+        ]
+
+        if len(nearby_variants) == 0:
+            continue
+
+        # Calculate distances to Fraser region middle point
+        distances = np.abs(nearby_variants['pos'] - fraser_middle)
+        min_dist_idx = distances.idxmin()
+        closest_variant = nearby_variants.loc[min_dist_idx]
+
+        # Annotate
+        fraser_annotated.at[idx, 'closest_variant_chr'] = closest_variant['chr']
+        fraser_annotated.at[idx, 'closest_variant_pos'] = int(closest_variant['pos'])
+        fraser_annotated.at[idx, 'closest_variant_ref'] = closest_variant['ref']
+        fraser_annotated.at[idx, 'closest_variant_alt'] = closest_variant['alt']
+        fraser_annotated.at[idx, 'closest_variant_distance'] = int(distances.loc[min_dist_idx])
+
+    # Drop temporary column
+    fraser_annotated.drop(columns=['chr_normalized'], inplace=True)
+
+    annotated_count = fraser_annotated['closest_variant_pos'].notna().sum()
+    print(f"  Annotated {annotated_count} Fraser results with closest variants")
+    print(f"  ({annotated_count / len(fraser_annotated) * 100:.1f}% of total)")
+
+    return fraser_annotated
 
 
 # =============================================================================
@@ -612,7 +761,7 @@ def get_top_positions(df: pd.DataFrame, n: int = 100) -> list[dict]:
 
 def prepare_volcano_data(df: pd.DataFrame) -> dict:
     """Prepare data for volcano plot."""
-    return {
+    data = {
         'deltaPsi': df['deltaPsi'].tolist(),
         'log10pValue': df['-log10(pValue)'].tolist(),
         'padjust': df['padjust'].tolist(),
@@ -625,6 +774,16 @@ def prepare_volcano_data(df: pd.DataFrame) -> dict:
         'sampleID': df['sampleID'].tolist(),
         'familyID': df['familyID'].fillna('Unknown').tolist() if 'familyID' in df.columns else ['Unknown'] * len(df)
     }
+
+    # Add variant proximity annotations if available
+    if 'closest_variant_pos' in df.columns:
+        data['closest_variant_chr'] = df['closest_variant_chr'].fillna('').tolist()
+        data['closest_variant_pos'] = df['closest_variant_pos'].fillna(0).astype(int).tolist()
+        data['closest_variant_ref'] = df['closest_variant_ref'].fillna('').tolist()
+        data['closest_variant_alt'] = df['closest_variant_alt'].fillna('').tolist()
+        data['closest_variant_distance'] = df['closest_variant_distance'].fillna(-1).astype(int).tolist()
+
+    return data
 
 
 def prepare_outrider_volcano_data(df: pd.DataFrame) -> dict:
@@ -715,6 +874,14 @@ def prepare_manhattan_data(df: pd.DataFrame) -> tuple[dict, list, list]:
         'familyID': df_sorted['familyID'].fillna('Unknown').tolist() if 'familyID' in df_sorted.columns else ['Unknown'] * len(df_sorted)
     }
 
+    # Add variant proximity annotations if available
+    if 'closest_variant_pos' in df_sorted.columns:
+        manhattan_data['closest_variant_chr'] = df_sorted['closest_variant_chr'].fillna('').tolist()
+        manhattan_data['closest_variant_pos'] = df_sorted['closest_variant_pos'].fillna(0).astype(int).tolist()
+        manhattan_data['closest_variant_ref'] = df_sorted['closest_variant_ref'].fillna('').tolist()
+        manhattan_data['closest_variant_alt'] = df_sorted['closest_variant_alt'].fillna('').tolist()
+        manhattan_data['closest_variant_distance'] = df_sorted['closest_variant_distance'].fillna(-1).astype(int).tolist()
+
     chr_labels = list(chr_centers.keys())
     chr_positions = list(chr_centers.values())
 
@@ -775,6 +942,16 @@ def prepare_tabix_data_for_js(df: pd.DataFrame, data_type: str = 'fraser') -> li
             record['deltaPsi'] = float(row['deltaPsi']) if pd.notna(row.get('deltaPsi')) else None
             record['psiValue'] = float(row['psiValue']) if pd.notna(row.get('psiValue')) else None
             record['type'] = str(row['type']) if pd.notna(row.get('type')) else 'NA'
+
+            # Add variant proximity information if available
+            if 'closest_variant_pos' in row.index and pd.notna(row.get('closest_variant_pos')):
+                record['closest_variant'] = {
+                    'chr': str(row['closest_variant_chr']),
+                    'pos': int(row['closest_variant_pos']),
+                    'ref': str(row['closest_variant_ref']),
+                    'alt': str(row['closest_variant_alt']),
+                    'distance': int(row['closest_variant_distance'])
+                }
         elif data_type == 'outrider':
             record['zScore'] = float(row['zScore']) if pd.notna(row.get('zScore')) else None
             record['log2fc'] = float(row['log2fc']) if pd.notna(row.get('log2fc')) else None
@@ -845,6 +1022,12 @@ def render_dashboard(
                          'psiValue', 'deltaPsi', 'sampleID']
     if 'familyID' in fraser_df.columns:
         fraser_table_cols.append('familyID')
+
+    # Add variant proximity columns if available
+    if 'closest_variant_pos' in fraser_df.columns:
+        fraser_table_cols.extend(['closest_variant_chr', 'closest_variant_pos',
+                                  'closest_variant_ref', 'closest_variant_alt',
+                                  'closest_variant_distance'])
 
     fraser_table = prepare_table_data(fraser_df, fraser_table_cols)
     fraser_table_data = fraser_table.to_dict('records')
@@ -946,6 +1129,13 @@ Examples:
     # With OUTRIDER results
     python create_interactive_dashboard.py --fraser fraser.csv --outrider outrider.csv --output dashboard.html
     
+    # With variant proximity annotation
+    python create_interactive_dashboard.py --fraser fraser.csv --variant-table variants.ht --output dashboard.html
+    
+    # Complete example with all features
+    python create_interactive_dashboard.py --fraser fraser.csv --outrider outrider.csv \\
+        --variant-table variants.ht --family-mapping families.csv --output dashboard.html
+    
     # With pre-indexed tabix files
     python create_interactive_dashboard.py --fraser fraser.tsv.gz --outrider outrider.tsv.gz --output dashboard.html
     
@@ -1012,6 +1202,19 @@ Examples:
         help='Path to CPG-to-Family mapping CSV (rdnow-export-project-summary format)'
     )
 
+    parser.add_argument(
+        '--variant-table',
+        default=None,
+        help='Path to Hail table (.ht) with rare variants of interest for proximity annotation'
+    )
+
+    parser.add_argument(
+        '--max-variant-distance',
+        type=int,
+        default=1000000,
+        help='Maximum distance (bp) to consider for closest variant (default: 1000000)'
+    )
+
     return parser.parse_args()
 
 
@@ -1051,6 +1254,23 @@ def main() -> None:
         if outrider_df is not None:
             outrider_df = add_family_ids(outrider_df, cpg_to_family)
 
+    # Load variant table and annotate with proximity if provided
+    if args.variant_table:
+        if not HAS_HAIL:
+            print("\n⚠️  Warning: Hail is not installed. Skipping variant proximity annotation.")
+            print("    Install Hail to enable this feature: pip install hail")
+        else:
+            try:
+                variants_df = load_hail_variants(args.variant_table)
+                fraser_df = find_closest_variant(
+                    fraser_df,
+                    variants_df,
+                    max_distance=args.max_variant_distance
+                )
+            except Exception as e:
+                print(f"\n⚠️  Warning: Failed to load variant table: {e}")
+                print("    Continuing without variant proximity annotations.")
+
     # Get top positions info
     if len(fraser_df) > 0:
         top_positions = get_top_positions(fraser_df, n=1)
@@ -1081,6 +1301,9 @@ def main() -> None:
     print("  - Real-time statistics updates")
     if cpg_to_family:
         print("  - Family-based filtering enabled")
+    if args.variant_table and 'closest_variant_pos' in fraser_df.columns:
+        annotated_count = fraser_df['closest_variant_pos'].notna().sum()
+        print(f"  - Variant proximity annotations ({annotated_count} Fraser results annotated)")
 
     if args.prepare_tabix:
         print("\nTabix files created:")
