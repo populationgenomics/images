@@ -98,6 +98,63 @@ def load_cpg_to_family_mapping(mapping_file: str) -> dict:
     for _, row in df.iterrows():
         cpg_id = row['sequencing_group.id']
         family_id = row['family.external_ids']
+
+
+def load_bam_mapping(mapping_file: str) -> dict:
+    """
+    Load sample ID to BAM file mapping from TSV.
+
+    Args:
+        mapping_file: Path to TSV file with columns: sampleID, bam_url, bai_url
+
+    Returns:
+        Dictionary mapping sample IDs to BAM info dicts
+    """
+    print(f"Loading BAM mapping from {mapping_file}...")
+
+    df = pd.read_csv(mapping_file, sep='\t')
+
+    # Validate required columns
+    required_cols = ['sampleID', 'bam_url']
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"BAM mapping file must contain '{col}' column")
+
+    # Create mapping
+    mapping = {}
+    for _, row in df.iterrows():
+        sample_id = str(row['sampleID'])
+        bam_url = str(row['bam_url'])
+        bai_url = str(row.get('bai_url', bam_url + '.bai'))
+
+        mapping[sample_id] = {
+            'bam_url': bam_url,
+            'bai_url': bai_url
+        }
+
+    print(f"  Loaded BAM paths for {len(mapping)} samples")
+    return mapping
+
+
+def load_cpg_to_family_mapping(mapping_file: str) -> dict:
+    """
+    Load CPG ID to Family ID mapping from project summary CSV.
+
+    Args:
+        mapping_file: Path to rdnow-export-project-summary CSV file
+
+    Returns:
+        Dictionary mapping CPG IDs (sequencing_group.id) to family.external_ids
+    """
+    print(f"Loading CPG to Family mapping from {mapping_file}...")
+
+    df = pd.read_csv(mapping_file)
+
+    # Create mapping from sequencing_group.id to family.external_ids
+    mapping = {}
+    for _, row in df.iterrows():
+        cpg_id = row['sequencing_group.id']
+        family_id = row['family.external_ids']
         mapping[cpg_id] = family_id
 
     unique_families = len(set(mapping.values()))
@@ -987,7 +1044,9 @@ def render_dashboard(
     output_path: str,
     genome: str = 'hg38',
     pvalue_threshold: float = 0.05,
-    deltapsi_threshold: float = 0.2
+    deltapsi_threshold: float = 0.2,
+    zscore_threshold: float = 2.0,
+    bam_mapping: Optional[dict] = None
 ) -> None:
     """Render the dashboard HTML using Jinja2 template."""
 
@@ -1102,7 +1161,9 @@ def render_dashboard(
         families=families,
         genome=genome,
         default_pvalue_threshold=pvalue_threshold,
-        default_deltapsi_threshold=deltapsi_threshold
+        default_deltapsi_threshold=deltapsi_threshold,
+        default_zscore_threshold=zscore_threshold,
+        sample_bam_mapping=bam_mapping or {}
     )
 
     # Write output
@@ -1185,6 +1246,19 @@ Examples:
     )
 
     parser.add_argument(
+        '--zscore-threshold',
+        type=float,
+        default=2.0,
+        help='Default |Z-Score| threshold for OUTRIDER (default: 2.0)'
+    )
+
+    parser.add_argument(
+        '--bam-mapping',
+        default=None,
+        help='Path to TSV file mapping sample IDs to BAM URLs (columns: sampleID, bam_url, bai_url)'
+    )
+
+    parser.add_argument(
         '--prepare-tabix',
         action='store_true',
         help='Convert CSV files to tabix-indexed format (keeps the indexed files)'
@@ -1230,6 +1304,11 @@ def main() -> None:
     cpg_to_family = {}
     if args.family_mapping:
         cpg_to_family = load_cpg_to_family_mapping(args.family_mapping)
+
+    # Load BAM mapping if provided
+    bam_mapping = {}
+    if args.bam_mapping:
+        bam_mapping = load_bam_mapping(args.bam_mapping)
 
     # Optionally prepare tabix files
     fraser_path = args.fraser
@@ -1286,7 +1365,9 @@ def main() -> None:
         output_path=args.output,
         genome=args.genome,
         pvalue_threshold=args.pvalue_threshold,
-        deltapsi_threshold=args.deltapsi_threshold
+        deltapsi_threshold=args.deltapsi_threshold,
+        zscore_threshold=args.zscore_threshold,
+        bam_mapping=bam_mapping
     )
 
     print("\n" + "=" * 60)
@@ -1294,13 +1375,17 @@ def main() -> None:
     print("=" * 60)
     print(f"\nOutput: {args.output}")
     print("\nFeatures:")
-    print("  - Interactive threshold controls for p-value and |Delta PSI|")
+    print("  - Interactive threshold controls for p-value, |Delta PSI|, and |Z-Score|")
     print("  - Color-coded significance in volcano and Manhattan plots")
     print("  - Click points to view FRASER/OUTRIDER details and jump in IGV")
     print("  - IGV browser with top 100 most significant positions")
+    print("  - Delta PSI track visualization in IGV")
+    print("  - BAM loading controls for curators")
     print("  - Real-time statistics updates")
     if cpg_to_family:
-        print("  - Family-based filtering enabled")
+        print(f"  - Family-based filtering enabled (searchable dropdown)")
+    if bam_mapping:
+        print(f"  - Pre-configured BAM files for {len(bam_mapping)} samples")
     if args.variant_table and 'closest_variant_pos' in fraser_df.columns:
         annotated_count = fraser_df['closest_variant_pos'].notna().sum()
         print(f"  - Variant proximity annotations ({annotated_count} Fraser results annotated)")

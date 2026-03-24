@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FRASER/OUTRIDER Results Interactive Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/igv@2.15.8/dist/igv.min.js"></script>
@@ -10,6 +12,9 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Select2 for searchable dropdowns -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -59,6 +64,21 @@
             border-radius: 3px;
             background-color: white;
         }
+        /* Select2 custom styling */
+        .select2-container {
+            width: 250px !important;
+        }
+        .select2-container--default .select2-selection--single {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            height: 32px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 30px;
+        }
         .control-group button {
             padding: 8px 20px;
             background-color: #4CAF50;
@@ -83,6 +103,58 @@
             padding: 20px;
             background-color: #f9f9f9;
             border-radius: 5px;
+        }
+        #bam-controls {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        #bam-controls h4 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        .bam-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .bam-input-group input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .bam-input-group button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .bam-input-group button:hover {
+            background-color: #45a049;
+        }
+        .bam-input-group button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .sample-bam-button {
+            margin: 5px;
+            padding: 6px 12px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .sample-bam-button:hover {
+            background-color: #1976D2;
         }
         .info-box {
             background-color: #e3f2fd;
@@ -293,10 +365,16 @@
                 <label for="deltapsi-threshold">|Delta PSI| Threshold:</label>
                 <input type="number" id="deltapsi-threshold" value="{{ default_deltapsi_threshold }}" step="0.05" min="0" max="1">
             </div>
+            {% if outrider_volcano_data %}
+            <div class="control-group">
+                <label for="zscore-threshold">|Z-Score| Threshold:</label>
+                <input type="number" id="zscore-threshold" value="{{ default_zscore_threshold }}" step="0.5" min="0" max="10">
+            </div>
+            {% endif %}
             {% if families %}
             <div class="control-group">
                 <label for="family-filter">Filter by Family:</label>
-                <select id="family-filter" onchange="updateThresholds()">
+                <select id="family-filter" class="select2-dropdown" onchange="updateThresholds()">
                     <option value="">All Families</option>
                     {% for family in families %}
                     <option value="{{ family }}">{{ family }}</option>
@@ -415,6 +493,28 @@
 
         <div id="igv-container">
             <h2>🧬 IGV Browser - Top 100 Most Significant Positions</h2>
+            <div id="bam-controls">
+                <h4>📊 Curator Controls - Load Sample BAMs</h4>
+                <div class="bam-input-group">
+                    <input type="text" id="bam-sample-id" placeholder="Sample ID (e.g., CPG12345)">
+                    <input type="text" id="bam-url" placeholder="BAM URL or path (http:// or file://)">
+                    <input type="text" id="bam-index-url" placeholder="BAM Index URL (.bai) - optional">
+                    <button onclick="loadCustomBAM()">Load BAM Track</button>
+                </div>
+                <div id="loaded-bams" style="margin-top: 10px; font-size: 12px; color: #666;">
+                    <strong>Loaded BAMs:</strong> <span id="bam-list">None</span>
+                </div>
+                {% if sample_bam_mapping and sample_bam_mapping|length > 0 %}
+                <div style="margin-top: 15px;">
+                    <strong>Quick Load Samples:</strong><br>
+                    {% for sample_id, bam_info in sample_bam_mapping.items() %}
+                    <button class="sample-bam-button" onclick="loadSampleBAM('{{ sample_id }}', '{{ bam_info.bam_url }}', '{{ bam_info.bai_url }}')">
+                        {{ sample_id }}
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
             <div id="igv-div"></div>
         </div>
 
@@ -495,8 +595,17 @@
 
         let currentPvalueThreshold = {{ default_pvalue_threshold }};
         let currentDeltaPsiThreshold = {{ default_deltapsi_threshold }};
+        {% if outrider_volcano_data %}
+        let currentZScoreThreshold = {{ default_zscore_threshold }};
+        {% endif %}
         let currentFamilyFilter = '';
         let igvBrowser = null;
+        let loadedBAMs = [];
+        {% if sample_bam_mapping %}
+        const sampleBAMMapping = {{ sample_bam_mapping | tojson }};
+        {% else %}
+        const sampleBAMMapping = {};
+        {% endif %}
 
         // Get filtered indices based on family filter
         function getFilteredIndices(familyData) {
@@ -890,10 +999,21 @@
             const filteredSampleID = filteredIndices.map(i => outriderVolcanoData.sampleID[i]);
             const filteredFamilyID = filteredIndices.map(i => (outriderVolcanoData.familyID || [])[i] || 'Unknown');
 
-            // Color by significance (p-value only for OUTRIDER)
-            const colors = filteredPadjust.map(p =>
-                p <= currentPvalueThreshold ? 'rgb(255, 127, 14)' : 'rgb(31, 119, 180)'
-            );
+            // Color by significance (p-value and z-score for OUTRIDER)
+            const colors = filteredPadjust.map((p, i) => {
+                const meetsP = p <= currentPvalueThreshold;
+                const meetsZ = Math.abs(filteredZScore[i]) >= currentZScoreThreshold;
+
+                if (meetsP && meetsZ) {
+                    return 'rgb(214, 39, 40)'; // Red - both significant
+                } else if (meetsP) {
+                    return 'rgb(255, 127, 14)'; // Orange - p-value only
+                } else if (meetsZ) {
+                    return 'rgb(148, 103, 189)'; // Purple - z-score only
+                } else {
+                    return 'rgb(31, 119, 180)'; // Blue - not significant
+                }
+            });
 
             const hoverText = filteredGene.map((g, i) =>
                 `Gene: ${g}<br>` +
@@ -948,6 +1068,32 @@
                             width: 2,
                             dash: 'dash'
                         }
+                    },
+                    // Vertical line for positive z-score threshold
+                    {
+                        type: 'line',
+                        x0: currentZScoreThreshold,
+                        x1: currentZScoreThreshold,
+                        y0: 0,
+                        y1: Math.max(...filteredLog10p),
+                        line: {
+                            color: 'lightgray',
+                            width: 1,
+                            dash: 'dot'
+                        }
+                    },
+                    // Vertical line for negative z-score threshold
+                    {
+                        type: 'line',
+                        x0: -currentZScoreThreshold,
+                        x1: -currentZScoreThreshold,
+                        y0: 0,
+                        y1: Math.max(...filteredLog10p),
+                        line: {
+                            color: 'lightgray',
+                            width: 1,
+                            dash: 'dot'
+                        }
                     }
                 ] : []
             };
@@ -969,10 +1115,21 @@
             const filteredSampleID = filteredIndices.map(i => outriderTopGenesData.sampleID[i]);
             const filteredFamilyID = filteredIndices.map(i => (outriderTopGenesData.familyID || [])[i] || 'Unknown');
 
-            // Color by significance
-            const colors = filteredPadjust.map(p =>
-                p <= currentPvalueThreshold ? 'rgb(255, 127, 14)' : 'rgb(31, 119, 180)'
-            );
+            // Color by significance (p-value and z-score)
+            const colors = filteredPadjust.map((p, i) => {
+                const meetsP = p <= currentPvalueThreshold;
+                const meetsZ = Math.abs(filteredZScore[i]) >= currentZScoreThreshold;
+
+                if (meetsP && meetsZ) {
+                    return 'rgb(214, 39, 40)'; // Red - both significant
+                } else if (meetsP) {
+                    return 'rgb(255, 127, 14)'; // Orange - p-value only
+                } else if (meetsZ) {
+                    return 'rgb(148, 103, 189)'; // Purple - z-score only
+                } else {
+                    return 'rgb(31, 119, 180)'; // Blue - not significant
+                }
+            });
 
             const hoverText = filteredGenes.map((g, i) =>
                 `Gene: ${g}<br>` +
@@ -1036,10 +1193,11 @@
 
         // Initialize IGV
         async function initIGV() {
-            const options = {
-                genome: genome,
-                locus: topPositions[0] ? `${topPositions[0].chr}:${topPositions[0].start}-${topPositions[0].end}` : "chr1:1-1000000",
-                tracks: [
+            try {
+                console.log('Initializing IGV browser...');
+
+                // Basic tracks that always work
+                const tracks = [
                     {
                         name: "Genes",
                         type: "annotation",
@@ -1049,10 +1207,46 @@
                         indexURL: `https://s3.amazonaws.com/igv.org.genomes/${genome}/refGene.txt.gz.tbi`,
                         order: Number.MAX_VALUE,
                         visibilityWindow: 300000000,
-                        displayMode: "EXPANDED"
-                    },
-                    {
-                        name: "Top 100 FRASER Results",
+                        displayMode: "COLLAPSED"
+                    }
+                ];
+
+                // Add FRASER results track if we have positions
+                if (topPositions && topPositions.length > 0) {
+                    console.log(`Adding ${topPositions.length} FRASER positions to IGV...`);
+
+                    // Add Delta PSI track if data exists
+                    const deltaPsiFeatures = topPositions
+                        .filter(pos => pos.deltaPsi !== undefined && !isNaN(pos.deltaPsi))
+                        .map(pos => ({
+                            chr: pos.chr,
+                            start: pos.start,
+                            end: pos.end,
+                            value: pos.deltaPsi,
+                            name: `${pos.gene || 'Unknown'} (ΔΨ=${pos.deltaPsi.toFixed(2)})`
+                        }));
+
+                    if (deltaPsiFeatures.length > 0) {
+                        tracks.push({
+                            name: "Delta PSI Scores",
+                            type: "wig",
+                            format: "wig",
+                            sourceType: "file",
+                            features: deltaPsiFeatures,
+                            min: -1,
+                            max: 1,
+                            color: function(feature) {
+                                return feature.value > 0 ? "rgb(214, 39, 40)" : "rgb(31, 119, 180)";
+                            },
+                            graphType: "bar",
+                            height: 80,
+                            autoscale: false
+                        });
+                    }
+
+                    // Add annotation track for FRASER results
+                    tracks.push({
+                        name: "FRASER Results",
                         type: "annotation",
                         format: "bed",
                         sourceType: "file",
@@ -1060,17 +1254,64 @@
                             chr: pos.chr,
                             start: pos.start,
                             end: pos.end,
-                            name: `${pos.gene} (p=${pos.pValue.toExponential(2)}, ΔΨ=${pos.deltaPsi.toFixed(2)})`,
-                            score: -Math.log10(pos.pValue)
+                            name: `${pos.gene || 'Unknown'} (p=${pos.pValue ? pos.pValue.toExponential(2) : 'NA'}, ΔΨ=${pos.deltaPsi ? pos.deltaPsi.toFixed(2) : 'NA'})`,
+                            score: pos.pValue ? -Math.log10(pos.pValue) : 0
                         })),
                         displayMode: "EXPANDED",
                         color: "rgb(214, 39, 40)",
                         height: 100
-                    }
-                ]
-            };
+                    });
+                }
 
-            igvBrowser = await igv.createBrowser(document.getElementById('igv-div'), options);
+                // Determine initial locus
+                let initialLocus = "chr1:1-1000000"; // Default fallback
+                if (topPositions && topPositions.length > 0 && topPositions[0].chr) {
+                    const pos = topPositions[0];
+                    const center = Math.floor((pos.start + pos.end) / 2);
+                    const window = 50000; // 50kb window
+                    initialLocus = `${pos.chr}:${Math.max(1, center - window)}-${center + window}`;
+                }
+
+                const options = {
+                    genome: genome || 'hg38',
+                    locus: initialLocus,
+                    tracks: tracks
+                };
+
+                console.log('Creating IGV browser with options:', options);
+                const igvDiv = document.getElementById('igv-div');
+                if (!igvDiv) {
+                    throw new Error('IGV container div not found');
+                }
+
+                igvBrowser = await igv.createBrowser(igvDiv, options);
+                console.log('IGV browser initialized successfully!');
+
+                // Add some styling to make it clear IGV is ready
+                igvDiv.style.border = '2px solid #4CAF50';
+                igvDiv.style.borderRadius = '5px';
+
+            } catch (error) {
+                console.error('Error initializing IGV:', error);
+                const igvDiv = document.getElementById('igv-div');
+                if (igvDiv) {
+                    igvDiv.innerHTML = `
+                        <div style="padding: 20px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; margin: 10px 0;">
+                            <h4 style="color: #856404; margin-top: 0;">⚠️ IGV Browser Initialization Issue</h4>
+                            <p style="color: #856404; margin-bottom: 10px;">There was a problem loading the IGV browser. This might be due to:</p>
+                            <ul style="color: #856404; margin-bottom: 10px;">
+                                <li>Network connectivity issues</li>
+                                <li>Browser security settings blocking external resources</li>
+                                <li>Invalid genome reference</li>
+                            </ul>
+                            <p style="color: #856404; margin-bottom: 0;"><strong>Error:</strong> ${error.message}</p>
+                            <button onclick="initIGV()" style="margin-top: 10px; padding: 5px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                Retry IGV Initialization
+                            </button>
+                        </div>
+                    `;
+                }
+            }
         }
 
         // Initialize DataTables
@@ -1115,6 +1356,13 @@
             currentPvalueThreshold = parseFloat(document.getElementById('pvalue-threshold').value);
             currentDeltaPsiThreshold = parseFloat(document.getElementById('deltapsi-threshold').value);
 
+            {% if outrider_volcano_data %}
+            const zScoreElement = document.getElementById('zscore-threshold');
+            if (zScoreElement) {
+                currentZScoreThreshold = parseFloat(zScoreElement.value);
+            }
+            {% endif %}
+
             // Update family filter if element exists
             const familyFilterElement = document.getElementById('family-filter');
             if (familyFilterElement) {
@@ -1144,11 +1392,98 @@
         function resetThresholds() {
             document.getElementById('pvalue-threshold').value = {{ default_pvalue_threshold }};
             document.getElementById('deltapsi-threshold').value = {{ default_deltapsi_threshold }};
+            {% if outrider_volcano_data %}
+            const zScoreElement = document.getElementById('zscore-threshold');
+            if (zScoreElement) {
+                zScoreElement.value = {{ default_zscore_threshold }};
+            }
+            {% endif %}
             updateThresholds();
+        }
+
+        // BAM loading functions
+        async function loadCustomBAM() {
+            if (!igvBrowser) {
+                alert('⚠️ IGV browser not initialized yet. Please wait for it to load, or click "Retry IGV Initialization" above.');
+                return;
+            }
+
+            const sampleId = document.getElementById('bam-sample-id').value.trim();
+            const bamUrl = document.getElementById('bam-url').value.trim();
+            const baiUrl = document.getElementById('bam-index-url').value.trim();
+
+            if (!sampleId || !bamUrl) {
+                alert('Please enter both Sample ID and BAM URL');
+                return;
+            }
+
+            await loadBAMTrack(sampleId, bamUrl, baiUrl || bamUrl + '.bai');
+        }
+
+        async function loadSampleBAM(sampleId, bamUrl, baiUrl) {
+            if (!igvBrowser) {
+                alert('⚠️ IGV browser not initialized yet. Please wait for it to load.');
+                return;
+            }
+
+            await loadBAMTrack(sampleId, bamUrl, baiUrl);
+        }
+
+        async function loadBAMTrack(sampleId, bamUrl, baiUrl) {
+            try {
+                console.log(`Loading BAM track for ${sampleId}...`);
+                console.log(`BAM URL: ${bamUrl}`);
+                console.log(`BAI URL: ${baiUrl}`);
+
+                const track = {
+                    name: `${sampleId} - Alignments`,
+                    type: "alignment",
+                    format: "bam",
+                    url: bamUrl,
+                    indexURL: baiUrl,
+                    visibilityWindow: 300000,
+                    alignmentRowHeight: 14,
+                    colorBy: "strand",
+                    showCoverage: true,
+                    coverageColor: "rgb(150, 150, 150)"
+                };
+
+                await igvBrowser.loadTrack(track);
+                loadedBAMs.push(sampleId);
+
+                // Update loaded BAMs list
+                document.getElementById('bam-list').textContent = loadedBAMs.join(', ');
+
+                // Clear input fields
+                document.getElementById('bam-sample-id').value = '';
+                document.getElementById('bam-url').value = '';
+                document.getElementById('bam-index-url').value = '';
+
+                console.log(`✅ Successfully loaded BAM track for ${sampleId}`);
+
+                // Show success message
+                const bamControls = document.getElementById('bam-controls');
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = 'background-color: #d4edda; color: #155724; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #c3e6cb;';
+                successMsg.innerHTML = `✅ Successfully loaded BAM track for <strong>${sampleId}</strong>`;
+                bamControls.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 5000);
+
+            } catch (error) {
+                console.error('Error loading BAM track:', error);
+                alert(`❌ Failed to load BAM track for ${sampleId}:\n\n${error.message}\n\nPlease check:\n- The BAM URL is accessible\n- The BAM index (.bai) file exists\n- CORS is configured if loading from a server\n- The file format is correct`);
+            }
         }
 
         // Initialize everything
         window.onload = function() {
+            // Initialize Select2 for family filter
+            $('.select2-dropdown').select2({
+                placeholder: 'All Families',
+                allowClear: true,
+                width: '250px'
+            });
+
             createVolcanoPlot();
             createManhattanPlot();
             {% if outrider_volcano_data %}
