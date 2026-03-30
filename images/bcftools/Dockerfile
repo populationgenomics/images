@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm-slim AS base
+FROM debian:bookworm-slim AS base
 
 ENV VERSION=1.23
 
