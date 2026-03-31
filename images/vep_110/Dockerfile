@@ -58,6 +58,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         ca-certificates \
         git \
         libncurses5-dev \
+        python3 \
         wget \
     && curl https://raw.githubusercontent.com/Ensembl/UTRannotator/master/uORF_5UTR_GRCh38_PUBLIC.txt > ${UTR38} \
     && curl https://raw.githubusercontent.com/Ensembl/VEP_plugins/release/110/pLI_values.txt > ${PLI_SCORES} \
