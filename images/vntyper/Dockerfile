@@ -2,11 +2,18 @@ FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail_gcloud:0.2.1
 
 ARG VERSION=${VERSION:-2.0.3}
 
-RUN conda install -y -c bioconda -c conda-forge \
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
+
+RUN apt-get update && apt-get install -y wget bzip2 && \
+    rm -rf /var/lib/apt/lists/* && \
+    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
+    mkdir -p ${MAMBA_ROOT_PREFIX} && \
+    micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
         bwa=0.7.18 \
         samtools=1.20 \
-        fastp=0.23.4 \
-    && conda clean -afy
+        fastp=0.23.4 && \
+    rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
 RUN git clone https://github.com/hassansaei/vntyper.git && \
     cd vntyper && \
