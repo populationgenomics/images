@@ -22,3 +22,6 @@ RUN git clone https://github.com/hassansaei/vntyper.git && \
     pip install --no-cache-dir . && \
     mkdir -p /vntyper/references && \
     vntyper install-references --output-dir /vntyper/references --references hg38
+
+RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['"'"'CRAM_REFERENCE'"'"']}" if os.environ.get("CRAM_REFERENCE") else ""|' \
+      /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
