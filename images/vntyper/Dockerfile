@@ -7,4 +7,5 @@ RUN git clone https://github.com/hassansaei/vntyper.git && \
     git checkout v${VERSION} && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir . && \
-    vntyper install-references --output-dir /vntyper/references --references hg38
+    mkdir -p /vntyper/references && \
+    vntyper install-references --output-dir /vntyper/references
