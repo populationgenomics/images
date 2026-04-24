@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y wget bzip2 && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
         bwa=0.7.18 \
         samtools=1.20 \
+        bcftools=1.21 \
         fastp=0.23.4 && \
     rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
