@@ -25,3 +25,8 @@ RUN git clone https://github.com/hassansaei/vntyper.git && \
 
 RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['"'"'CRAM_REFERENCE'"'"']}" if os.environ.get("CRAM_REFERENCE") else ""|' \
       /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
+
+RUN ln -s /usr/local/lib/python3.11/site-packages/vntyper /vntyper/vntyper && \
+    ln -s /vntyper/references /vntyper/reference
+
+WORKDIR /vntyper
