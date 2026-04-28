@@ -17,19 +17,14 @@ RUN apt-get update && apt-get install -y wget bzip2 && \
         fastp=0.23.4 && \
     rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
-# Install vntyper from source and download hg38 + advntr references
+# Clone vntyper source
 RUN git clone https://github.com/hassansaei/vntyper.git /tmp/vntyper-src && \
     cd /tmp/vntyper-src && \
-    git checkout v${VERSION} && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir . && \
-    vntyper install-references --output-dir /vntyper/reference --references hg38 advntr && \
-    rm -rf /tmp/vntyper-src
+    git checkout v${VERSION}
 
 # Create the envadvntr conda environment for adVNTR (Python 2.7)
-COPY vntyper/conda/environment_envadvntr.yml /tmp/environment_envadvntr.yml
-RUN micromamba create -y -f /tmp/environment_envadvntr.yml && \
-    rm -rf ${MAMBA_ROOT_PREFIX}/pkgs /tmp/environment_envadvntr.yml
+RUN micromamba create -y -f /tmp/vntyper-src/conda/environment_envadvntr.yml && \
+    rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
 # Install adVNTR into the envadvntr environment
 RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp/adVNTR && \
@@ -38,9 +33,16 @@ RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp
         bash -c 'CFLAGS="${CFLAGS:-} -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" python setup.py install' && \
     rm -rf /tmp/adVNTR
 
+# Install vntyper and download hg38 + advntr references
+RUN cd /tmp/vntyper-src && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir . && \
+    vntyper install-references --output-dir /vntyper/reference --references hg38 advntr && \
+    rm -rf /tmp/vntyper-src
+
 # Patch vntyper to use the CRAM_REFERENCE environment variable
 RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['"'"'CRAM_REFERENCE'"'"']}" if os.environ.get("CRAM_REFERENCE") else ""|' \
-    /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
+        /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
 
 # Create symlinks so vntyper's relative paths resolve
 RUN ln -s /usr/local/lib/python3.11/site-packages/vntyper /vntyper/vntyper && \
