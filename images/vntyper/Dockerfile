@@ -17,6 +17,15 @@ RUN apt-get update && apt-get install -y wget bzip2 && \
         fastp=0.23.4 && \
     rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
+# Install vntyper from source and download hg38 + advntr references
+RUN git clone https://github.com/hassansaei/vntyper.git /tmp/vntyper-src && \
+    cd /tmp/vntyper-src && \
+    git checkout v${VERSION} && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir . && \
+    vntyper install-references --output-dir /vntyper/reference --references hg38 advntr && \
+    rm -rf /tmp/vntyper-src
+
 # Create the envadvntr conda environment for adVNTR (Python 2.7)
 COPY vntyper/conda/environment_envadvntr.yml /tmp/environment_envadvntr.yml
 RUN micromamba create -y -f /tmp/environment_envadvntr.yml && \
@@ -28,15 +37,6 @@ RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp
     micromamba run -n envadvntr \
         bash -c 'CFLAGS="${CFLAGS:-} -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" python setup.py install' && \
     rm -rf /tmp/adVNTR
-
-# Install vntyper from source and download hg38 + advntr references
-RUN git clone https://github.com/hassansaei/vntyper.git /tmp/vntyper-src && \
-    cd /tmp/vntyper-src && \
-    git checkout v${VERSION} && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir . && \
-    vntyper install-references --output-dir /vntyper/reference --references hg38 advntr && \
-    rm -rf /tmp/vntyper-src
 
 # Patch vntyper to use the CRAM_REFERENCE environment variable
 RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['"'"'CRAM_REFERENCE'"'"']}" if os.environ.get("CRAM_REFERENCE") else ""|' \
