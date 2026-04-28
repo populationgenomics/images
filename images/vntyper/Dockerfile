@@ -8,7 +8,7 @@
   # Install micromamba and the main vntyper dependencies
   RUN apt-get update && apt-get install -y wget bzip2 && \
       rm -rf /var/lib/apt/lists/* && \
-      wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
+      wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/2.5.0/linux-64/micromamba-2.5.0-1.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
       mkdir -p ${MAMBA_ROOT_PREFIX} && \
       micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
           bwa=0.7.18 \
