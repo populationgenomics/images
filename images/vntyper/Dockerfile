@@ -22,13 +22,6 @@ RUN git clone https://github.com/hassansaei/vntyper.git /tmp/vntyper-src && \
     cd /tmp/vntyper-src && \
     git checkout v${VERSION}
 
-RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp/adVNTR && \
-    cd /tmp/adVNTR && \
-    micromamba run -n envadvntr env \
-        CFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
-        python setup.py install && \
-    rm -rf /tmp/adVNTR
-
 # Install vntyper and download hg38 + advntr references
 RUN cd /tmp/vntyper-src && \
     pip install --no-cache-dir --upgrade pip && \
