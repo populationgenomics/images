@@ -27,11 +27,8 @@ RUN micromamba create -y -f /tmp/vntyper-src/conda/environment_envadvntr.yml && 
     rm -rf ${MAMBA_ROOT_PREFIX}/pkgs
 
 # Install adVNTR into the envadvntr environment
-RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp/adVNTR && \
-    cd /tmp/adVNTR && \
-    micromamba run -n envadvntr \
-        bash -c 'CFLAGS="${CFLAGS:-} -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" python setup.py install' && \
-    rm -rf /tmp/adVNTR
+RUN cd /tmp/vntyper-src/vntyper/dependencies/advntr && \
+    micromamba run -n envadvntr bash install_advntr.sh -o
 
 # Install vntyper and download hg38 + advntr references
 RUN cd /tmp/vntyper-src && \
