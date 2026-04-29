@@ -49,4 +49,4 @@ RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp
         python setup.py install && \
     rm -rf /tmp/adVNTR
 
-WORKDIR /vntype
+WORKDIR /vntyper
