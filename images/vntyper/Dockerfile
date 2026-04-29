@@ -39,7 +39,7 @@ RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['
 
 # Create symlinks so vntyper's relative paths resolve
 RUN ln -s /usr/local/lib/python3.11/site-packages/vntyper /vntyper/vntyper && \
-    ln -s ${MAMBA_ROOT_PREFIX}/bin/micromamba /usr/local/bin/mamba
+    ln -s /usr/local/bin/micromamba /usr/local/bin/mamba
 
 # Install adVNTR into the envadvntr environment
 RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp/adVNTR && \
