@@ -26,12 +26,12 @@ RUN git clone https://github.com/hassansaei/vntyper.git /tmp/vntyper-src && \
 RUN cd /tmp/vntyper-src && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir . && \
-    vntyper install-references --output-dir /vntyper/reference --references hg38 advntr && \
+    vntyper install-references --output-dir /vntyper/reference --references hg38 vntr_db_advntr && \
     rm -rf /tmp/vntyper-src
 
 # Patch vntyper to use the CRAM_REFERENCE environment variable
 RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['"'"'CRAM_REFERENCE'"'"']}" if os.environ.get("CRAM_REFERENCE") else ""|' \
-        /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
+    /usr/local/lib/python3.11/site-packages/vntyper/scripts/fastq_bam_processing.py
 
 # Create symlinks so vntyper's relative paths resolve
 RUN ln -s /usr/local/lib/python3.11/site-packages/vntyper /vntyper/vntyper && \
