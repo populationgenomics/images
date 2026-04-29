@@ -37,4 +37,12 @@ RUN sed -i 's|cram_ref_option = ""|cram_ref_option = f"--reference {os.environ['
 RUN ln -s /usr/local/lib/python3.11/site-packages/vntyper /vntyper/vntyper && \
     ln -s ${MAMBA_ROOT_PREFIX}/bin/micromamba /usr/local/bin/mamba
 
+# Install adVNTR into a separate conda environment `envadvntr`
+RUN git clone https://github.com/berntpopp/adVNTR.git --branch enhanced_hmm /tmp/adVNTR && \
+    cd /tmp/adVNTR && \
+    micromamba run -n envadvntr env \
+        CFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion" \
+        python setup.py install && \
+    rm -rf /tmp/adVNTR
+
 WORKDIR /vntyper
