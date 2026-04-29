@@ -6,7 +6,7 @@ ENV MAMBA_ROOT_PREFIX=/root/micromamba
 ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 
 # Install micromamba and the main vntyper dependencies
-RUN apt-get update && apt-get install -y wget bzip2 && \
+RUN apt-get update && apt-get install -y wget bzip2 gcc g++ && \
     rm -rf /var/lib/apt/lists/* && \
     wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/2.5.0/linux-64/micromamba-2.5.0-1.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
     mkdir -p ${MAMBA_ROOT_PREFIX} && \
