@@ -46,7 +46,7 @@ RUN pip --no-cache-dir install \
     cd hail && \
     # Generate a Wheel, but don't install it in this layer
     # DEPLOY_REMOTE avoids a dev suffix being appended to dataproc initialization paths.
-    make wheel DEPLOY_REMOTE=1 HAIL_RELEASE_MODE=1 && \
+    make wheel DEPLOY_REMOTE=1 HAIL_BUILD_MODE=Release && \
     DEBIAN_FRONTEND=noninteractive apt-get purge -y openjdk-17-jre-headless
 
 FROM basic AS installer
