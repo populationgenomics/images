@@ -1,4 +1,4 @@
-ARG VERSION=0.2.137.cpg1
+ARG VERSION=0.2.138.cpg1
 
 FROM python:3.11-slim-bullseye AS basic
 
