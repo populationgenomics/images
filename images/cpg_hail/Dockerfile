@@ -13,6 +13,7 @@ RUN apt-get update && \
         git \
         gnupg \
         jq \
+        openjdk-11-jre-headless \
         openjdk-17-jre-headless \
         procps \
         rsync \
