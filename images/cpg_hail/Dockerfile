@@ -1,4 +1,4 @@
-ARG VERSION=0.2.137.cpg1
+ARG VERSION=0.2.138.cpg1
 
 FROM python:3.11-slim-bullseye AS basic
 
@@ -13,7 +13,7 @@ RUN apt-get update && \
         git \
         gnupg \
         jq \
-        openjdk-11-jdk-headless \
+        openjdk-17-jre-headless \
         procps \
         rsync \
         software-properties-common \
@@ -46,7 +46,8 @@ RUN pip --no-cache-dir install \
     cd hail && \
     # Generate a Wheel, but don't install it in this layer
     # DEPLOY_REMOTE avoids a dev suffix being appended to dataproc initialization paths.
-    make wheel DEPLOY_REMOTE=1 HAIL_RELEASE_MODE=1 MILL_VERSION=$(sed -n '/mill-version/s/.*: *//p' build.mill)-jvm
+    make wheel DEPLOY_REMOTE=1 HAIL_BUILD_MODE=Release && \
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y openjdk-17-jre-headless
 
 FROM basic AS installer
 
