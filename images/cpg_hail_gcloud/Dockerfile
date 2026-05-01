@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.137.cpg1-2
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.138.cpg1-2
 
 # this is the installation code direct from google
 # https://cloud.google.com/sdk/docs/install#deb
@@ -11,4 +11,4 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
-ARG VERSION=0.2.137.cpg1
+ARG VERSION=0.2.138.cpg1
