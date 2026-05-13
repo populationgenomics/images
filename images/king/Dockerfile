@@ -1,25 +1,14 @@
-FROM python:3.11-slim-bookworm
+FROM debian:bullseye-slim
 
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=2.3.2
-ENV VERSION=${VERSION}
-LABEL maintainer="Population Genomics Team"
-LABEL version="${VERSION}"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    ca-certificates \
-    libquadmath0 \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# KING upstream URL pattern strips dots from the version (e.g. 2.3.2 -> 232).
-# Browser User-Agent + retries: kingrelatedness.com filters the default wget UA
-# from some networks (notably CI runners), returning HTTP errors.
-RUN URL_VERSION=$(echo "${VERSION}" | tr -d '.') \
-    && wget --tries=3 --timeout=60 \
-        --user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
-        "https://www.kingrelatedness.com/executables/Linux-king${URL_VERSION}.tar.gz" \
-        -O /tmp/king.tar.gz \
-    && tar -xzf /tmp/king.tar.gz -C /usr/local/bin king \
-    && chmod +x /usr/local/bin/king \
-    && rm /tmp/king.tar.gz
+RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/* && \
+    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
+    mkdir ${MAMBA_ROOT_PREFIX} && \
+    micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
+    king=${VERSION} && \
+    rm -r /root/micromamba/pkgs
