@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS base
 
-ENV VERSION=1.23
+ENV VERSION=1.23.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y \
         make \
         wget \
         zlib1g-dev && \
-    # Install bcftools
     wget https://github.com/samtools/bcftools/releases/download/${VERSION}/bcftools-${VERSION}.tar.bz2 && \
     tar -xf bcftools-${VERSION}.tar.bz2 && \
     cd bcftools-${VERSION} && \
@@ -41,7 +40,6 @@ RUN apt-get update && apt-get install -y \
     strip bcftools plugins/*.so && \
     make DESTDIR=/bcftools_install install && \
     make -C htslib-$VERSION DESTDIR=/bcftools_install install
-
 
 FROM base
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
