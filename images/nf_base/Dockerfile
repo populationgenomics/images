@@ -23,6 +23,6 @@ RUN apt-get update -y && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
-RUN pip install \
+RUN pip install --no-cache-dir \
     metamist \
     cpg-utils \
