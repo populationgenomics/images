@@ -47,6 +47,10 @@ RUN chmod +x /usr/local/bin/plink-wrapper /usr/local/bin/plink1.9 /usr/local/bin
     ln -s /usr/local/bin/plink-wrapper /usr/local/bin/plink && \
     ln -s /usr/local/bin/plink-wrapper /usr/local/bin/plink2
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget unzip ca-certificates tabix \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set entrypoint to the wrapper
 ENTRYPOINT ["/usr/local/bin/plink-wrapper"]
 CMD ["plink1.9", "--help"]
