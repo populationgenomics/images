@@ -8,7 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
 
 # Install metamist and any other dependencies
-ARG VERSION=2.4.1
+ARG VERSION=${VERSION:-2.4.1}
 RUN pip install --no-cache-dir "rbceq2==${VERSION}"
 
 # Standard entrypoint (though Nextflow overrides this)
