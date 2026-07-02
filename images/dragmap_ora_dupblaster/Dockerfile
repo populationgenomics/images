@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1 as builder
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1 AS builder
 
 # set bash as the shell of choice
 SHELL ["/bin/bash", "-c"]
@@ -21,7 +21,7 @@ RUN apt-get update && \
     source $HOME/.bashrc && \
     cargo install dupblaster
 
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1 a
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1
 
 COPY --from=build /root/.cargo/bin/dupblaster /usr/local/bin/dupblaster
 
