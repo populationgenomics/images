@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1 AS builder
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap:1.3.0-tokenizer-next-fix-1 AS build
 
 # set bash as the shell of choice
 SHELL ["/bin/bash", "-c"]
