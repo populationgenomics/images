@@ -1,14 +1,55 @@
-FROM debian:buster-slim
+# In this image we do not include the R-based plot scripts.
+FROM ubuntu:20.04 AS build
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-2.0.1}
+# Set noninterative mode
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH="/usr/local/lib"
 
-RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
-    rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/* && \
-    wget -qO- https://api.anaconda.org/download/conda-forge/micromamba/0.8.2/linux-64/micromamba-0.8.2-he9b6cbd_0.tar.bz2 | tar -xvj -C /usr/local bin/micromamba && \
-    mkdir ${MAMBA_ROOT_PREFIX} && \
-    micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
-    verifybamid2=${VERSION} google-cloud-sdk && \
-    rm -r /root/micromamba/pkgs
+ARG HTSLIB_VERSION="1.23.1"
+ARG VERSION="v2.0.3"
+
+# apt update and install build requirements
+RUN apt-get update \
+     && apt-get install -y \
+        build-essential \
+        cmake \
+        g++ \
+        git \
+        wget \
+        libbz2-dev=1.0.8-2 \
+        libcurl4-openssl-dev \
+        zlib1g-dev \
+        liblzma-dev
+
+# Compile htslib
+WORKDIR /deps
+RUN wget -q https://github.com/samtools/htslib/releases/download/${HTSLIB_VERSION}/htslib-${HTSLIB_VERSION}.tar.bz2 \
+    && tar -xf htslib-${HTSLIB_VERSION}.tar.bz2 \
+    && mv htslib-${HTSLIB_VERSION} htslib
+
+WORKDIR /deps/htslib
+RUN autoheader; autoconf; ./configure --prefix=/usr/local/ \
+    && make && make install
+
+# Compile VerifyBamID. Version ${VERSION}
+WORKDIR /
+RUN git clone https://github.com/Griffan/VerifyBamID.git && \
+    cd VerifyBamID && \
+    git checkout ${VERSION}
+WORKDIR /VerifyBamID/build
+RUN cmake .. && \
+    make && \
+    make test
+
+# Final image
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND="noninteractive"
+
+RUN apt update && apt install -y \
+        libgomp1 \
+        libcurl4-openssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /VerifyBamID/bin/VerifyBamID /usr/local/bin/
+COPY --from=build /usr/local/lib/ /usr/local/lib/
