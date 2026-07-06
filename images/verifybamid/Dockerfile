@@ -37,7 +37,11 @@ RUN git clone https://github.com/Griffan/VerifyBamID.git && \
     cd VerifyBamID && \
     git checkout ${VERSION}
 WORKDIR /VerifyBamID/build
-RUN cmake .. && \
+
+# -fsigned-char: VerifyBamID's genotype-missing sentinel relies on `char`
+# being signed (default on x86_64 but not on aarch64), which otherwise
+# breaks missing-genotype detection and fails testReadVcf.
+RUN cmake -DCMAKE_C_FLAGS=-fsigned-char -DCMAKE_CXX_FLAGS=-fsigned-char .. && \
     make && \
     make test
 
