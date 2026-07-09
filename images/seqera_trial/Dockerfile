@@ -1,6 +1,8 @@
 # Use a slim Python image for efficiency
 FROM python:3.11-slim
 
+ENV VERSION=0.0.1
+
 # Set working directory
 WORKDIR /app
 
