@@ -25,7 +25,7 @@ RUN apt-get update && \
 
 FROM basic AS builder
 
-ENV HAIL_QUERY_BACKEND="service"
+ENV HAIL_QUERY_BACKEND="spark"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
