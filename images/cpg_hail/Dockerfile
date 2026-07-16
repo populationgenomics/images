@@ -25,7 +25,7 @@ RUN apt-get update && \
 
 FROM basic AS builder
 
-ENV HAIL_QUERY_BACKEND="spark"
+ENV HAIL_QUERY_BACKEND="service"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -48,12 +48,12 @@ RUN pip --no-cache-dir install \
     # Generate a Wheel, but don't install it in this layer
     # DEPLOY_REMOTE avoids a dev suffix being appended to dataproc initialization paths.
     make wheel DEPLOY_REMOTE=1 HAIL_BUILD_MODE=Release
-#
-#FROM basic AS installer
-#
-## wheel needs to have a descriptive name, e.g. hail-0.2.134-py3-none-any.whl
-## but this isn't knowable exactly from the hash/branch, so we use a wildcard
-## this RUN command binds in the wheel from the build layer without copying it in permanently
-#RUN --mount=type=bind,from=builder,source=/hail/hail/build/deploy/dist,target=/wheel \
-#    pip install --no-cache-dir \
-#        /wheel/hail-*-py3-none-any.whl
+
+FROM basic AS installer
+
+# wheel needs to have a descriptive name, e.g. hail-0.2.134-py3-none-any.whl
+# but this isn't knowable exactly from the hash/branch, so we use a wildcard
+# this RUN command binds in the wheel from the build layer without copying it in permanently
+RUN --mount=type=bind,from=builder,source=/hail/hail/build/deploy/dist,target=/wheel \
+    pip install --no-cache-dir \
+        /wheel/hail-*-py3-none-any.whl \
