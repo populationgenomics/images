@@ -56,4 +56,4 @@ FROM basic AS installer
 # this RUN command binds in the wheel from the build layer without copying it in permanently
 RUN --mount=type=bind,from=builder,source=/hail/hail/build/deploy/dist,target=/wheel \
     pip install --no-cache-dir \
-        /wheel/hail-*-py3-none-any.whl
+        /wheel/hail-*-py3-none-any.whl \
