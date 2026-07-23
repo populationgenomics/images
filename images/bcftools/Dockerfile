@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS base
 
-ENV VERSION=1.23.1
+ENV VERSION=1.24
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
