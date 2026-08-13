@@ -12,4 +12,4 @@ IMAGE_NAME="gatk_federate_svs"
 IMAGE_TAG="53b4f16a7"
 
 gcloud auth configure-docker australia-southeast1-docker.pkg.dev
-skopeo copy ${SOURCE_IMAGE} docker://australia-southeast1-docker.pkg.dev/cpg-common/images/${IMAGE_NAME}:${IMAGE_TAG}
+skopeo copy ${SOURCE_IMAGE} docker://australia-southeast1-docker.pkg.dev/tenk10k-sv/images/sv/${IMAGE_NAME}:${IMAGE_TAG}
