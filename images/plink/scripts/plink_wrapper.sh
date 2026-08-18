@@ -7,8 +7,19 @@
 BASE=$(basename "$0")
 CMD="$1"
 
-# Select the best PLINK2 binary variant based on host CPU features
+# Select the best PLINK2 binary variant based on host CPU features.
+# PLINK2_FORCE_VARIANT overrides detection (generic | intel_avx2 | amd_avx2) —
+# e.g. to sidestep AVX2-build-specific bugs such as the a.7.3 chrX --hwe hang.
 select_plink2_binary() {
+    if [ -n "$PLINK2_FORCE_VARIANT" ]; then
+        FORCED="/usr/local/bin/variants/plink2_$PLINK2_FORCE_VARIANT"
+        if [ ! -x "$FORCED" ]; then
+            echo "PLINK2_FORCE_VARIANT=$PLINK2_FORCE_VARIANT: $FORCED not found" >&2
+            exit 1
+        fi
+        echo "$FORCED"
+        return
+    fi
     BINARY="/usr/local/bin/variants/plink2_generic"
     if [ -f /proc/cpuinfo ]; then
         # Check for AVX2 support
