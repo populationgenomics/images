@@ -2,7 +2,11 @@
 FROM python:3.11-slim-bookworm
 
 # Build metadata
+# CI's get_version.py derives the image tag by text-matching the first
+# VERSION assignment in this file (comments included), so keep the value
+# below literally spelt out — no variables.
 ENV VERSION=1.9-20250819-PLINK-2.0-20260818
+ARG PLINK2BUILD=20260818
 LABEL maintainer="Population Genomics Team"
 LABEL version="${VERSION}"
 
@@ -22,21 +26,21 @@ RUN wget -q https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20250819.z
     && mv /tmp/plink1/plink /usr/local/bin/plink1.9 \
     && rm -rf plink1.zip /tmp/plink1
 
-# 2. Download and install PLINK 2.0 variants (Build 20260818)
+# 2. Download and install PLINK 2.0 variants
 # Intel AVX2
-RUN wget -q https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_avx2_20260818.zip -O intel.zip \
+RUN wget -q "https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_avx2_${PLINK2BUILD}.zip" -O intel.zip \
     && unzip -q intel.zip -d /tmp/intel \
     && mv /tmp/intel/plink2 /usr/local/bin/variants/plink2_intel_avx2 \
     && rm -rf intel.zip /tmp/intel
 
 # AMD AVX2
-RUN wget -q https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_amd_avx2_20260818.zip -O amd.zip \
+RUN wget -q "https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_amd_avx2_${PLINK2BUILD}.zip" -O amd.zip \
     && unzip -q amd.zip -d /tmp/amd \
     && mv /tmp/amd/plink2 /usr/local/bin/variants/plink2_amd_avx2 \
     && rm -rf amd.zip /tmp/amd
 
 # Generic x86_64
-RUN wget -q https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_x86_64_20260818.zip -O generic.zip \
+RUN wget -q "https://s3.amazonaws.com/plink2-assets/alpha7/plink2_linux_x86_64_${PLINK2BUILD}.zip" -O generic.zip \
     && unzip -q generic.zip -d /tmp/generic \
     && mv /tmp/generic/plink2 /usr/local/bin/variants/plink2_generic \
     && rm -rf generic.zip /tmp/generic
