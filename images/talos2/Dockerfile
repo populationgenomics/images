@@ -85,7 +85,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY --from=compiler /sv_wheels /tmp/sv_wheels
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /talos/.venv/bin/python --find-links /tmp/sv_wheels \
+    uv pip install --python /talos2/.venv/bin/python --find-links /tmp/sv_wheels \
         'pandas<3' \
         pyranges \
         ncls \
