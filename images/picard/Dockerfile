@@ -13,8 +13,8 @@ RUN apt-get update && \
 RUN git clone --branch ${VERSION} --depth 1 https://github.com/broadinstitute/picard.git /usr/picard
 WORKDIR /usr/picard
 
-# Build Picard with htsjdk 4.3.0 for CRAM v3.1 support
-RUN ./gradlew clean printVersion shadowJar -Dhtsjdk.version=4.3.0
+# Picard 3.5.0 uses htsjdk 5.0.0 so no need to specify a version override
+RUN ./gradlew clean printVersion shadowJar
 
 # --- STAGE 2: Minimal Runtime Environment ---
 FROM debian:bookworm-slim
