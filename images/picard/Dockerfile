@@ -3,14 +3,14 @@ FROM eclipse-temurin:17-jdk AS builder
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=3.4.0
+ARG VERSION=3.5.0
 
 RUN apt-get update && \
     apt-get --no-install-recommends install -y git && \
     rm -rf /var/lib/apt/lists/*
 
 # Clone Picard repository
-RUN git clone --branch 3.4.0 --depth 1 https://github.com/broadinstitute/picard.git /usr/picard
+RUN git clone --branch ${VERSION} --depth 1 https://github.com/broadinstitute/picard.git /usr/picard
 WORKDIR /usr/picard
 
 # Build Picard with htsjdk 4.3.0 for CRAM v3.1 support
@@ -20,7 +20,7 @@ RUN ./gradlew clean printVersion shadowJar -Dhtsjdk.version=4.3.0
 FROM debian:bookworm-slim
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=3.4.0
+ARG VERSION=3.5.0
 
 # Install minimal system requirements for Micromamba
 RUN apt-get update && apt-get install -y wget bzip2 ca-certificates && \
