@@ -2,12 +2,16 @@ FROM debian:bookworm-slim AS installer
 
 ARG VERSION=3.4.1
 
+# The "-cloud" tarball ships a system-wide /etc/ncbi config with
+# /config/default = "true", so the tools run for any user without the
+# per-user GUID configuration step.
 RUN apt-get update && apt-get install -y \
         ca-certificates \
         curl && \
-    curl -s "https://ftp.ncbi.nlm.nih.gov/sra/sdk/${VERSION}/sratoolkit.${VERSION}-ubuntu64.tar.gz" -o sratoolkit.tar.gz && \
-    tar -xzf sratoolkit.tar.gz && \
-    mv "sratoolkit.${VERSION}-ubuntu64" /usr/local/sratoolkit
+    curl -fsSL "https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${VERSION}/sratoolkit.${VERSION}-alma_linux64-cloud.tar.gz" -o sratoolkit.tar.gz && \
+    mkdir /sratoolkit && \
+    tar -xzf sratoolkit.tar.gz -C /sratoolkit && \
+    printf '/repository/user/cache-disabled = "true"\n' >> /sratoolkit/etc/ncbi/default.kfg
 
 FROM debian:bookworm-slim
 
@@ -17,19 +21,14 @@ LABEL \
   version="v${VERSION}" \
   description="NCBI SRA Toolkit (prefetch, fasterq-dump, etc.)"
 
+# libxml-libxml-perl is required by the perl-based loader tools
 RUN apt-get update && apt-get install -y \
-        ca-certificates && \
+        ca-certificates \
+        libxml-libxml-perl && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
-COPY --from=installer /usr/local/sratoolkit /usr/local/sratoolkit
+COPY --from=installer /sratoolkit/usr/local/ncbi /usr/local/ncbi
+COPY --from=installer /sratoolkit/etc/ncbi /etc/ncbi
 
-ENV PATH="/usr/local/sratoolkit/bin:${PATH}"
-
-# The tools refuse to run until a configuration with a GUID exists; also keep
-# the download cache out of the image layer's home directory.
-RUN mkdir -p /root/.ncbi && \
-    printf '/LIBS/GUID = "%s"\n/repository/user/cache-disabled = "true"\n' \
-        "$(cat /proc/sys/kernel/random/uuid)" > /root/.ncbi/user-settings.mkfg && \
-    prefetch --version && \
-    fasterq-dump --version
+ENV PATH="/usr/local/ncbi/sra-tools/bin:${PATH}"
