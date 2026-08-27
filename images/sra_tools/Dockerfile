@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS installer
 
-ARG VERSION=3.4.1
+ENV VERSION=3.4.1
 
 # The "-cloud" tarball ships a system-wide /etc/ncbi config with
 # /config/default = "true", so the tools run for any user without the
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 FROM debian:bookworm-slim
 
-ARG VERSION
+ENV VERSION=3.4.1
 
 LABEL \
   version="v${VERSION}" \
