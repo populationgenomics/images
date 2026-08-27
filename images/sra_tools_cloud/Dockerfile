@@ -41,9 +41,7 @@ FROM debian:bookworm-slim
 
 ENV VERSION=3.4.1
 
-LABEL \
-  version="v${VERSION}" \
-  description="NCBI SRA Toolkit plus gcloud CLI, pigz, and bgzip, for fetching SRA objects from cloud buckets"
+LABEL description="NCBI SRA Toolkit plus gcloud CLI, pigz, and bgzip, for fetching SRA objects from cloud buckets"
 
 # libxml-libxml-perl is required by the perl-based loader tools;
 # libbz2/liblzma/libdeflate are htslib runtime dependencies
