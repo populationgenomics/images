@@ -19,7 +19,7 @@ ENV VERSION=3.4.1
 
 LABEL \
   version="v${VERSION}" \
-  description="NCBI SRA Toolkit plus gcloud CLI and pigz, for fetching SRA objects from cloud buckets"
+  description="NCBI SRA Toolkit plus gcloud CLI, pigz, and bgzip, for fetching SRA objects from cloud buckets"
 
 # libxml-libxml-perl is required by the perl-based loader tools
 RUN apt-get update && apt-get install -y \
@@ -27,7 +27,8 @@ RUN apt-get update && apt-get install -y \
         curl \
         gnupg \
         libxml-libxml-perl \
-        pigz && \
+        pigz \
+        tabix && \
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
         > /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
