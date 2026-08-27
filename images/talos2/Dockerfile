@@ -1,6 +1,5 @@
-ARG SVAFOTATE_COMMIT=30b5004a0f4d26959c6b9a82f165651585293626
-
 ARG VERSION=0.0.1
+ARG SVAFOTATE_COMMIT=30b5004a0f4d26959c6b9a82f165651585293626
 
 FROM python:3.11-slim-bullseye AS base
 
@@ -57,12 +56,12 @@ RUN pip wheel --no-cache-dir --wheel-dir /sv_wheels \
 FROM base AS talos
 
 ARG SVAFOTATE_COMMIT
+ARG VERSION
 
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
 COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
 
 ARG ECHTVAR_VERSION=v0.2.2
-ENV VERSION=0.0.1
 
 RUN wget -q -O /bin/echtvar "https://github.com/brentp/echtvar/releases/download/${ECHTVAR_VERSION}/echtvar" && \
     chmod +x /bin/echtvar
@@ -75,7 +74,7 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
-RUN git clone https://github.com/populationgenomics/talos2.git
+RUN git clone -b ${VERSION} https://github.com/populationgenomics/talos2.git
 
 WORKDIR /talos2
 
