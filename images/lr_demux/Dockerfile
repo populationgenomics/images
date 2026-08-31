@@ -1,8 +1,8 @@
 FROM debian:bookworm-slim
 
-ENV VERSION=0.1.0
+ENV VERSION=0.1.1
 
-LABEL description="Genotype-based single-cell demultiplexing: cellsnp-lite, vireoSNP, pysam, samtools/bcftools/bedtools, plus git and gcloud for analysis-runner jobs"
+LABEL description="Genotype-based single-cell demultiplexing: cellsnp-lite, vireoSNP, pysam, samtools/bcftools/bedtools, plus git, gcloud and cpg-utils for analysis-runner jobs"
 
 ENV MAMBA_ROOT_PREFIX=/opt/micromamba
 ENV PATH=${MAMBA_ROOT_PREFIX}/bin:${PATH}
@@ -44,3 +44,9 @@ RUN curl -fsSL -o /usr/local/bin/micromamba \
         scipy && \
     micromamba clean -y --all && \
     rm -r ${MAMBA_ROOT_PREFIX}/pkgs
+
+# prepare_git_job resolves the checkout-token secret by running config_retrieve
+# inside the job. Its generated shell swallows import errors, so without
+# cpg-utils here a private-repo clone fails with a misleading "no git
+# credentials secret found".
+RUN pip install --no-cache-dir cpg-utils
