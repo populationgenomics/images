@@ -1,6 +1,6 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.139.cpg1-1
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/cpg_hail:0.2.138.cpg2-2
 
-ENV VERSION=0.2.139.cpg1
+ENV VERSION=0.2.138.cpg2
 
 # this is the installation code direct from google
 # https://cloud.google.com/sdk/docs/install#deb
