@@ -2,7 +2,7 @@ FROM python:3.11-slim-bookworm AS basic
 
 # ENV rather than ARG so the hail checkout below is immune to the CI
 # `--build-arg VERSION=<tag>-<n>` override, which is not a valid git ref.
-ENV VERSION=0.2.139.cpg1
+ENV VERSION=0.2.138.cpg2
 
 ENV HAIL_QUERY_BACKEND="service"
 
