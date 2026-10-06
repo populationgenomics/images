@@ -2,7 +2,7 @@
 #
 # Usage: admixture [-jN] [--cv] [--seed=X] <prefix>.bed <K>
 # The <prefix>.K.Q and <prefix>.K.P outputs are written to the working directory, not next to
-# the input. Chromosome codes in the .bim must be integers ("chr1" is rejected).
+# the input.
 FROM debian:trixie-slim AS downloader
 
 # CI's get_version.py derives the image tag by text-matching the first
