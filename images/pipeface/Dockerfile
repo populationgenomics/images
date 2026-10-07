@@ -111,8 +111,6 @@ LABEL name="pipeface"
 LABEL description="docker image containing most software required for pipeface/popface"
 LABEL version="0.0.5"
 ARG VERSION=0.0.5
-LABEL maintainer.name="Leah Kemp"
-LABEL maintainer.email="leahmhkemp@gmail.com"
 
 # get necessary libs
 RUN apt-get update && \
