@@ -2,7 +2,7 @@ FROM debian:trixie-slim
 
 ENV MAMBA_ROOT_PREFIX /root/micromamba
 ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-1.3.0}
+ARG VERSION=${VERSION:-tokenizer-next-upstream}
 
 RUN apt-get update && apt-get install -y \
         git wget bash bzip2 zip build-essential libboost-all-dev libz-dev && \
