@@ -1,8 +1,8 @@
 FROM debian:bookworm-slim
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-master}
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
+ARG VERSION=master
 
 RUN apt-get update && apt-get install -y \
         git wget bash bzip2 zip build-essential libboost-all-dev libz-dev && \
