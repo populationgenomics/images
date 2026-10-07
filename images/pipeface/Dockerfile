@@ -3,7 +3,7 @@ FROM ubuntu:24.04 AS build
 
 # get necessary libs
 RUN apt-get update && \
-    apt install -y make wget gcc bzip2 libz-dev libbz2-dev liblzma-dev libcurl4-openssl-dev build-essential python3-dev pip libtool cmake git zlib1g-dev openjdk-11-jdk bash libssl-dev libffi-dev libsqlite3-dev libreadline-dev libncurses-dev
+    apt install --no-install-recommends -y make wget gcc bzip2 libz-dev libbz2-dev liblzma-dev libcurl4-openssl-dev build-essential python3-dev pip libtool cmake git zlib1g-dev openjdk-11-jdk bash libssl-dev libffi-dev libsqlite3-dev libreadline-dev libncurses-dev
 
 # samtools
 RUN wget -O- "https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2" | tar -xj && \
@@ -115,7 +115,9 @@ LABEL maintainer.email="leahmhkemp@gmail.com"
 
 # get necessary libs
 RUN apt-get update && \
-    apt install -y python3-dev libcurl4-openssl-dev openjdk-11-jdk
+    apt install --no-install-recommends -y python3-dev libcurl4-openssl-dev openjdk-11-jdk && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/*
 
 # copy required compiled tools
 COPY --from=build \
