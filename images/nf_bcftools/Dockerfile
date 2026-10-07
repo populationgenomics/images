@@ -1,6 +1,6 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/nf_base:0.1.1-1 AS base
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/nf_base:0.1.0-1 AS base
 
-ARG VERSION=1.23.2
+ARG VERSION=1.23.1
 
 LABEL \
   version="v${VERSION}" \
