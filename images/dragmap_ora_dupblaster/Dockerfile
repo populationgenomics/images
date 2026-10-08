@@ -9,6 +9,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         bzip2 \
+        curl \
         libbz2-dev \
         libcurl4-openssl-dev \
         liblzma-dev \
