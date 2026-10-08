@@ -1,4 +1,4 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap_ora_dupblaster:2.7.0-2 AS build
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap_plus_ora:2.7.0-2 AS build
 
 # set bash as the shell of choice
 SHELL ["/bin/bash", "-c"]
@@ -15,6 +15,6 @@ RUN apt-get update && \
     source $HOME/.bashrc && \
     cargo install dupblaster --version ${VERSION}
 
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap_ora_dupblaster:2.7.0-2
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images/dragmap_plus_ora:2.7.0-2
 
 COPY --from=build /root/.cargo/bin/dupblaster /usr/local/bin/dupblaster
