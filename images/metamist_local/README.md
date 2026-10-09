@@ -1,8 +1,8 @@
 # metamist_local
 
-Metamist in local mode, in one container, set up the way metamist's own
-`docs/installation.md` describes. The image automates those steps so a script or
-a CI job can have a working, empty metamist with no GCP credentials:
+Metamist in local mode, in one container: an automation of metamist's own
+development setup (`docs/installation.md`). It gives a working, empty metamist
+with no GCP credentials:
 
 - a MariaDB 11.7 server, with the `sm_dev` database, `sm_api` user and role
 - metamist's liquibase migrations, run at boot
