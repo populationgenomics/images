@@ -31,18 +31,8 @@ The React web UI is not built. The data is empty unless you seed it (see below).
 
 The image tag is `7.14.3-N`: metamist's version plus CI's build counter.
 
-### Which metamist branch
-
-metamist's `dev` is its integration branch (deployed to its development
-environment) and `main` receives release merges (deployed to production). Both
-run on MariaDB, and their `docs/installation.md`, which this image automates, is
-identical. The image pins a commit on **`main`**, so it matches what production
-runs.
-
-The move to Postgres lives on the separate `pg-dev` / `pg-main` branches and is
-not released. Do not pin a commit from those branches: this image installs
-MariaDB and runs its migrations. When Postgres is released to `main`, the
-image's database layer and entrypoint change with it.
+Pinned to a commit on metamist's `main` (MariaDB). Not `pg-dev` / `pg-main`:
+the Postgres line is unreleased, and this image installs MariaDB.
 
 ## Run
 
