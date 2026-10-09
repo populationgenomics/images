@@ -1,5 +1,7 @@
 """Local-mode placeholder: from hailtop.config import get_deploy_config."""
 
-from _hail_stub import HailPlaceholder
+from __future__ import annotations
 
-get_deploy_config = HailPlaceholder
+import _hail_stub
+
+get_deploy_config = _hail_stub.HailPlaceholder

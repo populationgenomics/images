@@ -1,5 +1,7 @@
 """Local-mode placeholder: from hail.backend.service_backend import ServiceBackend."""
 
-from _hail_stub import HailPlaceholder
+from __future__ import annotations
 
-ServiceBackend = HailPlaceholder
+import _hail_stub
+
+ServiceBackend = _hail_stub.HailPlaceholder

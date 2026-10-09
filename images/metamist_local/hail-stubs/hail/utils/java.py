@@ -1,5 +1,7 @@
 """Local-mode placeholder: from hail.utils.java import Env."""
 
-from _hail_stub import HailPlaceholder
+from __future__ import annotations
 
-Env = HailPlaceholder
+import _hail_stub
+
+Env = _hail_stub.HailPlaceholder
