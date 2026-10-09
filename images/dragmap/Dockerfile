@@ -1,8 +1,8 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
-ARG VERSION=${VERSION:-1.3.0}
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
+ARG VERSION=post-bullseye-EOL-fixes
 
 RUN apt-get update && apt-get install -y \
         git wget bash bzip2 zip build-essential libboost-all-dev libz-dev && \
@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     mkdir ${MAMBA_ROOT_PREFIX} && \
     micromamba install -y --prefix ${MAMBA_ROOT_PREFIX} -c bioconda -c conda-forge \
         bazam biobambam google-cloud-sdk samtools \
-    && rm -r /root/micromamba/pkgs && \
-    git clone --depth 1 --branch ${VERSION} https://github.com/populationgenomics/DRAGMAP && \
+    && rm -r /root/micromamba/pkgs
+
+RUN git clone --depth 1 --branch ${VERSION} https://github.com/populationgenomics/DRAGMAP && \
     HAS_GTEST=0 make -C DRAGMAP -j 8 install && \
     rm -r DRAGMAP

@@ -1,7 +1,7 @@
 FROM debian:trixie-slim AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG VERSION=${VERSION:-0.3.1}
+ARG VERSION=${VERSION:-0.3.3}
 
 RUN apt-get update && apt-get install -y \
     git \

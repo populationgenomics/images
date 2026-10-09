@@ -1,6 +1,8 @@
-ARG VERSION=0.2.137.cpg1
+FROM python:3.11-slim-bookworm AS basic
 
-FROM python:3.11-slim-bullseye AS basic
+# ENV rather than ARG so the hail checkout below is immune to the CI
+# `--build-arg VERSION=<tag>-<n>` override, which is not a valid git ref.
+ENV VERSION=0.2.138.cpg2
 
 ENV HAIL_QUERY_BACKEND="service"
 
@@ -13,7 +15,6 @@ RUN apt-get update && \
         git \
         gnupg \
         jq \
-        openjdk-11-jdk-headless \
         procps \
         rsync \
         software-properties-common \
@@ -22,6 +23,19 @@ RUN apt-get update && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     pip install --no-cache-dir --upgrade pip
+
+# Hail requires Java 11, which Debian bookworm no longer packages, so install
+# Eclipse Temurin 11 from the Adoptium apt repository.
+# https://adoptium.net/installation/linux/
+RUN wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | \
+        gpg --dearmor -o /usr/share/keyrings/adoptium.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb bookworm main" \
+        > /etc/apt/sources.list.d/adoptium.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        temurin-11-jdk && \
+    rm -r /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/*
 
 FROM basic AS builder
 
@@ -34,7 +48,8 @@ RUN apt-get update && \
         gcc \
         libfontconfig \
         liblapack3 \
-        libopenblas-dev && \
+        libopenblas-dev \
+        openjdk-17-jre-headless && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
@@ -46,7 +61,7 @@ RUN pip --no-cache-dir install \
     cd hail && \
     # Generate a Wheel, but don't install it in this layer
     # DEPLOY_REMOTE avoids a dev suffix being appended to dataproc initialization paths.
-    make wheel DEPLOY_REMOTE=1 HAIL_RELEASE_MODE=1 MILL_VERSION=$(sed -n '/mill-version/s/.*: *//p' build.mill)-jvm
+    make wheel DEPLOY_REMOTE=1 HAIL_BUILD_MODE=Release
 
 FROM basic AS installer
 

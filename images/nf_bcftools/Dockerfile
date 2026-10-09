@@ -1,8 +1,11 @@
-FROM debian:bookworm-slim AS base
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/nf_base:0.1.0-1 AS base
 
-ENV VERSION=1.24
+ARG VERSION=1.23.1
 
-ENV DEBIAN_FRONTEND=noninteractive
+LABEL \
+  version="v${VERSION}" \
+  description="NF Base Bcftools install"
+
 RUN apt-get update && apt-get install -y \
         libbz2-1.0 \
         libcurl4 \
@@ -12,17 +15,13 @@ RUN apt-get update && apt-get install -y \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
-# second stage - add compile-relevant tools, obtain release, install from release
 FROM base AS compiler
+
 RUN apt-get update && apt-get install -y \
-        bzip2 \
-        gcc \
         libbz2-dev \
         libcurl4-openssl-dev \
         liblzma-dev \
         libssl-dev \
-        make \
-        wget \
         zlib1g-dev && \
     wget https://github.com/samtools/bcftools/releases/download/${VERSION}/bcftools-${VERSION}.tar.bz2 && \
     tar -xf bcftools-${VERSION}.tar.bz2 && \
