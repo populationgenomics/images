@@ -7,7 +7,7 @@
 #   3. run the liquibase migrations
 #   4. grant the local default user project-creators / members-admin
 #   5. start fake-gcs-server
-#   6. start the API (uvicorn --reload)
+#   6. start the API (uvicorn; --reload only when a checkout is mounted)
 #   7. seed once, only if SEED=1 (running SEED_SCRIPT with the image's python)
 # then log "[metamist_local_server] ready" and hand control to the given command
 # (defaults to tailing the API log).
@@ -30,10 +30,14 @@ phase() { echo "[metamist_local_server $1] $2"; }
 mkdir -p "${LOG_DIR}"
 
 # Run from the mounted working tree if present, otherwise the baked-in copy.
+# Live reload is only useful for a mounted checkout; the baked copy never changes,
+# so it is served without the file watcher.
 METAMIST_DIR="${METAMIST_DIR:-/app/metamist}"
+UVICORN_RELOAD=(--reload)
 if [[ ! -f "${METAMIST_DIR}/api/server.py" ]]; then
     log "no source mounted at ${METAMIST_DIR}, using baked /build" >&2
     METAMIST_DIR=/build
+    UVICORN_RELOAD=()
 fi
 cd "${METAMIST_DIR}"
 log "metamist source: ${METAMIST_DIR}"
@@ -136,9 +140,9 @@ for _ in $(seq 1 30); do
 done
 
 # --- 6. API server ----------------------------------------------------------
-phase 6/7 "starting API on :8000 (uvicorn --reload)"
+phase 6/7 "starting API on :8000 (uvicorn ${UVICORN_RELOAD[*]:-without reload})"
 ( cd "${METAMIST_DIR}" && exec "${VENV_PY}" -m uvicorn \
-    --host 0.0.0.0 --port 8000 --reload api.server:app ) \
+    --host 0.0.0.0 --port 8000 "${UVICORN_RELOAD[@]}" api.server:app ) \
     >"${LOG_DIR}/api.log" 2>&1 &
 
 log "waiting for the API to respond"

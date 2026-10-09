@@ -6,7 +6,7 @@ with no GCP credentials:
 
 - a MariaDB 11.7 server, with the `sm_dev` database, `sm_api` user and role
 - metamist's liquibase migrations, run at boot
-- the metamist API (uvicorn, `--reload`), serving Swagger and GraphiQL
+- the metamist API (uvicorn), serving Swagger and GraphiQL
 - the generated metamist python client, installed into the image's python
 - fake-gcs-server, a local stand-in for Google Cloud Storage (the emulator
   metamist's own tests use)
@@ -60,6 +60,35 @@ docker exec metamist_local_server mmquery '{ myProjects { name } }'
 
 It also runs on the host (copy it out with `docker cp`); point it at the
 published port with `SM_URL=http://localhost:8000`.
+
+## From tests (testcontainers)
+
+A test suite can start the image itself with
+[testcontainers](https://testcontainers-python.readthedocs.io/), waiting on the
+`ready` log line (tested with testcontainers 4.15):
+
+```python
+import re
+
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.wait_strategies import LogMessageWaitStrategy
+
+metamist = (
+    DockerContainer('australia-southeast1-docker.pkg.dev/cpg-common/images/metamist_local_server:<tag>')
+    .with_exposed_ports(8000)
+    .waiting_for(
+        LogMessageWaitStrategy(re.compile(r'\[metamist_local_server\] ready'))
+        .with_startup_timeout(300)
+    )
+)
+with metamist:
+    url = f'http://{metamist.get_container_host_ip()}:{metamist.get_exposed_port(8000)}'
+    # point the client or tests at url (SM_URL=url, SM_ENVIRONMENT=local)
+```
+
+Exposed ports land on random host ports. That is fine for the API. If host code
+uploads to the fake GCS, publish 4443 on a fixed port and pass it as
+`HOST_GCS_PORT`, because the emulator returns upload URLs built from that port.
 
 ## Environment variables
 
@@ -157,7 +186,7 @@ interface: host tooling waits on them.
 [metamist_local_server 3/7] running liquibase migrations
 [metamist_local_server 4/7] granting <user> project-creators / members-admin
 [metamist_local_server 5/7] starting fake-gcs-server on :4443 (filesystem backend at /data/fakegcs)
-[metamist_local_server 6/7] starting API on :8000 (uvicorn --reload)
+[metamist_local_server 6/7] starting API on :8000 (uvicorn without reload)
 [metamist_local_server 7/7] seeding: <script>
 [metamist_local_server] ready
 ```
@@ -179,7 +208,7 @@ docker run -d -v /path/to/metamist:/app/metamist ...
 
 If `api/server.py` is found there, the migrations run from that tree's `db/` and
 `uvicorn --reload` serves its `api/`, so edits to the python source are picked up
-live. Otherwise the baked-in copy at `/build` is used. The python dependencies and
+live. Otherwise the baked-in copy at `/build` is served without reload. The python dependencies and
 generated client are the ones baked at build time, so a checkout with different
 dependencies, or a changed API model, needs an image built from it (next section).
 
