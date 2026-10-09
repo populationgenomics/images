@@ -1,4 +1,4 @@
-# metamist_local
+# metamist_local_server
 
 Metamist in local mode, in one container: an automation of metamist's own
 development setup (`docs/installation.md`). It gives a working, empty metamist
@@ -37,11 +37,11 @@ the Postgres line is unreleased, and this image installs MariaDB.
 ## Run
 
 ```bash
-docker run -d --name metamist_local \
+docker run -d --name metamist_local_server \
     -p 127.0.0.1:8000:8000 -p 127.0.0.1:4443:4443 \
-    -v metamist_local_db:/var/lib/mysql \
-    -v metamist_local_gcs:/data/fakegcs \
-    australia-southeast1-docker.pkg.dev/cpg-common/images/metamist_local:<tag>
+    -v metamist_local_server_db:/var/lib/mysql \
+    -v metamist_local_server_gcs:/data/fakegcs \
+    australia-southeast1-docker.pkg.dev/cpg-common/images/metamist_local_server:<tag>
 ```
 
 Then `http://localhost:8000/docs` is Swagger and `http://localhost:8000/graphql`
@@ -55,7 +55,7 @@ publish the ports on loopback only, as above.
 prints JSON and exits non-zero on GraphQL errors.
 
 ```bash
-docker exec metamist_local mmquery '{ myProjects { name } }'
+docker exec metamist_local_server mmquery '{ myProjects { name } }'
 ```
 
 It also runs on the host (copy it out with `docker cp`); point it at the
@@ -110,7 +110,7 @@ uploaded objects stay in step with the database that references them.
 Seeding is off by default; the stack boots empty. To load data on first boot:
 
 ```bash
-docker run -d --name metamist_local \
+docker run -d --name metamist_local_server \
     -v "$PWD/my_seed:/opt/seed" \
     -e SEED=1 -e SEED_SCRIPT=/opt/seed/generate.py \
     ...
@@ -131,8 +131,8 @@ To seed an already-running container instead, leave `SEED=0` and run the script
 with the image's python:
 
 ```bash
-docker cp ./my_seed metamist_local:/opt/seed
-docker exec metamist_local python /opt/seed/generate.py
+docker cp ./my_seed metamist_local_server:/opt/seed
+docker exec metamist_local_server python /opt/seed/generate.py
 ```
 
 ## Healthy
@@ -143,7 +143,7 @@ a container that is seeding turns healthy while the seed is still running. If yo
 need the seed finished, wait for the `ready` log line instead.
 
 ```bash
-docker inspect -f '{{.State.Health.Status}}' metamist_local
+docker inspect -f '{{.State.Health.Status}}' metamist_local_server
 ```
 
 ## Boot log
@@ -152,21 +152,21 @@ The entrypoint logs seven numbered phases and then a final line. These lines are
 interface: host tooling waits on them.
 
 ```text
-[metamist_local 1/7] starting MariaDB
-[metamist_local 2/7] ensuring database, user and role exist
-[metamist_local 3/7] running liquibase migrations
-[metamist_local 4/7] granting <user> project-creators / members-admin
-[metamist_local 5/7] starting fake-gcs-server on :4443 (filesystem backend at /data/fakegcs)
-[metamist_local 6/7] starting API on :8000 (uvicorn --reload)
-[metamist_local 7/7] seeding: <script>
-[metamist_local] ready
+[metamist_local_server 1/7] starting MariaDB
+[metamist_local_server 2/7] ensuring database, user and role exist
+[metamist_local_server 3/7] running liquibase migrations
+[metamist_local_server 4/7] granting <user> project-creators / members-admin
+[metamist_local_server 5/7] starting fake-gcs-server on :4443 (filesystem backend at /data/fakegcs)
+[metamist_local_server 6/7] starting API on :8000 (uvicorn --reload)
+[metamist_local_server 7/7] seeding: <script>
+[metamist_local_server] ready
 ```
 
-- On a successful boot each `[metamist_local N/7]` line appears once, in order, and
-  `[metamist_local] ready` comes last, after phase 7 has finished. Only the prefix
+- On a successful boot each `[metamist_local_server N/7]` line appears once, in order, and
+  `[metamist_local_server] ready` comes last, after phase 7 has finished. Only the prefix
   is the contract; the text after it can change.
 - Phase 7 reads `seeding: <script>` or `seed skipped (already seeded, or SEED=0)`.
-- Other lines with the plain `[metamist_local]` prefix are progress or errors. A
+- Other lines with the plain `[metamist_local_server]` prefix are progress or errors. A
   fatal error is logged with that prefix and the container exits non-zero.
 
 ## Serving a metamist checkout (live reload)
@@ -193,7 +193,7 @@ tree, so you can replace it with a checkout:
 mkdir /tmp/metamist-clean
 git -C /path/to/metamist archive HEAD | tar -x -C /tmp/metamist-clean
 docker build --build-context metamist_src=/tmp/metamist-clean \
-    -t metamist_local:dev images/metamist_local
+    -t metamist_local_server:dev images/metamist_local_server
 ```
 
 Pass a clean copy, as `git archive` makes, not a working tree: a `.venv`,

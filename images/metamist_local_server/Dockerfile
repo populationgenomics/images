@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# metamist_local: metamist in local mode, set up as its docs/installation.md
+# metamist_local_server: metamist in local mode, set up as its docs/installation.md
 # describes, in one container:
 #   - MariaDB 11.7 server (data on a volume)
 #   - liquibase migrations (Java + MariaDB JDBC driver)
@@ -42,7 +42,7 @@ RUN apk add --no-cache git \
 
 # The metamist source tree as the filesystem root. The main stage copies only
 # from this stage, so a local checkout replaces it without editing this file:
-#   docker build --build-context metamist_src=/path/to/clean/metamist images/metamist_local
+#   docker build --build-context metamist_src=/path/to/clean/metamist images/metamist_local_server
 FROM scratch AS metamist_src
 COPY --from=metamist_fetch /src/ /
 
@@ -160,7 +160,7 @@ EXPOSE 8000 3306 4443
 
 # Healthy = the API answers on :8000. That happens before the seed step runs, so
 # a seeding container turns healthy while the seed is still loading; wait for the
-# "[metamist_local] ready" log line if you need the seed finished. CI can wait on
+# "[metamist_local_server] ready" log line if you need the seed finished. CI can wait on
 # `docker inspect --format '{{.State.Health.Status}}'` / `--wait` /
 # `condition: service_healthy` instead of scraping the boot log.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=180s --retries=6 \

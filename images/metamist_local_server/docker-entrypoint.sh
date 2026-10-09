@@ -9,10 +9,10 @@
 #   5. start fake-gcs-server
 #   6. start the API (uvicorn --reload)
 #   7. seed once, only if SEED=1 (running SEED_SCRIPT with the image's python)
-# then log "[metamist_local] ready" and hand control to the given command
+# then log "[metamist_local_server] ready" and hand control to the given command
 # (defaults to tailing the API log).
 #
-# The "[metamist_local N/7] ..." phase lines and the final "[metamist_local]
+# The "[metamist_local_server N/7] ..." phase lines and the final "[metamist_local_server]
 # ready" line are an interface: host tooling waits on them. See README.md.
 
 set -euo pipefail
@@ -22,10 +22,10 @@ DATADIR=/var/lib/mysql
 VENV_PY=/opt/venv/bin/python
 SEED_MARKER="${DATADIR}/.metamist_seeded"
 
-log() { echo "[metamist_local] $*"; }
+log() { echo "[metamist_local_server] $*"; }
 # Numbered boot phases, so a host CLI (or a human) can follow progress;
-# "[metamist_local] ready" at the end is the line to wait for.
-phase() { echo "[metamist_local $1] $2"; }
+# "[metamist_local_server] ready" at the end is the line to wait for.
+phase() { echo "[metamist_local_server $1] $2"; }
 
 mkdir -p "${LOG_DIR}"
 
@@ -178,7 +178,7 @@ log "ready"
 API_HOST_PORT="${HOST_API_PORT:-8000}"
 cat <<BANNER
 
-  metamist_local is up:
+  metamist_local_server is up:
     Swagger    http://localhost:${API_HOST_PORT}/docs
     GraphiQL   http://localhost:${API_HOST_PORT}/graphql
     fake GCS   http://localhost:${GCS_HOST_PORT}  (STORAGE_EMULATOR_HOST)
