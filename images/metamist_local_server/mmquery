@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Run a GraphQL query against the local metamist and pretty-print the JSON.
+
+Usage:
+    mmquery '{ myProjects { id name } }'
+    mmquery -f query.graphql
+    echo '{ myProjects { id } }' | mmquery
+    mmquery -v '{"project":"greek-myth"}' 'query($project:String!){ project(name:$project){ id } }'
+
+Stdlib-only, so the same file runs on the host (against the published port, via
+SM_URL) and inside the container. No auth is needed: in local mode the API
+authenticates as SM_LOCALONLY_DEFAULTUSER. Exits non-zero if the response
+contains GraphQL errors, so it works in checks.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+
+def api_url() -> str:
+    """Return the metamist API base URL.
+
+    This is SM_URL if set, else the in-container address, http://localhost:8000.
+    On the host, set SM_URL to the published port, e.g. http://localhost:18000.
+    """
+    return os.environ.get('SM_URL') or 'http://localhost:8000'
+
+
+def _read_query(args: argparse.Namespace) -> str | None:
+    """Return the query from the -f file, the argument, or piped stdin.
+
+    Returns None if none of them supplies one (blank stdin counts as none).
+    """
+    if args.file:
+        with open(args.file) as handle:
+            return handle.read()
+    if args.query:
+        return args.query
+    if not sys.stdin.isatty():
+        return sys.stdin.read().strip() or None
+    return None
+
+
+def _post(
+    url: str, query: str, variables: dict[str, object] | None
+) -> dict[str, object] | None:
+    """POST a GraphQL query and return the decoded JSON response.
+
+    Args:
+        url: The GraphQL endpoint.
+        query: The GraphQL document.
+        variables: Query variables, or None.
+
+    Returns:
+        The response body, including a GraphQL error body sent with a 4xx
+        status, or None if the server could not be reached or sent no JSON. The
+        reason is printed to stderr.
+    """
+    body = json.dumps({'query': query, 'variables': variables}).encode()
+    request = urllib.request.Request(  # noqa: S310 - URL is SM_URL, the local API
+        url, data=body, headers={'Content-Type': 'application/json'}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as resp:  # noqa: S310 - as above
+            return json.load(resp)
+    except urllib.error.HTTPError as e:
+        try:
+            return json.load(e)
+        except (json.JSONDecodeError, OSError):
+            print(f'HTTP {e.code} from {url}: {e.reason}', file=sys.stderr)
+            return None
+    except urllib.error.URLError as e:
+        print(f'cannot reach {url}: {e.reason} - is the container up?', file=sys.stderr)
+        return None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('query', nargs='?', help='GraphQL query string')
+    parser.add_argument('-f', '--file', help='read the query from a file')
+    parser.add_argument('-v', '--variables', help='JSON object of query variables')
+    args = parser.parse_args()
+
+    query = _read_query(args)
+    if query is None:
+        parser.error('provide a query as an argument, with -f, or on stdin')
+    variables = json.loads(args.variables) if args.variables else None
+    payload = _post(api_url().rstrip('/') + '/graphql', query, variables)
+    if payload is None:
+        return 1
+
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 1 if payload.get('errors') else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
