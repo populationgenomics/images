@@ -53,11 +53,11 @@ def main() -> int:
 
     body = json.dumps({'query': query, 'variables': variables}).encode()
     # URL comes from the operator's own SM_URL, so any scheme is the operator's call.
-    request = urllib.request.Request(  # noqa: S310
+    request = urllib.request.Request(  # noqa: S310 - URL is SM_URL, the local API
         URL, data=body, headers={'Content-Type': 'application/json'}
     )
     try:
-        with urllib.request.urlopen(request, timeout=60) as resp:  # noqa: S310
+        with urllib.request.urlopen(request, timeout=60) as resp:  # noqa: S310 - as above
             payload = json.load(resp)
     except urllib.error.HTTPError as exc:
         # GraphQL errors can arrive as a 4xx with a JSON body; show that body.

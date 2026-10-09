@@ -12,7 +12,6 @@ does not change metamist's own test client).
 
 import os
 import sys
-from typing import Any
 
 # Local-mode only: make `import hail` / `import hailtop` resolve to minimal
 # placeholders so scripts like create_test_subset.py (which import
@@ -28,12 +27,13 @@ if os.environ.get('STORAGE_EMULATOR_HOST'):
     try:
         from google.auth.credentials import AnonymousCredentials
         from google.cloud import storage
-    except Exception:  # noqa: BLE001, S110 - storage may not be importable in every env
+    except ImportError:
+        # google-cloud-storage isn't installed in this interpreter: nothing to patch.
         pass
     else:
         _orig_init = storage.Client.__init__
 
-        def _local_init(self: storage.Client, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        def _local_init(self: storage.Client, *args: object, **kwargs: object) -> None:
             kwargs.setdefault('credentials', AnonymousCredentials())
             kwargs.setdefault(
                 'project', os.environ.get('GOOGLE_CLOUD_PROJECT', 'metamist-local')
