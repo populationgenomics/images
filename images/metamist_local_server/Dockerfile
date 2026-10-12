@@ -142,10 +142,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && uv pip install --python /opt/venv --no-deps /build/packages/metamist
 
 # Make the unmodified storage.Client() use anonymous creds against the emulator,
-# and (local mode) resolve hail/hailtop to placeholders so hail-importing scripts
-# run without the heavy dependency.
+# and (local mode) serve hail/hailtop imports as placeholders from an import hook,
+# so hail-importing scripts run without the heavy dependency.
 COPY sitecustomize.py /opt/venv/lib/python3.11/site-packages/sitecustomize.py
-COPY hail-stubs/ /opt/hail-stubs/
 
 # No seed is baked in: seeding is opt-in and project-specific. With SEED=1 the
 # entrypoint runs SEED_SCRIPT once on first boot (mount or copy the script in;
