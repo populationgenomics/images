@@ -6,8 +6,8 @@ analysis has outputs. Off-GCP that calls ``google.auth.default()`` and fails.
 When ``STORAGE_EMULATOR_HOST`` is set we instead default the client to
 ``AnonymousCredentials`` and a dummy project, so the client talks to the local
 fake-gcs-server with no real GCP credentials. Inert when the env var is unset,
-and it never overrides credentials/project a caller passes explicitly (so it
-does not change metamist's own test client).
+and it never overrides credentials/project a caller passes explicitly, by
+keyword or positionally (so it does not change metamist's own test client).
 
 Patching ``storage.Client.__init__`` is deliberate: the client is constructed
 inside metamist code that this image runs unmodified, so there is no call site
@@ -47,10 +47,14 @@ def _patch_storage_client() -> None:
     original_init = storage.Client.__init__
 
     def local_init(self: storage.Client, *args: object, **kwargs: object) -> None:
-        kwargs.setdefault('credentials', credentials.AnonymousCredentials())
-        kwargs.setdefault(
-            'project', os.environ.get('GOOGLE_CLOUD_PROJECT', 'metamist-local')
-        )
+        # Client(project, credentials, ...): a positional argument already
+        # supplies the parameter, and a keyword for it would collide.
+        if len(args) < 1:
+            kwargs.setdefault(
+                'project', os.environ.get('GOOGLE_CLOUD_PROJECT', 'metamist-local')
+            )
+        if len(args) < 2:  # noqa: PLR2004
+            kwargs.setdefault('credentials', credentials.AnonymousCredentials())
         original_init(self, *args, **kwargs)
 
     storage.Client.__init__ = local_init
