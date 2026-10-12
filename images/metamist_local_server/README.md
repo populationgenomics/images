@@ -326,6 +326,9 @@ the locked runtime dependencies plus the client.
    must be the first `VERSION` line in the file: CI reads it to tag the image
    `<version>-N`. The build compares it (without the `-N`) with `/build/pyproject.toml`
    and fails on a mismatch, so a stale `ARG VERSION` cannot be published.
-3. CI rebuilds an image only when a `Dockerfile` changes. A change anywhere else in
+3. When bumping liquibase, the JDBC driver or the MariaDB keyring, update the
+   matching `*_SHA256` build arg in the `Dockerfile`. Cross-check the new hash
+   against the publisher's own checksum, as the comment there describes.
+4. CI rebuilds an image only when a `Dockerfile` changes. A change anywhere else in
    this folder (the entrypoint, `sitecustomize.py`, `mmquery`) has no effect until the
    `Dockerfile` is touched in the same change.

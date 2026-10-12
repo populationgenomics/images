@@ -65,28 +65,47 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LIQUIBASE_VERSION=4.26.0 \
     MARIADB_JDBC_VERSION=3.0.3
 
+# Every download below is checked against a SHA-256 recorded here, so a changed
+# upstream file fails the build. Each hash was cross-checked against the
+# publisher's own checksum: MariaDB's keyring .sha256, the SHA-1 in liquibase's
+# liquibase-additional zip, and Maven Central's .sha1 for the JDBC jar. Bump a
+# hash together with its version.
+ARG MARIADB_KEYRING_SHA256=403e0403df51273fbf5613e5644959d3f85923ef7d8f92e7d83eafe289093af4
+ARG LIQUIBASE_SHA256=89bd5c434fd67dd28b6c63e1edd6d99fee560c8e6e6e121191a67e54e7f73288
+ARG MARIADB_JDBC_SHA256=613086a0a20f177dfcf5e227f519272bc6be88bde4011de0f23c533231a7ae05
+
 # System packages: MariaDB 11.7 server/client, a JRE (for liquibase and
-# the openapi generator), and the usual build/runtime helpers. Installing
+# the openapi generator), and the usual build/runtime helpers. The MariaDB apt
+# repo is added directly (what MariaDB's mariadb_repo_setup script writes),
+# signed by MariaDB's keyring, rather than by piping that script into bash.
+# mariadb-server takes the newest 11.7.x: the series is pinned, not the point
+# release, because the repo drops old point releases. Installing
 # mariadb-server also initialises /var/lib/mysql with the package's defaults. That
 # is emptied again so the entrypoint's mariadb-install-db (root with no password,
 # local to the container) runs on first boot: a fresh named volume is filled from
 # the image, so it would otherwise inherit the package's data.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl wget gnupg git unzip jq gosu procps \
+        ca-certificates curl wget git unzip jq gosu procps \
         default-jre-headless \
-    && curl -fsSL https://r.mariadb.com/downloads/mariadb_repo_setup \
-        | bash -s -- --mariadb-server-version="mariadb-11.7" \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://supplychain.mariadb.com/mariadb-keyring-2025.gpg \
+        -o /etc/apt/keyrings/mariadb-keyring.gpg \
+    && echo "${MARIADB_KEYRING_SHA256}  /etc/apt/keyrings/mariadb-keyring.gpg" | sha256sum -c - \
+    && echo "deb [signed-by=/etc/apt/keyrings/mariadb-keyring.gpg] https://dlm.mariadb.com/repo/mariadb-server/11.7/repo/debian bookworm main" \
+        >/etc/apt/sources.list.d/mariadb.list \
     && apt-get update && apt-get install -y --no-install-recommends \
         mariadb-server mariadb-client \
     && rm -rf /var/lib/apt/lists/* /var/lib/mysql/*
 
 # liquibase + the MariaDB JDBC driver it needs to run the migrations
 RUN wget -q "https://github.com/liquibase/liquibase/releases/download/v${LIQUIBASE_VERSION}/liquibase-${LIQUIBASE_VERSION}.zip" \
+    && echo "${LIQUIBASE_SHA256}  liquibase-${LIQUIBASE_VERSION}.zip" | sha256sum -c - \
     && unzip -q "liquibase-${LIQUIBASE_VERSION}.zip" -d /opt/liquibase \
     && rm "liquibase-${LIQUIBASE_VERSION}.zip" \
     && ln -s /opt/liquibase/liquibase /usr/local/bin/liquibase \
     && wget -q "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_JDBC_VERSION}/mariadb-java-client-${MARIADB_JDBC_VERSION}.jar" \
-        -O /opt/mariadb-java-client.jar
+        -O /opt/mariadb-java-client.jar \
+    && echo "${MARIADB_JDBC_SHA256}  /opt/mariadb-java-client.jar" | sha256sum -c -
 
 # fake-gcs-server: a local stand-in for Google Cloud Storage, the same emulator
 # metamist's own test suite uses. metamist builds a storage.Client() whenever an
