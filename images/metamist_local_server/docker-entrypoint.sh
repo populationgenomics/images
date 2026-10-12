@@ -9,8 +9,10 @@
 #   5. start fake-gcs-server
 #   6. start the API (uvicorn; --reload only when a checkout is mounted)
 #   7. seed once, only if SEED=1 (running SEED_SCRIPT with the image's python)
-# then log "[metamist_local_server] ready" and hand control to the given command
-# (defaults to tailing the API log).
+# then log "[metamist_local_server] ready" and run the given command (defaults to
+# tailing the API log) as a child. This script stays PID 1 and supervises: when
+# the command or a service exits, or on SIGTERM/SIGINT, it stops what it started
+# (command, API, fake-gcs, then MariaDB with a clean shutdown) and exits.
 #
 # The "[metamist_local_server N/7] ..." phase lines and the final "[metamist_local_server]
 # ready" line are an interface: host tooling waits on them. See README.md.
@@ -21,11 +23,122 @@ LOG_DIR=/var/log/metamist
 DATADIR=/var/lib/mysql
 VENV_PY=/opt/venv/bin/python
 SEED_MARKER="${DATADIR}/.metamist_seeded"
+SEED_IN_PROGRESS="${DATADIR}/.metamist_seed_in_progress"
+
+# PIDs of what this script started, for cleanup(). STEP_PID is the boot step in
+# flight (liquibase or the seed script).
+MARIADB_PID=
+GCS_PID=
+API_PID=
+CMD_PID=
+STEP_PID=
+CURRENT_PHASE=
 
 log() { echo "[metamist_local_server] $*"; }
 # Numbered boot phases, so a host CLI (or a human) can follow progress;
 # "[metamist_local_server] ready" at the end is the line to wait for.
-phase() { echo "[metamist_local_server $1] $2"; }
+phase() {
+    CURRENT_PHASE="$1 $2"
+    echo "[metamist_local_server $1] $2"
+}
+# A fatal error: say why and exit non-zero (cleanup() then stops what is running).
+die() {
+    log "$*"
+    exit 1
+}
+
+# An unexpected failure of a top-level command (set -e) names its phase. There is
+# no `set -E`, so the trap is not inherited by functions or subshells: a failure
+# inside a function is reported with die, and a failing ( ... ) subshell fires
+# this trap once, in the shell that ran it.
+trap 'log "failed during phase ${CURRENT_PHASE:-startup}"' ERR
+
+# Stop a process this script started: TERM, then KILL if it is still there after 5 s.
+stop_process() {
+    local name="$1" pid="$2" i
+    if [[ -z "${pid}" ]] || ! kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    fi
+    log "stopping ${name}"
+    kill -TERM "${pid}" 2>/dev/null || true
+    for ((i = 0; i < 50; i++)); do
+        kill -0 "${pid}" 2>/dev/null || return 0
+        sleep 0.1
+    done
+    log "${name} did not stop within 5 s, killing it"
+    kill -KILL "${pid}" 2>/dev/null || true
+}
+
+# Ask MariaDB to shut down cleanly (so the next boot needs no crash recovery) and
+# wait for mariadbd to exit. docker stop's timeout is the only bound on the wait.
+stop_mariadb() {
+    if [[ -z "${MARIADB_PID}" ]] || ! kill -0 "${MARIADB_PID}" 2>/dev/null; then
+        return 0
+    fi
+    log "stopping MariaDB"
+    if ! mariadb-admin --protocol=socket shutdown >/dev/null 2>&1; then
+        log "mariadb-admin shutdown failed, sending SIGTERM to mariadbd"
+        kill -TERM "${MARIADB_PID}" 2>/dev/null || true
+    fi
+    wait "${MARIADB_PID}" 2>/dev/null || true
+}
+
+# Runs on every exit path (normal exit, fatal error, set -e failure, TERM, INT) and
+# keeps the exit status it was entered with.
+cleanup() {
+    local status=$?
+    # Finish the shutdown even if another signal arrives, and do not let a failing
+    # shutdown command abort it or fire the ERR trap.
+    trap '' TERM INT
+    trap - ERR
+    set +e
+    if [[ -n "${STEP_PID}" ]]; then
+        # liquibase is a shell script that runs java as a child, so stop children too.
+        pkill -TERM -P "${STEP_PID}" 2>/dev/null
+        stop_process "boot step" "${STEP_PID}"
+    fi
+    stop_process "command" "${CMD_PID}"
+    stop_process "API" "${API_PID}"
+    stop_process "fake-gcs-server" "${GCS_PID}"
+    stop_mariadb
+    exit "${status}"
+}
+trap cleanup EXIT
+trap 'log "received SIGTERM"; exit 143' TERM
+trap 'log "received SIGINT"; exit 130' INT
+
+# wait_for <name> <timeout_s> <logfile> <check command...>
+# Poll the check command once a second until it succeeds. On timeout, say so, show
+# the end of the service's log and exit 1.
+wait_for() {
+    local name="$1" timeout="$2" logfile="$3" i
+    shift 3
+    log "waiting for ${name}"
+    for ((i = 0; i < timeout; i++)); do
+        if "$@" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    log "${name} did not come up"
+    tail -n 50 "${logfile}" || true
+    exit 1
+}
+
+# run_step <dir> <command...>
+# Run the command in <dir> as a child and wait for it, returning its status. The
+# exec makes the child's PID the command's own, for cleanup(). Waiting on a
+# background job lets the TERM/INT traps fire at once; a foreground command
+# (liquibase, the seed script) would delay them until it finished.
+run_step() {
+    local dir="$1" status=0
+    shift
+    ( cd "${dir}" && exec "$@" ) &
+    STEP_PID=$!
+    wait "${STEP_PID}" || status=$?
+    STEP_PID=
+    return "${status}"
+}
 
 mkdir -p "${LOG_DIR}"
 
@@ -44,14 +157,38 @@ log "metamist source: ${METAMIST_DIR}"
 
 # The default user is interpolated into bootstrap SQL; keep it to a safe charset.
 if [[ ! "${SM_LOCALONLY_DEFAULTUSER}" =~ ^[A-Za-z0-9_.@-]+$ ]]; then
-    log "SM_LOCALONLY_DEFAULTUSER contains unexpected characters; refusing to start"
-    exit 1
+    die "SM_LOCALONLY_DEFAULTUSER contains unexpected characters; refusing to start"
+fi
+
+# SEED is a switch, not a truthy string: "true" or "yes" must not quietly mean "no".
+SEED="${SEED:-0}"
+if [[ "${SEED}" != "0" && "${SEED}" != "1" ]]; then
+    die "SEED must be 0 or 1, got '${SEED}'; refusing to start"
 fi
 
 # There is no default seed: asking for one without naming it is a config error.
-if [[ "${SEED:-0}" == "1" && -z "${SEED_SCRIPT:-}" ]]; then
-    log "SEED=1 needs SEED_SCRIPT (absolute path, or relative to ${METAMIST_DIR}); refusing to start"
-    exit 1
+# An absolute SEED_SCRIPT runs as-is; a relative one is resolved against the
+# metamist source tree.
+SEED_PATH=
+if [[ "${SEED}" == "1" ]]; then
+    if [[ -z "${SEED_SCRIPT:-}" ]]; then
+        die "SEED=1 needs SEED_SCRIPT (absolute path, or relative to ${METAMIST_DIR}); refusing to start"
+    fi
+    SEED_PATH="${SEED_SCRIPT}"
+    if [[ "${SEED_PATH}" != /* ]]; then
+        SEED_PATH="${METAMIST_DIR}/${SEED_PATH}"
+    fi
+fi
+
+# The volumes only make sense together with the seed that filled them, so an
+# unfinished seed, or a different one than the volume holds, is fatal rather than
+# something to run on top of. Checked before anything is started.
+RESET_HINT="remove both volumes (${DATADIR} and /data/fakegcs) and start again"
+if [[ -f "${SEED_IN_PROGRESS}" ]]; then
+    die "seed $(<"${SEED_IN_PROGRESS}") started on this volume and did not finish, so the data may be partial; ${RESET_HINT}; refusing to start"
+fi
+if [[ "${SEED}" == "1" && -f "${SEED_MARKER}" && "$(<"${SEED_MARKER}")" != "${SEED_PATH}" ]]; then
+    die "this volume was seeded with '$(<"${SEED_MARKER}")', not ${SEED_PATH}; ${RESET_HINT}; refusing to start"
 fi
 
 # --- 1. MariaDB -------------------------------------------------------------
@@ -68,14 +205,9 @@ mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld
 phase 1/7 "starting MariaDB"
 gosu mysql mariadbd --datadir="${DATADIR}" --bind-address=0.0.0.0 --port=3306 \
     >"${LOG_DIR}/mariadb.log" 2>&1 &
+MARIADB_PID=$!
 
-log "waiting for MariaDB to accept connections"
-for _ in $(seq 1 60); do
-    if mariadb-admin --protocol=socket ping >/dev/null 2>&1; then break; fi
-    sleep 1
-done
-mariadb-admin --protocol=socket ping >/dev/null 2>&1 \
-    || { log "MariaDB did not come up"; cat "${LOG_DIR}/mariadb.log"; exit 1; }
+wait_for MariaDB 60 "${LOG_DIR}/mariadb.log" mariadb-admin --protocol=socket ping
 
 # --- 2. database / user / role (idempotent) ---------------------------------
 phase 2/7 "ensuring database, user and role exist"
@@ -93,14 +225,14 @@ SQL
 
 # --- 3. migrations ----------------------------------------------------------
 phase 3/7 "running liquibase migrations"
-( cd "${METAMIST_DIR}/db" && liquibase \
+run_step "${METAMIST_DIR}/db" liquibase \
     --classpath=/opt/mariadb-java-client.jar \
     --changeLogFile project.xml \
     --url "jdbc:mariadb://127.0.0.1:3306/${SM_DEV_DB_NAME}" \
     --driver org.mariadb.jdbc.Driver \
     --username "${SM_DEV_DB_USER}" \
     --password "" \
-    update )
+    update
 
 # --- 4. grant the local default user project-creator rights (idempotent) ----
 phase 4/7 "granting ${SM_LOCALONLY_DEFAULTUSER} project-creators / members-admin"
@@ -132,49 +264,46 @@ fake-gcs-server -scheme http -host 0.0.0.0 -port 4443 \
     -backend filesystem -filesystem-root "${FAKEGCS_ROOT}" \
     -external-url "http://localhost:${GCS_HOST_PORT}" -public-host "localhost:${GCS_HOST_PORT}" \
     >"${LOG_DIR}/fakegcs.log" 2>&1 &
-for _ in $(seq 1 30); do
-    if curl -fs "http://localhost:4443/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}" >/dev/null 2>&1; then
-        break
-    fi
-    sleep 1
-done
+GCS_PID=$!
+
+wait_for fake-gcs-server 30 "${LOG_DIR}/fakegcs.log" \
+    curl -fs "http://localhost:4443/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}"
 
 # --- 6. API server ----------------------------------------------------------
 phase 6/7 "starting API on :8000 (uvicorn ${UVICORN_RELOAD[*]:-without reload})"
 ( cd "${METAMIST_DIR}" && exec "${VENV_PY}" -m uvicorn \
     --host 0.0.0.0 --port 8000 "${UVICORN_RELOAD[@]}" api.server:app ) \
     >"${LOG_DIR}/api.log" 2>&1 &
+API_PID=$!
 
-log "waiting for the API to respond"
-for _ in $(seq 1 60); do
-    if curl -fs http://localhost:8000/openapi.json >/dev/null 2>&1; then break; fi
-    sleep 1
-done
-curl -fs http://localhost:8000/openapi.json >/dev/null 2>&1 \
-    || { log "API did not come up"; tail -n 50 "${LOG_DIR}/api.log"; exit 1; }
+wait_for API 60 "${LOG_DIR}/api.log" curl -fs http://localhost:8000/openapi.json
 
 # --- 7. seed once, if asked -------------------------------------------------
-if [[ "${SEED:-0}" == "1" && ! -f "${SEED_MARKER}" ]]; then
-    # An absolute SEED_SCRIPT runs as-is; a relative one is resolved against the
-    # metamist source tree.
-    seed_path="${SEED_SCRIPT}"
-    [[ "${seed_path}" != /* ]] && seed_path="${METAMIST_DIR}/${seed_path}"
-
-    # A missing or failing seed is fatal: the container never reports ready with
-    # less data than was asked for. No marker is written, so the next boot retries.
-    if [[ ! -f "${seed_path}" ]]; then
-        log "seed script ${seed_path} not found; refusing to start"
-        exit 1
-    fi
-    phase 7/7 "seeding: ${seed_path}"
-    if ! ( cd "${METAMIST_DIR}" && "${VENV_PY}" "${seed_path}" ); then
-        log "seed script failed; refusing to start"
-        exit 1
-    fi
-    touch "${SEED_MARKER}"
-    log "seed complete"
+if [[ "${SEED}" == "0" ]]; then
+    phase 7/7 "seed skipped (SEED=0)"
+elif [[ -f "${SEED_MARKER}" ]]; then
+    # Its content was checked against SEED_PATH before anything started.
+    phase 7/7 "seed skipped (already seeded with ${SEED_PATH})"
 else
-    phase 7/7 "seed skipped (already seeded, or SEED=0)"
+    # A missing or failing seed is fatal: the container never reports ready with
+    # less data than was asked for.
+    if [[ ! -f "${SEED_PATH}" ]]; then
+        die "seed script ${SEED_PATH} not found; refusing to start"
+    fi
+    phase 7/7 "seeding: ${SEED_PATH}"
+    # The in-progress marker stays if the seed fails or is interrupted: the data is
+    # then partial, and rerunning the script on top of it is not safe.
+    echo "${SEED_PATH}" >"${SEED_IN_PROGRESS}"
+    seed_status=0
+    run_step "${METAMIST_DIR}" "${VENV_PY}" "${SEED_PATH}" || seed_status=$?
+    if ((seed_status != 0)); then
+        die "seed script failed (exit ${seed_status}), so the data may be partial; ${RESET_HINT}; refusing to start"
+    fi
+    # Success marker first: a stop between the two writes leaves both files, which
+    # the next boot refuses, rather than neither, which it would seed over.
+    echo "${SEED_PATH}" >"${SEED_MARKER}"
+    rm -f "${SEED_IN_PROGRESS}"
+    log "seed complete"
 fi
 
 log "ready"
@@ -193,4 +322,36 @@ cat <<BANNER
 
 BANNER
 
-exec "$@"
+# Run the command as a child (not exec) so this script can stop the services when
+# it ends. <&0 keeps an interactive command's stdin; a background job would
+# otherwise get /dev/null.
+"$@" <&0 &
+CMD_PID=$!
+
+# Block until the command or a service exits. wait -n returns that job's status;
+# || keeps a non-zero status from tripping set -e and the ERR trap.
+exited_pid=
+status=0
+wait -n -p exited_pid "${CMD_PID}" "${MARIADB_PID}" "${GCS_PID}" "${API_PID}" || status=$?
+
+case "${exited_pid}" in
+    "${CMD_PID}")
+        log "command exited with status ${status}"
+        exit "${status}"
+        ;;
+    "${MARIADB_PID}")
+        service=MariaDB logfile="${LOG_DIR}/mariadb.log"
+        ;;
+    "${GCS_PID}")
+        service=fake-gcs-server logfile="${LOG_DIR}/fakegcs.log"
+        ;;
+    "${API_PID}")
+        service=API logfile="${LOG_DIR}/api.log"
+        ;;
+    *)
+        die "wait returned without a known process (status ${status})"
+        ;;
+esac
+log "${service} exited unexpectedly (status ${status})"
+tail -n 50 "${logfile}" || true
+exit 1
