@@ -225,14 +225,19 @@ SQL
 
 # --- 3. migrations ----------------------------------------------------------
 phase 3/7 "running liquibase migrations"
-run_step "${METAMIST_DIR}/db" liquibase \
-    --classpath=/opt/mariadb-java-client.jar \
-    --changeLogFile project.xml \
-    --url "jdbc:mariadb://127.0.0.1:3306/${SM_DEV_DB_NAME}" \
-    --driver org.mariadb.jdbc.Driver \
-    --username "${SM_DEV_DB_USER}" \
-    --password "" \
-    update
+LIQUIBASE_ARGS=(
+    --classpath=/opt/mariadb-java-client.jar
+    --changeLogFile project.xml
+    --url "jdbc:mariadb://127.0.0.1:3306/${SM_DEV_DB_NAME}"
+    --driver org.mariadb.jdbc.Driver
+    --username "${SM_DEV_DB_USER}"
+    --password ""
+)
+# A stop during an earlier update leaves liquibase's changelog lock held, and the
+# next update then waits on it. This container is the only migrator, so any held
+# lock is stale.
+run_step "${METAMIST_DIR}/db" liquibase "${LIQUIBASE_ARGS[@]}" releaseLocks
+run_step "${METAMIST_DIR}/db" liquibase "${LIQUIBASE_ARGS[@]}" update
 
 # --- 4. grant the local default user project-creator rights (idempotent) ----
 phase 4/7 "granting ${SM_LOCALONLY_DEFAULTUSER} project-creators / members-admin"
