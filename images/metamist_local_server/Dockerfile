@@ -18,7 +18,7 @@
 
 # CI tags the image from this version (the first such line in this file) plus an
 # auto-incremented suffix. It is metamist's pyproject version at METAMIST_COMMIT;
-# bump the two together.
+# bump the two together (the build fails if they disagree).
 ARG VERSION=7.14.3
 # metamist has no git tags or releases, so the source is pinned by a commit on
 # its main (production, MariaDB) branch; not pg-dev/pg-main (Postgres, unreleased).
@@ -66,7 +66,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
     MARIADB_JDBC_VERSION=3.0.3
 
 # System packages: MariaDB 11.7 server/client, a JRE (for liquibase and
-# the openapi generator), and the usual build/runtime helpers.
+# the openapi generator), and the usual build/runtime helpers. Installing
+# mariadb-server also initialises /var/lib/mysql with the package's defaults. That
+# is emptied again so the entrypoint's mariadb-install-db (root with no password,
+# local to the container) runs on first boot: a fresh named volume is filled from
+# the image, so it would otherwise inherit the package's data.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl wget gnupg git unzip jq gosu procps \
         default-jre-headless \
@@ -74,7 +78,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         | bash -s -- --mariadb-server-version="mariadb-11.7" \
     && apt-get update && apt-get install -y --no-install-recommends \
         mariadb-server mariadb-client \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /var/lib/mysql/*
 
 # liquibase + the MariaDB JDBC driver it needs to run the migrations
 RUN wget -q "https://github.com/liquibase/liquibase/releases/download/v${LIQUIBASE_VERSION}/liquibase-${LIQUIBASE_VERSION}.zip" \
@@ -114,16 +118,27 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 COPY --from=metamist_src / /build/
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
-# Generate the python client (openapi-generator-cli is a build-only tool), then
-# install the client into site-packages as a real (non-editable) package so
-# `import metamist` works regardless of what is mounted over the source tree.
-# openapi-generator-cli runs the generator; strawberry's CLI is used by
-# regenerate_api.py to export the GraphQL schema. Both are build-only.
+# The image tag (VERSION: `<version>` or CI's `<version>-N`) must name the metamist
+# source baked in, so a bumped METAMIST_COMMIT or a --build-context checkout cannot
+# leave a stale tag.
+ARG VERSION
+RUN src_version="$(python -c 'import tomllib; print(tomllib.load(open("/build/pyproject.toml", "rb"))["project"]["version"])')" \
+    && if [ "${VERSION%%-*}" != "${src_version}" ]; then \
+        echo "VERSION ${VERSION} does not match metamist ${src_version} in /build/pyproject.toml" >&2; \
+        exit 1; \
+    fi
+
+# Generate the python client with the code generators from metamist's own dev
+# group (openapi-generator-cli runs the generator; strawberry's CLI exports the
+# GraphQL schema), then sync back to the runtime set so /opt/venv holds exactly
+# the locked runtime dependencies. Last, install the client into site-packages
+# as a real (non-editable) package so `import metamist` works regardless of what
+# is mounted over the source tree.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /opt/venv openapi-generator-cli==5.3.0 'strawberry-graphql[cli]==0.268.1' 'libcst==1.5.1' \
+    uv sync --frozen \
     && OPENAPI_COMMAND=openapi-generator-cli python regenerate_api.py \
+    && uv sync --frozen --no-dev \
     && uv pip install --python /opt/venv --no-deps /build/packages/metamist
 
 # Make the unmodified storage.Client() use anonymous creds against the emulator,
@@ -158,13 +173,13 @@ ENV SM_ENVIRONMENT=local \
 WORKDIR /app/metamist
 EXPOSE 8000 3306 4443
 
-# Healthy = the API answers on :8000. That happens before the seed step runs, so
+# Healthy = curl gets /docs from the API on :8000. That happens before the seed step runs, so
 # a seeding container turns healthy while the seed is still loading; wait for the
 # "[metamist_local_server] ready" log line if you need the seed finished. CI can wait on
 # `docker inspect --format '{{.State.Health.Status}}'` / `--wait` /
 # `condition: service_healthy` instead of scraping the boot log.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=180s --retries=6 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs', timeout=4)"]
+    CMD curl -fsS http://localhost:8000/docs >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Keep the container alive and stream the API log when no command is given.
