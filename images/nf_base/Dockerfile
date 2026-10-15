@@ -1,6 +1,6 @@
 FROM python:3.11-slim-trixie AS base
 
-ARG VERSION=0.1.0
+ARG VERSION=5.8.0
 
 LABEL \
   version="v${VERSION}" \
@@ -21,8 +21,7 @@ RUN apt-get update -y && \
         procps \
         wget && \
     rm -r /var/lib/apt/lists/* && \
-    rm -r /var/cache/apt/*
-
-RUN pip install --no-cache-dir \
+    rm -r /var/cache/apt/* && \
+    pip install --no-cache-dir \
     metamist \
-    cpg-utils \
+    cpg-utils>=5.8.1
