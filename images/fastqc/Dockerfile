@@ -1,7 +1,7 @@
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 
 ARG VERSION=0.11.9
 
