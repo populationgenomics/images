@@ -27,6 +27,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libncurses5-dev \
     libssl-dev \
     make \
+    procps \
     software-properties-common \
     wget \
     zlib1g-dev
