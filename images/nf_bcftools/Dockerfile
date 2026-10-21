@@ -1,6 +1,6 @@
-FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/nf_base:0.1.0-1 AS base
+FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/nf_base:5.8.1-1 AS base
 
-ARG VERSION=1.23.1
+ARG VERSION=1.24
 
 LABEL \
   version="v${VERSION}" \
@@ -41,5 +41,6 @@ RUN apt-get update && apt-get install -y \
     make -C htslib-$VERSION DESTDIR=/bcftools_install install
 
 FROM base
+
 COPY --from=compiler /bcftools_install/usr/local/bin/* /usr/local/bin/
 COPY --from=compiler /bcftools_install/usr/local/libexec/bcftools/* /usr/local/libexec/bcftools/
