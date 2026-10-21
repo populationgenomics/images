@@ -3,8 +3,14 @@ FROM debian:bookworm-slim
 ARG VERSION=0.15.3
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    perl wget ca-certificates bowtie2 libgd-perl && \
-    rm -rf /var/lib/apt/lists/*
+      bowtie2 \
+      ca-certificates \
+      libgd-perl \
+      procps \
+      wget \
+    && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -r /var/cache/apt/*
 
 RUN wget -q -O /tmp/fastq_screen.tar.gz \
     https://github.com/StevenWingett/FastQ-Screen/archive/refs/tags/v${VERSION}.tar.gz && \
