@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
         liblzma5 \
         libncurses5-dev \
         libssl3 \
+        procps \
         zlib1g && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
