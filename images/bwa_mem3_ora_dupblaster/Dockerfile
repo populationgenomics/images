@@ -4,6 +4,7 @@ ARG VERSION=v0.15.0
 ARG LLVM_VERSION=19
 ARG ORAD_VERSION=2.7.0
 ARG DUPBLASTER_VERSION=0.3.0
+ARG BAZAM_VERSION=1.0.1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -40,6 +41,12 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
         sh -s -- -y --profile minimal && \
     /root/.cargo/bin/cargo install --locked --root /out dupblaster --version ${DUPBLASTER_VERSION}
 
+# https://github.com/ssadedin/bazam#download-a-release-from-github
+RUN curl -fsSL -o /out/share/bazam/bazam.jar --create-dirs \
+        https://github.com/ssadedin/bazam/releases/download/${BAZAM_VERSION}/bazam.jar && \
+    printf '#!/bin/sh\nexec java ${JAVA_OPTS} -jar /usr/local/share/bazam/bazam.jar "$@"\n' > /out/bin/bazam && \
+    chmod 755 /out/bin/bazam
+
 FROM debian:trixie-slim
 
 ARG LLVM_VERSION=19
@@ -48,13 +55,16 @@ ARG LLVM_VERSION=19
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libdeflate0 \
       libomp5-${LLVM_VERSION} \
+      openjdk-21-jre-headless \
       procps \
       zlib1g && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
 
-COPY --from=builder /out/bin/bwa-mem3 /out/bin/orad /out/bin/dupblaster /usr/local/bin/
+COPY --from=builder /out/bin/bwa-mem3 /out/bin/orad /out/bin/dupblaster /out/bin/bazam /usr/local/bin/
+COPY --from=builder /out/share/bazam/bazam.jar /usr/local/share/bazam/bazam.jar
 
 RUN bwa-mem3 version && \
     orad --version && \
-    dupblaster --version
+    dupblaster --version && \
+    { bazam -h 2>&1 || true; } | grep -q 'usage: java -jar bazam.jar'
