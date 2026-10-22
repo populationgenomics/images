@@ -5,6 +5,7 @@ ARG LLVM_VERSION=19
 ARG ORAD_VERSION=2.7.0
 ARG DUPBLASTER_VERSION=0.3.0
 ARG BAZAM_VERSION=1.0.1
+ARG SAMTOOLS_VERSION=1.24
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -13,13 +14,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       autoconf-archive \
       automake \
       build-essential \
+      bzip2 \
       ca-certificates \
       clang-${LLVM_VERSION} \
       cmake \
       curl \
       git \
+      libbz2-dev \
+      libcurl4-openssl-dev \
       libdeflate-dev \
+      liblzma-dev \
+      libncurses-dev \
       libomp-${LLVM_VERSION}-dev \
+      libssl-dev \
       libtool \
       pkg-config \
       zlib1g-dev && \
@@ -47,14 +54,27 @@ RUN curl -fsSL -o /out/share/bazam/bazam.jar --create-dirs \
     printf '#!/bin/sh\nexec java ${JAVA_OPTS} -jar /usr/local/share/bazam/bazam.jar "$@"\n' > /out/bin/bazam && \
     chmod 755 /out/bin/bazam
 
+RUN curl -fsSL https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2 | \
+        tar -xj -C /tmp && \
+    cd /tmp/samtools-${SAMTOOLS_VERSION} && \
+    ./configure --enable-libcurl --enable-s3 --enable-gcs && \
+    make -j"$(nproc)" && \
+    make DESTDIR=/samtools_install install && \
+    make -C htslib-${SAMTOOLS_VERSION} DESTDIR=/samtools_install install
+
 FROM debian:trixie-slim
 
 ARG LLVM_VERSION=19
 
 # procps provides ps, which Nextflow needs to record task CPU and memory use
 RUN apt-get update && apt-get install -y --no-install-recommends \
+      libbz2-1.0 \
+      libcurl4t64 \
       libdeflate0 \
+      liblzma5 \
+      libncursesw6 \
       libomp5-${LLVM_VERSION} \
+      libssl3t64 \
       openjdk-21-jre-headless \
       procps \
       zlib1g && \
@@ -63,8 +83,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /out/bin/bwa-mem3 /out/bin/orad /out/bin/dupblaster /out/bin/bazam /usr/local/bin/
 COPY --from=builder /out/share/bazam/bazam.jar /usr/local/share/bazam/bazam.jar
+COPY --from=builder /samtools_install/usr/local/bin/* /usr/local/bin/
 
 RUN bwa-mem3 version && \
     orad --version && \
     dupblaster --version && \
+    samtools --version && \
     { bazam -h 2>&1 || true; } | grep -q 'usage: java -jar bazam.jar'
