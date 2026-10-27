@@ -29,7 +29,7 @@ RUN perl -c /opt/dipcall.kit/run-dipcall && \
     minimap2 --version && \
     samtools --version | head -n 1 && \
     k8 -v && \
-    htsbox 2>&1 | head -n 2 && \
+    { htsbox 2>&1 || true; } | grep -q 'htsbox r' && \
     bedtk 2>&1 | head -n 1 && \
     tabix --version | head -n 1 && \
     bgzip --version | head -n 1 && \
