@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
-# Official cactus image for running tha pangenome pipeline
-SOURCE_IMAGE="quay.io/comparative-genomics-toolkit/cactus:3.3.0"
+# Official cactus image for running the pangenome pipeline
+SOURCE_IMAGE="docker://quay.io/comparative-genomics-toolkit/cactus:v3.3.0"
 IMAGE_NAME="cactus"
 IMAGE_TAG="3.3.0"
 
