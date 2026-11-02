@@ -1,8 +1,8 @@
 # --- STAGE 1: Build Picard from Source ---
 FROM eclipse-temurin:17-jdk AS builder
 
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=3.5.0
 
 RUN apt-get update && \
@@ -18,8 +18,8 @@ RUN ./gradlew clean printVersion shadowJar
 
 # --- STAGE 2: Minimal Runtime Environment ---
 FROM debian:bookworm-slim
-ENV MAMBA_ROOT_PREFIX /root/micromamba
-ENV PATH $MAMBA_ROOT_PREFIX/bin:$PATH
+ENV MAMBA_ROOT_PREFIX=/root/micromamba
+ENV PATH=$MAMBA_ROOT_PREFIX/bin:$PATH
 ARG VERSION=3.5.0
 
 # Install minimal system requirements for Micromamba
