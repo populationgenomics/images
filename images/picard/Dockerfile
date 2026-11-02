@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     procps \
     wget \
     && \
-    apt-get clean \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Micromamba
