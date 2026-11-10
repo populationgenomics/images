@@ -1,6 +1,6 @@
 FROM australia-southeast1-docker.pkg.dev/cpg-common/images-dev/nf_base:5.8.1-1 AS base
 
-ARG VERSION=1.24
+ARG VERSION=1.25
 
 LABEL \
   version="v${VERSION}" \
