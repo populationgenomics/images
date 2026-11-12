@@ -1,8 +1,13 @@
 FROM debian:bookworm-slim
 
-ARG VERSION=${VERSION:-2.7.10b}
+ARG VERSION=2.7.10b
 
-RUN apt-get update && apt-get install -y git wget bash bzip2 zip && \
+RUN apt-get update && apt-get install -y  \
+      bzip2 \
+      procps \
+      wget \
+      zip \
+    && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/* && \
     cd /tmp && wget https://github.com/alexdobin/STAR/releases/download/${VERSION}/STAR_${VERSION}.zip && \

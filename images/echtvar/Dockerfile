@@ -9,7 +9,7 @@ RUN chmod +x /bin/echtvar
 # designed for the gnomAD v4 joint-dataset
 COPY config.json /config.json
 
-# designed for the gnomAD v4 genomes-only
+# designed for a subset of the gnomAD v4 joint values
 COPY simple_config.json /simple_config.json
 
 ENV ECHTVAR_CONFIG=/config.json
