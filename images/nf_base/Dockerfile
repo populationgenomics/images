@@ -24,4 +24,4 @@ RUN apt-get update -y && \
     rm -r /var/cache/apt/* && \
     pip install --no-cache-dir \
     metamist \
-    cpg-utils>=5.8.1
+    cpg-utils>=${VERSION}
