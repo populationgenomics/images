@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim AS base
 
-ENV VERSION=1.24
+ENV VERSION=1.25
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
         libcurl4 \
         liblzma5 \
         libssl3 \
+        procps \
         zlib1g && \
     rm -r /var/lib/apt/lists/* && \
     rm -r /var/cache/apt/*
