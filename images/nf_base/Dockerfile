@@ -1,6 +1,6 @@
 FROM python:3.11-slim-trixie AS base
 
-ARG VERSION=5.8.1
+ARG VERSION=5.9.0
 
 LABEL \
   version="v${VERSION}" \
