@@ -1,6 +1,6 @@
-FROM debian:bookworm-slim AS base
+FROM debian:trixie-slim AS base
 
-ENV VERSION=1.24
+ENV VERSION=1.25
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
         libbz2-1.0 \
