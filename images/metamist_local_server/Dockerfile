@@ -21,8 +21,12 @@
 # bump the two together (the build fails if they disagree).
 ARG VERSION=8.0.0
 # metamist has no git tags or releases, so the source is pinned by a commit. This
-# one is the 8.0.0 release, on metamist's pg-main (PostgreSQL) branch; the 7.x
-# line on dev and main used MariaDB, which this image no longer installs.
+# one is the 8.0.0 release on pg-main, the branch production is deployed from and
+# the PyPI package is published from. dev (the default branch) and main still hold
+# the 7.x MariaDB line, which this image no longer installs, until metamist's
+# branches are consolidated. If that rewrites or removes pg-main, this fetch may
+# fail: bump the pin to the commit that then carries the same version (see
+# "Bumping" in the README).
 ARG METAMIST_COMMIT=785e3b02337850d736ad9864cc49d8f1d1897704
 # The PostgreSQL major version: server, client, extension build and data path.
 ARG PG_MAJOR=18

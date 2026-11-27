@@ -43,23 +43,38 @@ what this image runs.
 Version 8 replaces MariaDB with PostgreSQL, so:
 
 - **Old database volumes are incompatible.** A volume that held `/var/lib/mysql`
-  cannot be used; remove it, and the fake GCS volume with it (the two are kept in
-  step), then start again. The data is rebuilt by the seed.
+  cannot be used, at either path: the container refuses to start if it finds
+  MariaDB files in `/var/lib/postgresql`. Remove it, and the fake GCS volume with
+  it (the two are kept in step), then start again. The data is rebuilt by the seed.
+
+  ```bash
+  docker rm -f metamist_local_server
+  docker volume rm metamist_local_server_db metamist_local_server_gcs
+  ```
+
+  Removing only the database volume is refused too: a new database does not start
+  beside a fake GCS volume that already holds objects.
 - The database volume is now mounted at `/var/lib/postgresql`, not `/var/lib/mysql`.
   The container refuses to start if `/var/lib/mysql` exists (a compose file that
   still mounts the old volume there), rather than ignore the mount and start empty.
-- The database port is 5432, not 3306, and the database is PostgreSQL's:
-  connect as `metamist_server` (see [PostgreSQL](#postgresql)), not as `sm_api`.
+- The database port is 5432, not 3306. Connect with a PostgreSQL client to the
+  `metamist` database (formerly `sm_dev`) as `metamist_server` (formerly `sm_api`).
+  The tables are in the `main` schema, which is on that user's `search_path`, so
+  queries need no schema prefix (see [PostgreSQL](#postgresql)).
 - The boot log has six numbered phases, not seven (see [Boot log](#boot-log)).
 - `SM_DEV_DB_NAME` and `SM_DEV_DB_USER` can no longer be overridden: metamist's
   migrations fix them as `metamist` and `metamist_server`, and the container
-  refuses to start with other values.
+  refuses to start with other values. It also refuses an `SM_DEV_DB_PORT` other
+  than 5432, such as a leftover 3306.
 - The log file `mariadb.log` is now `postgres.log`.
+- The seed markers `.metamist_seeded` and `.metamist_seed_in_progress` moved with
+  the data, from `/var/lib/mysql` to `/var/lib/postgresql/18/docker`. Their names
+  and meaning are unchanged.
 - A mounted metamist checkout must be version 8 or later (it needs `db/migrations`).
 
-Everything else is as before: the environment variables, the seed markers and the
-seed's rules for refusing to start, the `ready` line, the health check, `mmquery`,
-and the `--build-context` override.
+Everything else is as before: the other environment variables, the seed's rules
+for refusing to start, the `ready` line, the health check, `mmquery`, and the
+`--build-context` override.
 
 ## Pull
 
@@ -241,8 +256,14 @@ with it.
 | `/opt/seed` | conventional place to mount or copy a seed script; nothing is baked in |
 | `/var/log/metamist` | `api.log`, `postgres.log`, `initdb.log`, `fakegcs.log` |
 
+Mount the database volume at `/var/lib/postgresql`, not at
+`/var/lib/postgresql/data` (the path postgres images up to 17 used): nothing is
+written there, so the container refuses to start if that path exists.
+
 Keep `/var/lib/postgresql` and `/data/fakegcs` together: mount both or neither, so
-the uploaded objects stay in step with the database that references them.
+the uploaded objects stay in step with the database that references them. The
+container refuses to create a new database when `/data/fakegcs` already holds
+objects.
 
 Mount the database volume at `/var/lib/postgresql`, not at the data directory
 inside it. On first boot the entrypoint runs `initdb` in a scratch directory
@@ -391,20 +412,31 @@ docker run -d -v /path/to/metamist:/app/metamist ...
 If `api/server.py` is found there, the migrations run from that tree's
 `db/migrations` and `uvicorn --reload` serves its `api/`, so edits to the python
 source are picked up live. Otherwise the baked-in copy at `/build` is served
-without reload. The checkout must be metamist 8 or later: one without
+without reload. The checkout must be metamist 8 or later, which today means the
+`pg-main` branch (a fresh clone is on `dev`, which is 7.x): one without
 `db/migrations` stops the container. The python dependencies and generated client
 are the ones baked at build time, so a checkout with different dependencies, or a
-changed API model, needs an image built from it (next section).
+changed API model, needs an image built from it (see
+[Building against a local checkout](#building-against-a-local-checkout)).
 
-## Building against a local checkout
+## Building
 
-CI fetches metamist at the pinned commit. The release workflow (`deploy.yaml`, on
-a push to `main`) builds with no build args, so `ARG VERSION` keeps the
-`Dockerfile`'s default (the image tag, `8.0.0-N`, comes from the workflow). The
-manual `deploy_dev.yaml` and `deploy_container.yaml` workflows pass
+From the repository root, with BuildKit (the default builder in current Docker;
+the `Dockerfile` uses `RUN --mount`):
+
+```bash
+docker build -t metamist_local_server:dev images/metamist_local_server
+```
+
+This fetches metamist at the pinned commit, as CI does. The release workflow
+(`deploy.yaml`, on a push to `main`) builds with no build args, so `ARG VERSION`
+keeps the `Dockerfile`'s default (the image tag, `8.0.0-N`, comes from the
+workflow). The manual `deploy_dev.yaml` and `deploy_container.yaml` workflows pass
 `--build-arg VERSION=<the tag you give>`, so that tag must be `8.0.0` or
 `8.0.0-<suffix>`: the build fails unless the part before the first `-` equals the
 `version` in the tree's `pyproject.toml`.
+
+## Building against a local checkout
 
 The metamist source is a build stage named `metamist_src` whose root is the
 metamist tree, so you can replace it with a checkout. Pass
@@ -449,3 +481,10 @@ image has no JRE.
 5. CI rebuilds an image only when a `Dockerfile` changes. A change anywhere else in
    this folder (the entrypoint, `sitecustomize.py`, `mmquery`) has no effect until the
    `Dockerfile` is touched in the same change.
+6. Update this README to match: the [Versions](#versions) table, the `8.0.0` in the
+   tag and [Building](#building) text, and, after a PostgreSQL major version
+   change, the `18` in the data paths and in the summary at the top. Searching
+   this file for the old version numbers finds them all. If releases have moved
+   off `pg-main`, also update the branch names here, in the `Dockerfile` comment
+   above `ARG METAMIST_COMMIT` and in the entrypoint's `db/migrations not found`
+   message.

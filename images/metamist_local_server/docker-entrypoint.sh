@@ -31,6 +31,8 @@ PG_BIN="/usr/lib/postgresql/${PG_MAJOR}/bin"
 PG_VOLUME=/var/lib/postgresql
 PG_SOCKET_DIR=/var/run/postgresql
 PG_HBA_FILE=/etc/metamist/pg_hba.conf
+FAKEGCS_ROOT=/data/fakegcs
+RESET_HINT="remove both volumes (${PG_VOLUME} and ${FAKEGCS_ROOT}) and start again"
 SEED_MARKER="${PGDATA}/.metamist_seeded"
 SEED_IN_PROGRESS="${PGDATA}/.metamist_seed_in_progress"
 
@@ -40,6 +42,9 @@ SEED_IN_PROGRESS="${PGDATA}/.metamist_seed_in_progress"
 PG_SUPERUSER=metamist_superuser
 PG_DATABASE=metamist
 PG_APP_ROLE=metamist_server
+# The port PostgreSQL listens on in the container, and so the only value
+# SM_DEV_DB_PORT can have.
+PG_PORT=5432
 
 # PIDs of what this script started, for cleanup(). STEP_PID is the boot step in
 # flight (dbmate or the seed script); SLEEP_PID is the sleep of the supervision
@@ -205,7 +210,7 @@ log "metamist source: ${METAMIST_DIR}"
 # metamist 8 moved from MariaDB/liquibase to PostgreSQL/dbmate. A mounted 7.x
 # checkout has no db/migrations, and this image has no MariaDB to run it on.
 if [[ ! -d "${METAMIST_DIR}/db/migrations" ]]; then
-    die "${METAMIST_DIR}/db/migrations not found: this image runs metamist 8 or later (PostgreSQL); a 7.x checkout needs an older image; refusing to start"
+    die "${METAMIST_DIR}/db/migrations not found: this image runs metamist 8 or later (PostgreSQL), which is on metamist's pg-main branch; a 7.x checkout (the dev and main branches) needs a 7.14.x image; refusing to start"
 fi
 
 # The image never creates /var/lib/mysql, so it exists only if a 7.x setup's
@@ -215,11 +220,25 @@ if [[ -e /var/lib/mysql ]]; then
     die "/var/lib/mysql exists, so an old MariaDB (7.x) volume is still mounted; this image keeps its data in PostgreSQL at ${PG_VOLUME} and cannot use it (see 'Upgrading from 7.14.x' in the README); refusing to start"
 fi
 
+# The same volume mounted at the new path: the README's run command keeps the 7.x
+# volume name, so an upgrader's MariaDB files arrive here. mysql/ is what the 7.x
+# entrypoint itself tested for; ibdata1 is InnoDB's system tablespace. Nothing is
+# deleted: removing the volume is the user's decision.
+if [[ -e "${PG_VOLUME}/ibdata1" || -d "${PG_VOLUME}/mysql" ]]; then
+    die "${PG_VOLUME} holds MariaDB (7.x) data, which this image cannot use; ${RESET_HINT} (see 'Upgrading from 7.14.x' in the README); refusing to start"
+fi
+
 # The migrations create the metamist_server role and grant CONNECT on the metamist
 # database by name, so other names cannot work. Fail here, rather than later with
 # a connection error, if a 7.x setup still passes its old SM_DEV_DB_* overrides.
 if [[ "${SM_DEV_DB_NAME}" != "${PG_DATABASE}" || "${SM_DEV_DB_USER}" != "${PG_APP_ROLE}" ]]; then
     die "SM_DEV_DB_NAME must be ${PG_DATABASE} and SM_DEV_DB_USER ${PG_APP_ROLE} (metamist's migrations fix those names), got '${SM_DEV_DB_NAME}' and '${SM_DEV_DB_USER}'; refusing to start"
+fi
+# PostgreSQL always listens on PG_PORT here. A 7.x setup that still passes
+# MariaDB's 3306 would otherwise fail in phase 3 with a connection error that does
+# not name the variable.
+if [[ "${SM_DEV_DB_PORT}" != "${PG_PORT}" ]]; then
+    die "SM_DEV_DB_PORT must be ${PG_PORT} (PostgreSQL in this container; 7.x used 3306 for MariaDB), got '${SM_DEV_DB_PORT}'; refusing to start"
 fi
 
 # The default user ends up in SQL and in log lines; keep it to a safe charset even
@@ -251,7 +270,6 @@ fi
 # The volumes only make sense together with the seed that filled them, so an
 # unfinished seed, or a different one than the volume holds, is fatal rather than
 # something to run on top of. Checked before anything is started.
-RESET_HINT="remove both volumes (${PG_VOLUME} and /data/fakegcs) and start again"
 if [[ -f "${SEED_IN_PROGRESS}" ]]; then
     die "seed $(<"${SEED_IN_PROGRESS}") started on this volume and did not finish, so the data may be partial; ${RESET_HINT}; refusing to start"
 fi
@@ -271,6 +289,14 @@ fi
 # and the next boot starts over. The postgres user owns the volume root and the
 # directory above PGDATA (so it can make the scratch directory there) and everything
 # it creates; nothing is chowned recursively.
+# /var/lib/postgresql/data is where postgres images up to 17 kept their data, so a
+# compose file adapted from one of those mounts its volume there. This image never
+# creates that path and never writes to it: the database would live in the
+# container and go with it.
+if [[ -e "${PG_VOLUME}/data" ]]; then
+    die "${PG_VOLUME}/data exists, so a volume is mounted there; this image keeps its data in ${PGDATA}: mount the volume at ${PG_VOLUME} instead; refusing to start"
+fi
+
 PGDATA_PARENT="$(dirname "${PGDATA}")"
 PGDATA_SCRATCH="${PGDATA}.initdb"
 mkdir -p "${PGDATA_PARENT}"
@@ -287,6 +313,12 @@ elif [[ -d "${PGDATA}" && -n "$(ls -A "${PGDATA}")" ]]; then
     fi
     chown postgres:postgres "${PGDATA}"
 else
+    # A new database beside objects that are already in fake GCS: the objects belong
+    # to a database that is gone (only the database volume was removed, or a 7.x
+    # fake GCS volume was kept), and no seed would replace or remove them.
+    if [[ -d "${FAKEGCS_ROOT}" && -n "$(ls -A "${FAKEGCS_ROOT}")" ]]; then
+        die "${FAKEGCS_ROOT} already holds objects but there is no database at ${PGDATA}, so they belong to a database that is gone; ${RESET_HINT}; refusing to start"
+    fi
     log "initialising PostgreSQL data directory"
     if [[ -e "${PGDATA_SCRATCH}" ]]; then
         log "removing ${PGDATA_SCRATCH}, left by an interrupted first boot"
@@ -330,6 +362,7 @@ mkdir -p "${PG_SOCKET_DIR}" && chown postgres:postgres "${PG_SOCKET_DIR}"
 phase 1/6 "starting PostgreSQL"
 gosu postgres "${PG_BIN}/postgres" -D "${PGDATA}" \
     -c listen_addresses='*' \
+    -c port="${PG_PORT}" \
     -c unix_socket_directories="${PG_SOCKET_DIR}" \
     -c hba_file="${PG_HBA_FILE}" \
     >"${LOG_DIR}/postgres.log" 2>&1 &
@@ -378,12 +411,28 @@ WHERE g.name IN ('project-creators', 'members-admin')
   );
 SQL
 
+# The insert adds nothing, and still succeeds, if this metamist's migrations do not
+# create both groups under those names (a mounted checkout or a later pin that
+# renames one). The first create-project call would then fail on permissions, far
+# from the cause, so count what the user now has.
+granted="$("${PG_BIN}/psql" -X -q -w -At -v ON_ERROR_STOP=1 -v local_user="${SM_LOCALONLY_DEFAULTUSER}" \
+    -h "${SM_DEV_DB_HOST}" -p "${SM_DEV_DB_PORT}" -U "${PG_APP_ROLE}" -d "${PG_DATABASE}" <<'SQL'
+SELECT count(*)
+FROM main.group_member gm
+JOIN main."group" g ON g.id = gm.group_id
+WHERE gm.member = :'local_user'
+  AND g.name IN ('project-creators', 'members-admin');
+SQL
+)"
+if [[ "${granted}" != "2" ]]; then
+    die "${SM_LOCALONLY_DEFAULTUSER} is in ${granted} of the 2 groups it needs (project-creators, members-admin), so this metamist's migrations do not create both under those names; refusing to start"
+fi
+
 # --- 4. fake GCS emulator ---------------------------------------------------
 # Filesystem backend on a volume so uploaded objects survive container recreation
 # and stay in sync with the persisted DB. (With a memory backend, a recreate
 # wipes the objects while the DB + seed marker persist and the seed, which
 # uploads them, never re-runs, so analysis outputs would look missing.)
-FAKEGCS_ROOT=/data/fakegcs
 mkdir -p "${FAKEGCS_ROOT}"
 # Binds all container interfaces so the port can be published to the host.
 # The URLs it hands out (e.g. resumable-upload sessions) use the *host-published*
@@ -444,7 +493,7 @@ cat <<BANNER
     GraphiQL   http://localhost:${API_HOST_PORT}/graphql
     fake GCS   http://localhost:${GCS_HOST_PORT}  (STORAGE_EMULATOR_HOST)
     user       ${SM_LOCALONLY_DEFAULTUSER}  (no token needed in local mode)
-    Postgres   ${PG_APP_ROLE}@localhost:5432/${PG_DATABASE}  (no password; publish 5432 to reach it from the host)
+    Postgres   ${PG_APP_ROLE}@localhost:${PG_PORT}/${PG_DATABASE}  (no password; publish ${PG_PORT} to reach it from the host)
 
   Query it:    mmquery '{ myProjects { id name } }'
   Logs:        ${LOG_DIR}/api.log  ${LOG_DIR}/postgres.log
