@@ -2,36 +2,59 @@
 #
 # Boot the whole metamist stack inside one container, in order (these are the
 # steps of metamist's docs/installation.md):
-#   1. start MariaDB (init data dir on first run)
-#   2. create the sm_dev database, sm_api user and role
-#   3. run the liquibase migrations
-#   4. grant the local default user project-creators / members-admin
-#   5. start fake-gcs-server
-#   6. start the API (uvicorn; --reload only when a checkout is mounted)
-#   7. seed once, only if SEED=1 (running SEED_SCRIPT with the image's python)
+#   1. start PostgreSQL (initdb on first run)
+#   2. run the dbmate migrations (this also creates the metamist database)
+#   3. let the metamist_server role log in, and grant the local default user
+#      project-creators / members-admin
+#   4. start fake-gcs-server
+#   5. start the API (uvicorn; --reload only when a checkout is mounted)
+#   6. seed once, only if SEED=1 (running SEED_SCRIPT with the image's python)
 # then log "[metamist_local_server] ready" and run the given command (defaults to
 # tailing the API log) as a child. This script stays PID 1 and supervises: when
 # the command or a service exits, or on SIGTERM/SIGINT, it stops what it started
-# (command, API, fake-gcs, then MariaDB with a clean shutdown) and exits.
+# (command, API, fake-gcs, then PostgreSQL with a clean shutdown) and exits.
 #
-# The "[metamist_local_server N/7] ..." phase lines and the final "[metamist_local_server]
+# The "[metamist_local_server N/6] ..." phase lines and the final "[metamist_local_server]
 # ready" line are an interface: host tooling waits on them. See README.md.
 
 set -euo pipefail
 
 LOG_DIR=/var/log/metamist
-DATADIR=/var/lib/mysql
 VENV_PY=/opt/venv/bin/python
-SEED_MARKER="${DATADIR}/.metamist_seeded"
-SEED_IN_PROGRESS="${DATADIR}/.metamist_seed_in_progress"
+
+# PGDATA and PG_MAJOR come from the image. The seed markers live inside the data
+# directory, so they exist exactly as long as the data they describe: a volume
+# that has lost its data has lost its markers too.
+: "${PGDATA:?PGDATA is not set (the image sets it)}"
+: "${PG_MAJOR:?PG_MAJOR is not set (the image sets it)}"
+PG_BIN="/usr/lib/postgresql/${PG_MAJOR}/bin"
+PG_VOLUME=/var/lib/postgresql
+PG_SOCKET_DIR=/var/run/postgresql
+PG_HBA_FILE=/etc/metamist/pg_hba.conf
+FAKEGCS_ROOT=/data/fakegcs
+RESET_HINT="remove both volumes (${PG_VOLUME} and ${FAKEGCS_ROOT}) and start again"
+SEED_MARKER="${PGDATA}/.metamist_seeded"
+SEED_IN_PROGRESS="${PGDATA}/.metamist_seed_in_progress"
+
+# Names metamist's migrations hard-code: the bootstrap superuser that owns the
+# schemas (ALTER DEFAULT PRIVILEGES FOR ROLE ...), the database they grant CONNECT
+# on, and the application login role they create (as NOLOGIN).
+PG_SUPERUSER=metamist_superuser
+PG_DATABASE=metamist
+PG_APP_ROLE=metamist_server
+# The port PostgreSQL listens on in the container, and so the only value
+# SM_DEV_DB_PORT can have.
+PG_PORT=5432
 
 # PIDs of what this script started, for cleanup(). STEP_PID is the boot step in
-# flight (liquibase or the seed script).
-MARIADB_PID=
+# flight (dbmate or the seed script); SLEEP_PID is the sleep of the supervision
+# loop at the end.
+POSTGRES_PID=
 GCS_PID=
 API_PID=
 CMD_PID=
 STEP_PID=
+SLEEP_PID=
 CURRENT_PHASE=
 
 log() { echo "[metamist_local_server] $*"; }
@@ -69,18 +92,35 @@ stop_process() {
     kill -KILL "${pid}" 2>/dev/null || true
 }
 
-# Ask MariaDB to shut down cleanly (so the next boot needs no crash recovery) and
-# wait for mariadbd to exit. docker stop's timeout is the only bound on the wait.
-stop_mariadb() {
-    if [[ -z "${MARIADB_PID}" ]] || ! kill -0 "${MARIADB_PID}" 2>/dev/null; then
+# wait_gone <pid> <tenths of a second>: return 0 once the process is gone, 1 if it
+# is still there after that long.
+wait_gone() {
+    local pid="$1" i
+    for ((i = 0; i < $2; i++)); do
+        kill -0 "${pid}" 2>/dev/null || return 0
+        sleep 0.1
+    done
+    return 1
+}
+
+# Ask PostgreSQL to shut down cleanly (so the next boot needs no crash recovery) and
+# wait for it to exit. SIGINT is its "fast" shutdown: it disconnects clients, rolls
+# back open transactions and checkpoints. (SIGTERM, "smart", would wait for every
+# client to disconnect first.) If that takes more than 20 s, SIGQUIT is its
+# "immediate" shutdown: no checkpoint, so the next boot runs crash recovery, but it
+# is quick. SIGKILL is the last resort, as for the other processes.
+stop_postgres() {
+    if [[ -z "${POSTGRES_PID}" ]] || ! kill -0 "${POSTGRES_PID}" 2>/dev/null; then
         return 0
     fi
-    log "stopping MariaDB"
-    if ! mariadb-admin --protocol=socket shutdown >/dev/null 2>&1; then
-        log "mariadb-admin shutdown failed, sending SIGTERM to mariadbd"
-        kill -TERM "${MARIADB_PID}" 2>/dev/null || true
-    fi
-    wait "${MARIADB_PID}" 2>/dev/null || true
+    log "stopping PostgreSQL"
+    kill -INT "${POSTGRES_PID}" 2>/dev/null || true
+    wait_gone "${POSTGRES_PID}" 200 && return 0
+    log "PostgreSQL did not shut down within 20 s, forcing an immediate shutdown"
+    kill -QUIT "${POSTGRES_PID}" 2>/dev/null || true
+    wait_gone "${POSTGRES_PID}" 50 && return 0
+    log "PostgreSQL did not stop within 5 s of the immediate shutdown, killing it"
+    kill -KILL "${POSTGRES_PID}" 2>/dev/null || true
 }
 
 # Runs on every exit path (normal exit, fatal error, set -e failure, TERM, INT) and
@@ -93,28 +133,40 @@ cleanup() {
     trap - ERR
     set +e
     if [[ -n "${STEP_PID}" ]]; then
-        # liquibase is a shell script that runs java as a child, so stop children too.
+        # A seed script may have started children of its own, so stop them too.
         pkill -TERM -P "${STEP_PID}" 2>/dev/null
         stop_process "boot step" "${STEP_PID}"
+    fi
+    # The supervision loop's sleep may be in flight when a signal ends the loop.
+    if [[ -n "${SLEEP_PID}" ]]; then
+        kill "${SLEEP_PID}" 2>/dev/null
     fi
     stop_process "command" "${CMD_PID}"
     stop_process "API" "${API_PID}"
     stop_process "fake-gcs-server" "${GCS_PID}"
-    stop_mariadb
+    stop_postgres
     exit "${status}"
 }
 trap cleanup EXIT
 trap 'log "received SIGTERM"; exit 143' TERM
 trap 'log "received SIGINT"; exit 130' INT
 
-# wait_for <name> <timeout_s> <logfile> <check command...>
-# Poll the check command once a second until it succeeds. On timeout, say so, show
-# the end of the service's log and exit 1.
+# wait_for <name> <pid> <timeout_s> <logfile> <check command...>
+# Poll the check command once a second until it succeeds. If the service's process
+# <pid> exits first, or on timeout, say so, show the end of the service's log and
+# exit 1.
 wait_for() {
-    local name="$1" timeout="$2" logfile="$3" i
-    shift 3
+    local name="$1" pid="$2" timeout="$3" logfile="$4" i status
+    shift 4
     log "waiting for ${name}"
     for ((i = 0; i < timeout; i++)); do
+        if ! kill -0 "${pid}" 2>/dev/null; then
+            status=0
+            wait "${pid}" 2>/dev/null || status=$?
+            log "${name} exited before it came up (status ${status})"
+            tail -n 50 "${logfile}" || true
+            exit 1
+        fi
         if "$@" >/dev/null 2>&1; then
             return 0
         fi
@@ -129,7 +181,7 @@ wait_for() {
 # Run the command in <dir> as a child and wait for it, returning its status. The
 # exec makes the child's PID the command's own, for cleanup(). Waiting on a
 # background job lets the TERM/INT traps fire at once; a foreground command
-# (liquibase, the seed script) would delay them until it finished.
+# (dbmate, the seed script) would delay them until it finished.
 run_step() {
     local dir="$1" status=0
     shift
@@ -155,7 +207,42 @@ fi
 cd "${METAMIST_DIR}"
 log "metamist source: ${METAMIST_DIR}"
 
-# The default user is interpolated into bootstrap SQL; keep it to a safe charset.
+# metamist 8 moved from MariaDB/liquibase to PostgreSQL/dbmate. A mounted 7.x
+# checkout has no db/migrations, and this image has no MariaDB to run it on.
+if [[ ! -d "${METAMIST_DIR}/db/migrations" ]]; then
+    die "${METAMIST_DIR}/db/migrations not found: this image runs metamist 8 or later (PostgreSQL), which is on metamist's pg-main branch; a 7.x checkout (the dev and main branches) needs a 7.14.x image; refusing to start"
+fi
+
+# The image never creates /var/lib/mysql, so it exists only if a 7.x setup's
+# MariaDB volume is still mounted there. This image cannot read it, and the
+# PostgreSQL data goes elsewhere, so a stale mount would be silently ignored.
+if [[ -e /var/lib/mysql ]]; then
+    die "/var/lib/mysql exists, so an old MariaDB (7.x) volume is still mounted; this image keeps its data in PostgreSQL at ${PG_VOLUME} and cannot use it (see 'Upgrading from 7.14.x' in the README); refusing to start"
+fi
+
+# The same volume mounted at the new path: the README's run command keeps the 7.x
+# volume name, so an upgrader's MariaDB files arrive here. mysql/ is what the 7.x
+# entrypoint itself tested for; ibdata1 is InnoDB's system tablespace. Nothing is
+# deleted: removing the volume is the user's decision.
+if [[ -e "${PG_VOLUME}/ibdata1" || -d "${PG_VOLUME}/mysql" ]]; then
+    die "${PG_VOLUME} holds MariaDB (7.x) data, which this image cannot use; ${RESET_HINT} (see 'Upgrading from 7.14.x' in the README); refusing to start"
+fi
+
+# The migrations create the metamist_server role and grant CONNECT on the metamist
+# database by name, so other names cannot work. Fail here, rather than later with
+# a connection error, if a 7.x setup still passes its old SM_DEV_DB_* overrides.
+if [[ "${SM_DEV_DB_NAME}" != "${PG_DATABASE}" || "${SM_DEV_DB_USER}" != "${PG_APP_ROLE}" ]]; then
+    die "SM_DEV_DB_NAME must be ${PG_DATABASE} and SM_DEV_DB_USER ${PG_APP_ROLE} (metamist's migrations fix those names), got '${SM_DEV_DB_NAME}' and '${SM_DEV_DB_USER}'; refusing to start"
+fi
+# PostgreSQL always listens on PG_PORT here. A 7.x setup that still passes
+# MariaDB's 3306 would otherwise fail in phase 3 with a connection error that does
+# not name the variable.
+if [[ "${SM_DEV_DB_PORT}" != "${PG_PORT}" ]]; then
+    die "SM_DEV_DB_PORT must be ${PG_PORT} (PostgreSQL in this container; 7.x used 3306 for MariaDB), got '${SM_DEV_DB_PORT}'; refusing to start"
+fi
+
+# The default user ends up in SQL and in log lines; keep it to a safe charset even
+# though psql quotes it as a literal.
 if [[ ! "${SM_LOCALONLY_DEFAULTUSER}" =~ ^[A-Za-z0-9_.@-]+$ ]]; then
     die "SM_LOCALONLY_DEFAULTUSER contains unexpected characters; refusing to start"
 fi
@@ -183,119 +270,204 @@ fi
 # The volumes only make sense together with the seed that filled them, so an
 # unfinished seed, or a different one than the volume holds, is fatal rather than
 # something to run on top of. Checked before anything is started.
-RESET_HINT="remove both volumes (${DATADIR} and /data/fakegcs) and start again"
 if [[ -f "${SEED_IN_PROGRESS}" ]]; then
     die "seed $(<"${SEED_IN_PROGRESS}") started on this volume and did not finish, so the data may be partial; ${RESET_HINT}; refusing to start"
 fi
 if [[ "${SEED}" == "1" && -f "${SEED_MARKER}" && "$(<"${SEED_MARKER}")" != "${SEED_PATH}" ]]; then
     die "this volume was seeded with '$(<"${SEED_MARKER}")', not ${SEED_PATH}; ${RESET_HINT}; refusing to start"
 fi
-
-# --- 1. MariaDB -------------------------------------------------------------
-if [[ ! -d "${DATADIR}/mysql" ]]; then
-    log "initialising MariaDB data directory"
-    mariadb-install-db --user=mysql --datadir="${DATADIR}" \
-        --auth-root-authentication-method=normal >/dev/null
+# A missing script is only an error when the seed is going to run: a volume that is
+# already seeded with this path skips it.
+if [[ "${SEED}" == "1" && ! -f "${SEED_MARKER}" && ! -f "${SEED_PATH}" ]]; then
+    die "seed script ${SEED_PATH} not found; refusing to start"
 fi
-chown -R mysql:mysql "${DATADIR}"
 
-# mariadbd needs its runtime socket dir; /run is tmpfs so create it each boot.
-mkdir -p /run/mysqld && chown mysql:mysql /run/mysqld
+# --- 1. PostgreSQL ----------------------------------------------------------
+# PGDATA is only ever created whole: initdb runs in a scratch directory beside it,
+# which is renamed to PGDATA (atomic, on the same volume) once initdb has finished.
+# A stop in the middle of initdb therefore leaves PGDATA absent, never half-written,
+# and the next boot starts over. The postgres user owns the volume root and the
+# directory above PGDATA (so it can make the scratch directory there) and everything
+# it creates; nothing is chowned recursively.
+# /var/lib/postgresql/data is where postgres images up to 17 kept their data, so a
+# compose file adapted from one of those mounts its volume there. This image never
+# creates that path and never writes to it: the database would live in the
+# container and go with it.
+if [[ -e "${PG_VOLUME}/data" ]]; then
+    die "${PG_VOLUME}/data exists, so a volume is mounted there; this image keeps its data in ${PGDATA}: mount the volume at ${PG_VOLUME} instead; refusing to start"
+fi
 
-phase 1/7 "starting MariaDB"
-gosu mysql mariadbd --datadir="${DATADIR}" --bind-address=0.0.0.0 --port=3306 \
-    >"${LOG_DIR}/mariadb.log" 2>&1 &
-MARIADB_PID=$!
+PGDATA_PARENT="$(dirname "${PGDATA}")"
+PGDATA_SCRATCH="${PGDATA}.initdb"
+mkdir -p "${PGDATA_PARENT}"
+chown postgres:postgres "${PG_VOLUME}" "${PGDATA_PARENT}"
 
-wait_for MariaDB 60 "${LOG_DIR}/mariadb.log" mariadb-admin --protocol=socket ping
+if [[ -e "${PGDATA}" && ! -d "${PGDATA}" ]]; then
+    die "${PGDATA} exists but is not a directory; ${RESET_HINT}; refusing to start"
+elif [[ -d "${PGDATA}" && -n "$(ls -A "${PGDATA}")" ]]; then
+    # A cluster has both of these files. Without them this was not made by the
+    # initdb above (which only renames a finished directory into place), so do not
+    # start PostgreSQL on it, and do not delete what is there either.
+    if [[ ! -f "${PGDATA}/PG_VERSION" || ! -f "${PGDATA}/global/pg_control" ]]; then
+        die "${PGDATA} is not a complete PostgreSQL data directory (PG_VERSION or global/pg_control is missing); ${RESET_HINT}; refusing to start"
+    fi
+    chown postgres:postgres "${PGDATA}"
+else
+    # A new database beside objects that are already in fake GCS: the objects belong
+    # to a database that is gone (only the database volume was removed, or a 7.x
+    # fake GCS volume was kept), and no seed would replace or remove them.
+    if [[ -d "${FAKEGCS_ROOT}" && -n "$(ls -A "${FAKEGCS_ROOT}")" ]]; then
+        die "${FAKEGCS_ROOT} already holds objects but there is no database at ${PGDATA}, so they belong to a database that is gone; ${RESET_HINT}; refusing to start"
+    fi
+    log "initialising PostgreSQL data directory"
+    if [[ -e "${PGDATA_SCRATCH}" ]]; then
+        log "removing ${PGDATA_SCRATCH}, left by an interrupted first boot"
+        rm -rf "${PGDATA_SCRATCH}"
+    fi
+    # The superuser is named for what metamist's migrations expect (see above). The
+    # locale is the one metamist's own db image (postgres:18) uses.
+    if ! gosu postgres "${PG_BIN}/initdb" -D "${PGDATA_SCRATCH}" -U "${PG_SUPERUSER}" \
+        --encoding=UTF8 --locale=en_US.utf8 --auth-local=trust --auth-host=reject \
+        >"${LOG_DIR}/initdb.log" 2>&1; then
+        tail -n 50 "${LOG_DIR}/initdb.log" || true
+        rm -rf "${PGDATA_SCRATCH}"
+        die "initdb failed; refusing to start"
+    fi
+    # An empty PGDATA (a mount point cannot be replaced) is removed so the rename can
+    # take its place; rmdir fails, and so refuses, if it is a mount point.
+    if [[ -d "${PGDATA}" ]]; then
+        rmdir "${PGDATA}" || die "${PGDATA} is an empty directory that cannot be replaced (a volume mounted on it?); mount the volume at ${PG_VOLUME} instead; refusing to start"
+    fi
+    mv "${PGDATA_SCRATCH}" "${PGDATA}"
+fi
 
-# --- 2. database / user / role (idempotent) ---------------------------------
-phase 2/7 "ensuring database, user and role exist"
-mariadb -u root <<SQL
-CREATE DATABASE IF NOT EXISTS ${SM_DEV_DB_NAME};
-CREATE USER IF NOT EXISTS '${SM_DEV_DB_USER}'@'%';
-CREATE USER IF NOT EXISTS '${SM_DEV_DB_USER}'@'localhost';
-CREATE ROLE IF NOT EXISTS sm_api_role;
-GRANT sm_api_role TO '${SM_DEV_DB_USER}'@'%';
-GRANT sm_api_role TO '${SM_DEV_DB_USER}'@'localhost';
-SET DEFAULT ROLE sm_api_role FOR '${SM_DEV_DB_USER}'@'%';
-SET DEFAULT ROLE sm_api_role FOR '${SM_DEV_DB_USER}'@'localhost';
-GRANT ALL PRIVILEGES ON ${SM_DEV_DB_NAME}.* TO sm_api_role;
+# Who may connect, written on every boot so it always matches this image rather than
+# whatever the volume was initialised with. There is no password anywhere, so:
+#   - the superuser (and any other role) can connect only over the local socket,
+#     which means from inside the container;
+#   - the application login is the only role allowed over TCP, which is what a
+#     published port or the API itself uses. It is not a superuser and only sees
+#     the metamist database.
+# Publish the port on loopback only; see README.md.
+cat >"${PG_HBA_FILE}" <<HBA
+local  all             all                                   trust
+host   ${PG_DATABASE}  ${PG_APP_ROLE}  0.0.0.0/0             trust
+host   ${PG_DATABASE}  ${PG_APP_ROLE}  ::/0                  trust
+HBA
+
+# The server needs its runtime socket dir; /run does not survive a container
+# recreate, so create it each boot.
+mkdir -p "${PG_SOCKET_DIR}" && chown postgres:postgres "${PG_SOCKET_DIR}"
+
+phase 1/6 "starting PostgreSQL"
+gosu postgres "${PG_BIN}/postgres" -D "${PGDATA}" \
+    -c listen_addresses='*' \
+    -c port="${PG_PORT}" \
+    -c unix_socket_directories="${PG_SOCKET_DIR}" \
+    -c hba_file="${PG_HBA_FILE}" \
+    >"${LOG_DIR}/postgres.log" 2>&1 &
+POSTGRES_PID=$!
+
+# The superuser and the postgres database always exist, so the probe is not logged
+# by the server as a failed login (as pg_isready's default root/root would be).
+wait_for PostgreSQL "${POSTGRES_PID}" 60 "${LOG_DIR}/postgres.log" \
+    "${PG_BIN}/pg_isready" -h "${PG_SOCKET_DIR}" -U "${PG_SUPERUSER}" -d postgres
+
+# --- 2. migrations ----------------------------------------------------------
+# dbmate creates the metamist database if it is missing, then applies whatever
+# migrations are not yet recorded (a rerun on an up-to-date database does nothing).
+# It connects as the superuser over the socket. The search_path is the one metamist's
+# own db/docker-compose.yaml uses, so dbmate's bookkeeping table lands in public.
+# Unlike liquibase there is no changelog lock to release after an interrupted run:
+# dbmate's lock is a session lock, which PostgreSQL drops with the connection.
+phase 2/6 "running dbmate migrations"
+DBMATE_URL="postgres://${PG_SUPERUSER}@/${PG_DATABASE}?socket=${PG_SOCKET_DIR}&sslmode=disable&search_path=public,main,history"
+run_step "${METAMIST_DIR}" dbmate --url "${DBMATE_URL}" \
+    --migrations-dir "${METAMIST_DIR}/db/migrations" --no-dump-schema up
+
+# --- 3. app login + local default user's project-creator rights (idempotent) -
+phase 3/6 "enabling ${PG_APP_ROLE} login and granting ${SM_LOCALONLY_DEFAULTUSER} project-creators / members-admin"
+# The migrations create metamist_server as NOLOGIN, because they cannot hold a
+# password; here it just gets LOGIN, with no password (the pg_hba rules above are the
+# access control). Its search_path is set so a client that connects with psql from
+# the host sees metamist's tables without schema-qualifying them (the API sets
+# the same path itself on every connection).
+"${PG_BIN}/psql" -X -q -w -v ON_ERROR_STOP=1 -h "${PG_SOCKET_DIR}" -U "${PG_SUPERUSER}" -d "${PG_DATABASE}" <<SQL
+ALTER ROLE ${PG_APP_ROLE} LOGIN;
+ALTER ROLE ${PG_APP_ROLE} SET search_path = public, main, history;
 SQL
 
-# --- 3. migrations ----------------------------------------------------------
-phase 3/7 "running liquibase migrations"
-LIQUIBASE_ARGS=(
-    --classpath=/opt/mariadb-java-client.jar
-    --changeLogFile project.xml
-    --url "jdbc:mariadb://127.0.0.1:3306/${SM_DEV_DB_NAME}"
-    --driver org.mariadb.jdbc.Driver
-    --username "${SM_DEV_DB_USER}"
-    --password ""
-)
-# A stop during an earlier update leaves liquibase's changelog lock held, and the
-# next update then waits on it. This container is the only migrator, so any held
-# lock is stale.
-run_step "${METAMIST_DIR}/db" liquibase "${LIQUIBASE_ARGS[@]}" releaseLocks
-run_step "${METAMIST_DIR}/db" liquibase "${LIQUIBASE_ARGS[@]}" update
-
-# --- 4. grant the local default user project-creator rights (idempotent) ----
-phase 4/7 "granting ${SM_LOCALONLY_DEFAULTUSER} project-creators / members-admin"
-mariadb -h 127.0.0.1 -P 3306 -u "${SM_DEV_DB_USER}" "${SM_DEV_DB_NAME}" <<SQL
-INSERT INTO group_member (group_id, member)
-SELECT g.id, '${SM_LOCALONLY_DEFAULTUSER}'
-FROM \`group\` g
+# The grant is metamist's own, from its docs/installation.md, run as the app login
+# over TCP: the same path the API takes, so a broken login fails the boot here.
+"${PG_BIN}/psql" -X -q -w -v ON_ERROR_STOP=1 -v local_user="${SM_LOCALONLY_DEFAULTUSER}" \
+    -h "${SM_DEV_DB_HOST}" -p "${SM_DEV_DB_PORT}" -U "${PG_APP_ROLE}" -d "${PG_DATABASE}" <<'SQL'
+INSERT INTO main.group_member (group_id, member)
+SELECT g.id, :'local_user'
+FROM main."group" g
 WHERE g.name IN ('project-creators', 'members-admin')
   AND NOT EXISTS (
-      SELECT 1 FROM group_member gm
-      WHERE gm.group_id = g.id AND gm.member = '${SM_LOCALONLY_DEFAULTUSER}'
+      SELECT 1 FROM main.group_member gm
+      WHERE gm.group_id = g.id AND gm.member = :'local_user'
   );
 SQL
 
-# --- 5. fake GCS emulator ---------------------------------------------------
+# The insert adds nothing, and still succeeds, if this metamist's migrations do not
+# create both groups under those names (a mounted checkout or a later pin that
+# renames one). The first create-project call would then fail on permissions, far
+# from the cause, so count what the user now has.
+granted="$("${PG_BIN}/psql" -X -q -w -At -v ON_ERROR_STOP=1 -v local_user="${SM_LOCALONLY_DEFAULTUSER}" \
+    -h "${SM_DEV_DB_HOST}" -p "${SM_DEV_DB_PORT}" -U "${PG_APP_ROLE}" -d "${PG_DATABASE}" <<'SQL'
+SELECT count(*)
+FROM main.group_member gm
+JOIN main."group" g ON g.id = gm.group_id
+WHERE gm.member = :'local_user'
+  AND g.name IN ('project-creators', 'members-admin');
+SQL
+)"
+if [[ "${granted}" != "2" ]]; then
+    die "${SM_LOCALONLY_DEFAULTUSER} is in ${granted} of the 2 groups it needs (project-creators, members-admin), so this metamist's migrations do not create both under those names; refusing to start"
+fi
+
+# --- 4. fake GCS emulator ---------------------------------------------------
 # Filesystem backend on a volume so uploaded objects survive container recreation
 # and stay in sync with the persisted DB. (With a memory backend, a recreate
 # wipes the objects while the DB + seed marker persist and the seed, which
 # uploads them, never re-runs, so analysis outputs would look missing.)
-FAKEGCS_ROOT=/data/fakegcs
 mkdir -p "${FAKEGCS_ROOT}"
 # Binds all container interfaces so the port can be published to the host.
 # The URLs it hands out (e.g. resumable-upload sessions) use the *host-published*
 # port, which HOST_GCS_PORT carries in; it differs from 4443 when the container
 # port is published on another host port.
 GCS_HOST_PORT="${HOST_GCS_PORT:-4443}"
-phase 5/7 "starting fake-gcs-server on :4443 (filesystem backend at ${FAKEGCS_ROOT})"
+phase 4/6 "starting fake-gcs-server on :4443 (filesystem backend at ${FAKEGCS_ROOT})"
 fake-gcs-server -scheme http -host 0.0.0.0 -port 4443 \
     -backend filesystem -filesystem-root "${FAKEGCS_ROOT}" \
     -external-url "http://localhost:${GCS_HOST_PORT}" -public-host "localhost:${GCS_HOST_PORT}" \
     >"${LOG_DIR}/fakegcs.log" 2>&1 &
 GCS_PID=$!
 
-wait_for fake-gcs-server 30 "${LOG_DIR}/fakegcs.log" \
+wait_for fake-gcs-server "${GCS_PID}" 30 "${LOG_DIR}/fakegcs.log" \
     curl -fs "http://localhost:4443/storage/v1/b?project=${GOOGLE_CLOUD_PROJECT}"
 
-# --- 6. API server ----------------------------------------------------------
-phase 6/7 "starting API on :8000 (uvicorn ${UVICORN_RELOAD[*]:-without reload})"
+# --- 5. API server ----------------------------------------------------------
+phase 5/6 "starting API on :8000 (uvicorn ${UVICORN_RELOAD[*]:-without reload})"
 ( cd "${METAMIST_DIR}" && exec "${VENV_PY}" -m uvicorn \
     --host 0.0.0.0 --port 8000 "${UVICORN_RELOAD[@]}" api.server:app ) \
     >"${LOG_DIR}/api.log" 2>&1 &
 API_PID=$!
 
-wait_for API 60 "${LOG_DIR}/api.log" curl -fs http://localhost:8000/openapi.json
+wait_for API "${API_PID}" 60 "${LOG_DIR}/api.log" curl -fs http://localhost:8000/openapi.json
 
-# --- 7. seed once, if asked -------------------------------------------------
+# --- 6. seed once, if asked -------------------------------------------------
 if [[ "${SEED}" == "0" ]]; then
-    phase 7/7 "seed skipped (SEED=0)"
+    phase 6/6 "seed skipped (SEED=0)"
 elif [[ -f "${SEED_MARKER}" ]]; then
     # Its content was checked against SEED_PATH before anything started.
-    phase 7/7 "seed skipped (already seeded with ${SEED_PATH})"
+    phase 6/6 "seed skipped (already seeded with ${SEED_PATH})"
 else
-    # A missing or failing seed is fatal: the container never reports ready with
-    # less data than was asked for.
-    if [[ ! -f "${SEED_PATH}" ]]; then
-        die "seed script ${SEED_PATH} not found; refusing to start"
-    fi
-    phase 7/7 "seeding: ${SEED_PATH}"
+    # A missing (checked before boot) or failing seed is fatal: the container never
+    # reports ready with less data than was asked for.
+    phase 6/6 "seeding: ${SEED_PATH}"
     # The in-progress marker stays if the seed fails or is interrupted: the data is
     # then partial, and rerunning the script on top of it is not safe.
     echo "${SEED_PATH}" >"${SEED_IN_PROGRESS}"
@@ -321,9 +493,10 @@ cat <<BANNER
     GraphiQL   http://localhost:${API_HOST_PORT}/graphql
     fake GCS   http://localhost:${GCS_HOST_PORT}  (STORAGE_EMULATOR_HOST)
     user       ${SM_LOCALONLY_DEFAULTUSER}  (no token needed in local mode)
+    Postgres   ${PG_APP_ROLE}@localhost:${PG_PORT}/${PG_DATABASE}  (no password; publish ${PG_PORT} to reach it from the host)
 
   Query it:    mmquery '{ myProjects { id name } }'
-  Logs:        ${LOG_DIR}/api.log  ${LOG_DIR}/mariadb.log
+  Logs:        ${LOG_DIR}/api.log  ${LOG_DIR}/postgres.log
 
 BANNER
 
@@ -333,19 +506,40 @@ BANNER
 "$@" <&0 &
 CMD_PID=$!
 
-# Block until the command or a service exits. wait -n returns that job's status;
-# || keeps a non-zero status from tripping set -e and the ERR trap.
+# Block until the command or a service exits, by polling with kill -0 rather than
+# `wait -n`. bash's wait -n looks for finished jobs, then makes a blocking wait; a
+# child that exits between the two is reaped without being reported and wait -n
+# then blocks for good (seen about once in several thousand runs, in bash 5.3 too),
+# which here would leave the container up with its command already gone. kill -0
+# and `wait <pid>` have no such gap. The sleep runs in the background and is waited
+# for, so the TERM and INT traps fire at once instead of after the sleep.
 exited_pid=
 status=0
-wait -n -p exited_pid "${CMD_PID}" "${MARIADB_PID}" "${GCS_PID}" "${API_PID}" || status=$?
+while [[ -z "${exited_pid}" ]]; do
+    for pid in "${CMD_PID}" "${POSTGRES_PID}" "${GCS_PID}" "${API_PID}"; do
+        if ! kill -0 "${pid}" 2>/dev/null; then
+            exited_pid="${pid}"
+            break
+        fi
+    done
+    if [[ -z "${exited_pid}" ]]; then
+        sleep 0.5 &
+        SLEEP_PID=$!
+        wait "${SLEEP_PID}" || true
+        SLEEP_PID=
+    fi
+done
+# The process is gone, so this returns its status at once (|| keeps a non-zero
+# status from tripping set -e and the ERR trap).
+wait "${exited_pid}" || status=$?
 
 case "${exited_pid}" in
     "${CMD_PID}")
         log "command exited with status ${status}"
         exit "${status}"
         ;;
-    "${MARIADB_PID}")
-        service=MariaDB logfile="${LOG_DIR}/mariadb.log"
+    "${POSTGRES_PID}")
+        service=PostgreSQL logfile="${LOG_DIR}/postgres.log"
         ;;
     "${GCS_PID}")
         service=fake-gcs-server logfile="${LOG_DIR}/fakegcs.log"
@@ -354,7 +548,7 @@ case "${exited_pid}" in
         service=API logfile="${LOG_DIR}/api.log"
         ;;
     *)
-        die "wait returned without a known process (status ${status})"
+        die "unknown process ${exited_pid} exited (status ${status})"
         ;;
 esac
 log "${service} exited unexpectedly (status ${status})"
